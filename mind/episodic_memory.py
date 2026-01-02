@@ -1,0 +1,31 @@
+"""
+Path: mind/episodic_memory.py
+Role: Manages the Digital Journal (User History).
+"""
+
+from .vector_store import AetherVectorStore
+import datetime
+
+class EpisodicMemory:
+    def __init__(self, vector_store: AetherVectorStore):
+        self.store = vector_store
+
+    def record_interaction(self, user_id: str, role: str, content: str):
+        """
+        Saves a single turn of conversation into the user's private namespace.
+        """
+        metadata = {
+            "user_id": user_id,
+            "role": role,
+            "timestamp": str(datetime.datetime.now())
+        }
+        namespace = f"user_{user_id}_episodic"
+        self.store.upsert_knowledge(content, metadata, namespace)
+
+    def get_recent_context(self, user_id: str, current_query: str):
+        """
+        Retrieves relevant past interactions to provide context for the Brain.
+        """
+        namespace = f"user_{user_id}_episodic"
+        contexts, _ = self.store.query_context(current_query, namespace, top_k=3)
+        return contexts
