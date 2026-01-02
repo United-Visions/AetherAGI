@@ -33,10 +33,17 @@ class ActiveInferenceLoop:
 
         if "500" in response: return "The Brain is still waking up. Please wait 30 seconds and try again."
 
-        # Only record if it's not a system error
-        if "SYSTEM ERROR" not in response and "ERROR:" not in response:
+        # 3. LEARN: The Memory Shield
+        # We only save to episodic memory if the response is valid logic, not a system error
+        error_keywords = ["ERROR:", "SYSTEM ERROR", "UNREACHABLE", "500", "404"]
+        is_valid_response = response and not any(k in response.upper() for k in error_keywords)
+
+        if is_valid_response:
             self.memory.record_interaction(user_id, "user", user_input)
             self.memory.record_interaction(user_id, "assistant", response)
+            logger.info(f"Successful interaction saved to user_{user_id}_episodic")
+        else:
+            logger.warning("Memory Shield active: Technical error detected, skipping storage to prevent mind corruption.")
 
         logger.info(f"Cycle complete for User {user_id}")
         return response

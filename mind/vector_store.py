@@ -18,11 +18,15 @@ class AetherVectorStore:
         and then upserts into the index.
         """
         try:
-            # 1. Get the embedding from OpenAI (Truncated to 1024 as you set in Dashboard)
+            # Force types to prevent Pinecone crashes
+            target_namespace = str(namespace)
+            metadata_dict = metadata if isinstance(metadata, dict) else {"info": str(metadata)}
+
+            # 1. Get the embedding (NVIDIA Hosted)
             res = self.pc.inference.embed(
                 model=self.model,
                 inputs=[text],
-                parameters={"input_type": "passage", "dimension": 1024}
+                parameters={"input_type": "passage"}
             )
             vector_values = res.data[0].values
 
@@ -30,14 +34,13 @@ class AetherVectorStore:
             v_id = hashlib.md5(text.encode()).hexdigest()
 
             # 3. Upsert with the actual values
-            metadata_dict = metadata if isinstance(metadata, dict) else {"info": str(metadata)}
             self.index.upsert(
                 vectors=[{
                     "id": v_id,
                     "values": vector_values,
                     "metadata": {**metadata_dict, "text": text}
                 }],
-                namespace=namespace
+                namespace=target_namespace
             )
         except Exception as e:
             logger.error(f"Failed to upsert to Pinecone: {e}")

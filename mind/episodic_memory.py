@@ -20,7 +20,7 @@ class EpisodicMemory:
             "timestamp": str(datetime.datetime.now())
         }
         namespace = f"user_{user_id}_episodic"
-        self.store.upsert_knowledge(content, metadata, namespace)
+        self.store.upsert_knowledge(content, namespace, metadata)
 
     def get_recent_context(self, user_id: str, current_query: str):
         """
