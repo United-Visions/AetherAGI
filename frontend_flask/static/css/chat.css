@@ -1,0 +1,133 @@
+#messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem; /* Increased gap for better separation */
+}
+
+.message-row {
+    display: flex;
+    width: 100%;
+    margin-bottom: 0.5rem;
+    position: relative;
+}
+
+.message-row.user {
+    justify-content: flex-end;
+}
+
+.message-row.assistant {
+    justify-content: flex-start;
+    flex-direction: column;
+}
+
+/* User Message - Bubble Style */
+.user-bubble {
+    background-color: var(--user-bubble-bg);
+    color: white;
+    padding: 0.75rem 1.25rem;
+    border-radius: 18px;
+    border-bottom-right-radius: 4px;
+    max-width: 75%;
+    word-wrap: break-word;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    position: relative;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Assistant Message - Flat Text Style */
+.assistant-text {
+    color: var(--agent-text-color);
+    padding: 0; /* No padding */
+    background: transparent; /* No background */
+    max-width: 90%;
+    font-size: 1rem; /* Slightly larger */
+    line-height: 1.6;
+    font-family: var(--font-mono); /* Use mono for agent feel */
+    position: relative;
+}
+
+.agent-avatar-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: var(--accent-blue);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    font-size: 0.7rem;
+    color: white;
+    margin-bottom: 4px;
+}
+
+/* Cursor Animation for Typing */
+.typing-cursor::after {
+    content: '▋';
+    display: inline-block;
+    vertical-align: bottom;
+    animation: blink 1s step-start infinite;
+    color: var(--accent-blue);
+    margin-left: 2px;
+}
+
+@keyframes blink {
+    50% { opacity: 0; }
+}
+
+/* Emoji / Status Indicators */
+.message-status {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    background: var(--container-bg);
+    border-radius: 50%;
+    padding: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: transform 0.2s;
+    z-index: 5;
+}
+
+.message-status:hover {
+    transform: scale(1.2);
+}
+
+.status-tooltip {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    width: 200px;
+    background-color: #2d333b;
+    border: 1px solid var(--border-color);
+    padding: 0.5rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    margin-bottom: 5px;
+}
+
+.message-status:hover .status-tooltip {
+    display: block;
+}
+
+/* File attachments in chat stream */
+.chat-attachment {
+    background: #2d333b;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    width: fit-content;
+}

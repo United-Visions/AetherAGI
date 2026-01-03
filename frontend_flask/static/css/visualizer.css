@@ -1,0 +1,76 @@
+#visualizer-container {
+    padding: 0 1.5rem 1rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.thought-card {
+    background-color: #0d1117;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+
+.thought-header {
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    background-color: #1a2028;
+    color: var(--text-muted);
+    transition: background 0.2s;
+}
+
+.thought-header:hover {
+    background-color: #21262d;
+    color: var(--text-primary);
+}
+
+.thought-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.thought-content {
+    padding: 1rem;
+    color: var(--text-muted);
+    display: none; /* Hidden by default */
+    border-top: 1px solid var(--border-color);
+    white-space: pre-wrap;
+    background-color: #0d1117;
+}
+
+.thought-card.expanded .thought-content {
+    display: block;
+}
+
+.thought-card.expanded .fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+.thought-step {
+    margin-bottom: 0.5rem;
+    padding-left: 1rem;
+    border-left: 2px solid var(--border-color);
+}
+
+.thought-step.active {
+    border-left-color: var(--accent-blue);
+    color: var(--text-primary);
+}
+
+/* Specific styling for surprise/analysis blocks */
+.metric-box {
+    display: inline-block;
+    padding: 2px 6px;
+    background: rgba(33, 136, 255, 0.15);
+    color: var(--accent-blue);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    margin-right: 0.5rem;
+}

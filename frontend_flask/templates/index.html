@@ -7,49 +7,63 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@303;400;600&family=Fira+Code:wght@400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- Modular CSS Imports handled via main.css -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
 <body>
-    <div id="chat-container">
+    <div id="chat-wrapper">
         <header>
-            <h1>AetherMind</h1>
+            <div id="header-title">AetherMind</div>
         </header>
 
         <main id="messages">
-            <!-- Messages will be injected here -->
+            <!-- Messages injected by JS -->
+            <div class="message-row assistant">
+                <div style="display:flex; align-items:flex-start;">
+                    <div class="agent-avatar-icon"><i class="fas fa-robot"></i></div>
+                    <div class="assistant-text">Hello. I am AetherMind. How can I assist you today?</div>
+                </div>
+            </div>
         </main>
 
-        <video id="video-preview" class="hidden"></video>
+        <div id="visualizer-container">
+            <!-- Thinking Cards injected by JS -->
+        </div>
 
-        <form id="chat-form">
-            <div class="multimodal-buttons">
-                <button type="button" id="camera-btn" aria-label="Camera">
-                    <i class="fas fa-camera"></i>
-                </button>
-                <button type="button" id="mic-btn" aria-label="Microphone">
-                    <i class="fas fa-microphone"></i>
-                </button>
-                <button type="button" id="file-btn" aria-label="Attach File">
-                    <i class="fas fa-paperclip"></i>
-                </button>
-                <input type="file" id="file-input" class="hidden" accept="image/*,video/*,audio/*,.pdf"/>
-            </div>
-            <input
-                id="chat-input"
-                type="text"
-                placeholder="Ask AetherMind anything..."
-                autocomplete="off"
-            />
-            <button type="submit" id="send-btn" aria-label="Send">
-                <i class="fas fa-paper-plane"></i>
-            </button>
-        </form>
+        <div id="input-area-wrapper">
+            <div id="file-previews"></div>
 
-        <div id="thought-visualizer">
-            <p>&gt; Standing by for input...</p>
+            <form id="chat-form">
+                <div class="input-actions">
+                    <button type="button" id="camera-btn" class="icon-btn" aria-label="Camera">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                    <button type="button" id="mic-btn" class="icon-btn" aria-label="Microphone">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button type="button" id="file-btn" class="icon-btn" aria-label="Attach File">
+                        <i class="fas fa-paperclip"></i>
+                    </button>
+                    <input type="file" id="file-input" class="hidden" accept="image/*,video/*,audio/*,.pdf,.txt,.py" multiple style="display:none;"/>
+                </div>
+
+                <input
+                    id="chat-input"
+                    type="text"
+                    placeholder="Ask AetherMind anything..."
+                    autocomplete="off"
+                />
+
+                <button type="submit" id="send-btn" aria-label="Send">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
         </div>
     </div>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+    <!-- Modular JS -->
+    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
