@@ -15,6 +15,8 @@ from .active_inference import ActiveInferenceLoop
 from .auth_manager import AuthManager
 from .router import Router
 from brain.logic_engine import LogicEngine
+from brain.empathy_engine import EmpathyEngine
+from brain.affective_core import AffectiveCore
 from mind.vector_store import AetherVectorStore
 from mind.episodic_memory import EpisodicMemory
 
@@ -46,7 +48,9 @@ STORE = AetherVectorStore(api_key=os.getenv("PINECONE_API_KEY"))
 MEMORY = EpisodicMemory(STORE)
 BRAIN = LogicEngine(runpod_key=os.getenv("RUNPOD_API_KEY"), endpoint_id=os.getenv("RUNPOD_ENDPOINT_ID"), pinecone_key=os.getenv("PINECONE_API_KEY"))
 ROUTER = Router()
-AETHER = ActiveInferenceLoop(BRAIN, MEMORY, STORE, ROUTER)
+HEART = EmpathyEngine()
+AFFECTIVE_CORE = AffectiveCore() # Initialize the new emotional state manager
+AETHER = ActiveInferenceLoop(BRAIN, MEMORY, STORE, ROUTER, HEART, AFFECTIVE_CORE)
 AUTH = AuthManager()
 
 # --- Schemas ---

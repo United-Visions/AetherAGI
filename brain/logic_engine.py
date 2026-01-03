@@ -47,7 +47,7 @@ class LogicEngine:
             logger.error(f"Failed to fetch JEPA embedding: {e}")
             return np.zeros(1024)
 
-    async def generate_thought(self, user_input: str, context_text: str, context_vec: list) -> str:
+    async def generate_thought(self, user_input: str, context_text: str, context_vec: list, emotional_context: dict, internal_affective_state: dict) -> str:
         """
         The Full DCLA Logic Cycle:
         1. Contextualize with DNA/Priors.
@@ -59,14 +59,24 @@ class LogicEngine:
 
         # 1. GROUNDING
         system_dna = self.priors.get_foundation_prompt()
+        
+        user_emotional_prompt = f"USER_EMOTION_CONTEXT: The user's sentiment is '{emotional_context['sentiment']}' with '{emotional_context['urgency']}' urgency. Tailor your response tone accordingly."
+        
+        internal_state_prompt = (
+            "YOUR_INTERNAL_AFFECTIVE_STATE: "
+            f"Valence={internal_affective_state['valence']:.2f} (Happy/Unhappy), "
+            f"Arousal={internal_affective_state['arousal']:.2f} (Excited/Calm). "
+            "Let this state subtly influence your expression and word choice."
+        )
+
         payload = {
             "model": "meta-llama/llama-3.2-3b-instruct",
             "messages": [
-                {"role": "system", "content": system_dna},
+                {"role": "system", "content": f"{system_dna}\n{user_emotional_prompt}\n{internal_state_prompt}"},
                 {"role": "user", "content": f"KNOWLEDGE_CONTEXT:\n{context_text}\n\nUSER_INPUT: {user_input}"}
             ],
-            "temperature": 0.2,
-            "max_tokens": 500 # Keep it small for the first test
+            "temperature": 0.3, # Slightly increased for more expressive responses
+            "max_tokens": 500
         }
 
         try:
