@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 load_dotenv()
 
 # Configuration
-API_URL = "http://localhost:8000/v1/chat/completions"
+API_URL = "https://aetheragi.onrender.com/v1/chat/completions"
 # Make sure you added your AM_LIVE_KEY to the .env file
 API_KEY = os.getenv("AM_LIVE_KEY") 
 logging.info(f"API_KEY loaded: {API_KEY}")
