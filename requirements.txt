@@ -9,3 +9,5 @@ firecrawl-py
 pydantic
 anthropic
 openai
+Flask
+gunicorn

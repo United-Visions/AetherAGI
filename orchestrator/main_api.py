@@ -12,6 +12,7 @@ from typing import Optional
 
 from .active_inference import ActiveInferenceLoop
 from .auth_manager import AuthManager
+from .router import Router
 from brain.logic_engine import LogicEngine
 from mind.vector_store import AetherVectorStore
 from mind.episodic_memory import EpisodicMemory
@@ -24,11 +25,12 @@ app = FastAPI(title="AetherMind AGI API", version="1.0.0")
 API_KEY_NAME = "X-Aether-Key"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
-# Initialize Core (Same as before)
+# Initialize Core Components
 STORE = AetherVectorStore(api_key=os.getenv("PINECONE_API_KEY"))
 MEMORY = EpisodicMemory(STORE)
 BRAIN = LogicEngine(runpod_key=os.getenv("RUNPOD_API_KEY"), endpoint_id=os.getenv("RUNPOD_ENDPOINT_ID"), pinecone_key=os.getenv("PINECONE_API_KEY"))
-AETHER = ActiveInferenceLoop(BRAIN, MEMORY, STORE)
+ROUTER = Router()
+AETHER = ActiveInferenceLoop(BRAIN, MEMORY, STORE, ROUTER)
 AUTH = AuthManager()
 
 # --- Schemas ---
