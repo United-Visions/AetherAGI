@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timedelta
 import numpy as np
+import httpx
 
 from .active_inference import ActiveInferenceLoop
 from .auth_manager import AuthManager
@@ -20,8 +21,7 @@ from brain.logic_engine import LogicEngine
 from heart.heart_orchestrator import Heart # New Heart import
 from mind.vector_store import AetherVectorStore
 from mind.episodic_memory import EpisodicMemory
-from brain.jepa_aligner import JEPAAligner # Import the real JEPA Aligner
-from perception.eye import Eye
+from brain.jepa_aligner import JEPAAligner
 from curiosity.surprise_detector import SurpriseDetector
 from curiosity.research_scheduler import ResearchScheduler
 
@@ -58,11 +58,17 @@ AETHER = ActiveInferenceLoop(BRAIN, MEMORY, STORE, ROUTER, HEART)
 AUTH = AuthManager()
 
 # Initialize Sensory & Curiosity Components
-JEPA = JEPAAligner() # Initialize the real JEPA Aligner
-EYE = Eye()
-SURPRISE_DETECTOR = SurpriseDetector(jepa=JEPA, store=STORE) # Inject the real JEPA instance
+JEPA = JEPAAligner()
+SURPRISE_DETECTOR = SurpriseDetector(jepa=JEPA, store=STORE)
 RESEARCH_SCHEDULER = ResearchScheduler(redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"))
 
+# --- HTTP Client for External Services ---
+# It's best practice to initialize one client and reuse it.
+perception_service_url = os.getenv("PERCEPTION_ENDPOINT_URL")
+if not perception_service_url:
+    print("WARNING: PERCEPTION_ENDPOINT_URL environment variable not set. Multimodal features will fail.")
+
+http_client = httpx.AsyncClient(timeout=60.0) # 60 second timeout for model processing
 
 # --- Schemas ---
 class ChatCompletionRequest(BaseModel):
@@ -89,16 +95,35 @@ async def ingest_multimodal(
 ):
     """
     New endpoint to handle multimodal file uploads.
+    This now forwards the request to the external Perception Service.
     """
+    if not perception_service_url:
+        raise HTTPException(status_code=500, detail="Perception Service is not configured on the backend.")
+
     contents = await file.read()
-    mime_type = file.content_type
     
-    # 1. Process with the Eye
-    text_representation = await EYE.ingest(file_bytes=contents, mime_type=mime_type)
-    
+    try:
+        # Forward the file to the Perception Service
+        files = {'file': (file.filename, contents, file.content_type)}
+        response = await http_client.post(f"{perception_service_url}/v1/ingest", files=files)
+        
+        # Handle non-200 responses from the perception service
+        response.raise_for_status()
+        
+        perception_data = response.json()
+        text_representation = perception_data.get("text_representation", "")
+
+    except httpx.RequestError as e:
+        # Handles network errors, timeouts, etc.
+        raise HTTPException(status_code=503, detail=f"Perception Service is unavailable or timed out: {e}")
+    except httpx.HTTPStatusError as e:
+        # Handles 4xx or 5xx errors from the perception service
+        detail = f"Perception Service returned an error: {e.response.text}"
+        if e.response.status_code == 500: # General model error
+             detail = "The perception model encountered an internal error."
+        raise HTTPException(status_code=e.response.status_code, detail=detail)
+
     # 2. Generate an embedding for the text representation
-    # In a real scenario, you'd have an embedding model service.
-    # For now, we simulate a 1024-dim vector.
     embedding_vector = np.random.rand(1024).astype(np.float32)
 
     # 3. Score for surprise

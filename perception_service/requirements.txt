@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+python-multipart
+torch
+transformers
+sentencepiece
+accelerate
+bitsandbytes
+whisper-cpp-python
+av
+pdfminer.six
+pytesseract
+Pillow
+loguru
+runpod

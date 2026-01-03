@@ -83,6 +83,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
+                // Check for our specific "model unavailable" status code
+                if (response.status === 503) {
+                    throw new Error("The perception model is warming up or currently unavailable. Please try again in a moment.");
+                }
                 const errorText = await response.text();
                 throw new Error(`API Error: ${response.status} - ${errorText}`);
             }
