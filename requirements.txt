@@ -2,7 +2,7 @@ python-dotenv
 fastapi
 uvicorn[standard]
 httpx
-pinecone-client
+pinecone
 numpy
 loguru
 firecrawl-py
