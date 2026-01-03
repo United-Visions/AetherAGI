@@ -3,5 +3,9 @@ fastapi
 uvicorn[standard]
 httpx
 pinecone-client
-openai
+numpy
+loguru
+firecrawl-py
+pydantic
 anthropic
+openai
