@@ -5,6 +5,7 @@ Role: Production API Gateway. Handles authentication and routing.
 
 import os
 from fastapi import FastAPI, Header, HTTPException, Depends, Security
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -20,6 +21,21 @@ from mind.episodic_memory import EpisodicMemory
 load_dotenv()
 
 app = FastAPI(title="AetherMind AGI API", version="1.0.0")
+
+# --- CORS Middleware ---
+# This allows your frontend (running on a different domain) to make API calls to this backend.
+origins = [
+    "https://aethermind-frontend.onrender.com",
+    "http://localhost:5000", # For local testing
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"], # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"], # Allows all headers
+)
 
 # Setup Security
 API_KEY_NAME = "X-Aether-Key"
