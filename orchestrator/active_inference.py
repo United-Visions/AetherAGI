@@ -28,6 +28,7 @@ class ActiveInferenceLoop:
 
         # 1. SENSE: Retrieve logical context
         k12_context, state_vec = self.store.query_context(user_input, namespace="core_k12")
+        logger.debug(f"State vector shape: {len(state_vec)}")
         episodic_context, _ = self.store.query_context(user_input, namespace=f"user_{user_id}_episodic")
         
         # 2. FEEL: Compute emotional and moral context from the Heart
