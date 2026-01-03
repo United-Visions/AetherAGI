@@ -1,1 +1,7 @@
 python-dotenv
+fastapi
+uvicorn[standard]
+httpx
+pinecone-client
+openai
+anthropic
