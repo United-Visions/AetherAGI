@@ -12,3 +12,17 @@ openai
 Flask
 gunicorn
 torch
+transformers
+sentencepiece
+accelerate
+bitsandbytes
+whisper-cpp-python
+redis
+av
+pdfminer.six
+pytesseract
+loguru
+pillow
+numpy
+scikit-learn
+beautifulsoup4

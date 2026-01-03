@@ -4,12 +4,14 @@ Role: Production API Gateway. Handles authentication and routing.
 """
 
 import os
-from fastapi import FastAPI, Header, HTTPException, Depends, Security
+from fastapi import FastAPI, Header, HTTPException, Depends, Security, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime, timedelta
+import numpy as np
 
 from .active_inference import ActiveInferenceLoop
 from .auth_manager import AuthManager
@@ -18,6 +20,10 @@ from brain.logic_engine import LogicEngine
 from heart.heart_orchestrator import Heart # New Heart import
 from mind.vector_store import AetherVectorStore
 from mind.episodic_memory import EpisodicMemory
+from brain.jepa_aligner import JEPAAligner # Import the real JEPA Aligner
+from perception.eye import Eye
+from curiosity.surprise_detector import SurpriseDetector
+from curiosity.research_scheduler import ResearchScheduler
 
 load_dotenv()
 
@@ -51,6 +57,13 @@ HEART = Heart(pinecone_key=os.getenv("PINECONE_API_KEY")) # Initialize the new H
 AETHER = ActiveInferenceLoop(BRAIN, MEMORY, STORE, ROUTER, HEART)
 AUTH = AuthManager()
 
+# Initialize Sensory & Curiosity Components
+JEPA = JEPAAligner() # Initialize the real JEPA Aligner
+EYE = Eye()
+SURPRISE_DETECTOR = SurpriseDetector(jepa=JEPA, store=STORE) # Inject the real JEPA instance
+RESEARCH_SCHEDULER = ResearchScheduler(redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"))
+
+
 # --- Schemas ---
 class ChatCompletionRequest(BaseModel):
     model: str = "aethermind-v1"
@@ -68,6 +81,46 @@ async def get_user_id(api_key: str = Security(api_key_header)):
     return user_id
 
 # --- Endpoints ---
+
+@app.post("/v1/ingest/multimodal")
+async def ingest_multimodal(
+    file: UploadFile,
+    user_id: str = Depends(get_user_id)
+):
+    """
+    New endpoint to handle multimodal file uploads.
+    """
+    contents = await file.read()
+    mime_type = file.content_type
+    
+    # 1. Process with the Eye
+    text_representation = await EYE.ingest(file_bytes=contents, mime_type=mime_type)
+    
+    # 2. Generate an embedding for the text representation
+    # In a real scenario, you'd have an embedding model service.
+    # For now, we simulate a 1024-dim vector.
+    embedding_vector = np.random.rand(1024).astype(np.float32)
+
+    # 3. Score for surprise
+    surprise_score = await SURPRISE_DETECTOR.score(embedding_vector)
+
+    # 4. If surprising, schedule research
+    if surprise_score > SURPRISE_DETECTOR.novelty_threshold:
+        # Generate research questions (a real implementation would call the Brain)
+        questions = [f"What is this? {text_representation[:100]}", f"Tell me more about {text_representation[:100]}"]
+        for q in questions:
+            job = {
+                "query": q,
+                "surprise": surprise_score,
+                "tools": ["browser"],
+                "deadline": (datetime.utcnow() + timedelta(hours=24)).isoformat(),
+                "user_id": user_id
+            }
+            await RESEARCH_SCHEDULER.push(job)
+
+    # 5. Return the initial analysis to the user
+    return {"status": "ingested", "analysis": text_representation, "surprise": surprise_score}
+
 
 @app.post("/v1/chat/completions")
 async def chat_completions(

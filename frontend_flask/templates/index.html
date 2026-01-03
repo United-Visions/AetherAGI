@@ -36,12 +36,24 @@
 
             <footer class="p-4 border-t border-gray-700">
                 <form id="chat-form" class="flex items-center">
+                    <div class="flex items-center p-2 bg-gray-800 rounded-l-lg border border-gray-600">
+                        <button type="button" id="camera-btn" class="text-gray-400 hover:text-white mr-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.55a1 1 0 011.45.89V16.11a1 1 0 01-1.45.89L15 14M5 9a2 2 0 100-4 2 2 0 000 4zm10-2a2 2 0 100-4 2 2 0 000 4zM5 19a2 2 0 100-4 2 2 0 000 4zm10-2a2 2 0 100-4 2 2 0 000 4z"/></svg>
+                        </button>
+                        <button type="button" id="mic-btn" class="text-gray-400 hover:text-white mr-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+                        </button>
+                        <button type="button" id="file-btn" class="text-gray-400 hover:text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                        </button>
+                        <input type="file" id="file-input" class="hidden" accept="image/*,video/*,audio/*,.pdf"/>
+                    </div>
                     <input
                         id="chat-input"
                         type="text"
                         placeholder="Ask AetherMind anything..."
                         autocomplete="off"
-                        class="flex-1 p-2 rounded-l-lg bg-gray-800 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="flex-1 p-2 bg-gray-800 border-t border-b border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <button
                         type="submit"
@@ -60,115 +72,10 @@
             </div>
             <div id="thought-visualizer" class="flex-1 p-4 overflow-y-auto text-sm text-gray-400 space-y-2">
                 <p>&gt; Standing by for input...</p>
+                <video id="video-preview" class="hidden w-full rounded-lg mt-2"></video>
             </div>
         </div>
     </div>
-
-    <script>
-        const chatForm = document.getElementById('chat-form');
-        const chatInput = document.getElementById('chat-input');
-        const chatContainer = document.getElementById('chat-container');
-        const thoughtVisualizer = document.getElementById('thought-visualizer');
-        const aethermindApiUrl = 'https://aetheragi.onrender.com/v1/chat/completions';
-        let messages = [];
-
-        // --- Core Functions ---
-
-        const addMessageToUI = (role, content) => {
-            const messageDiv = document.createElement('div');
-            const isUser = role === 'user';
-            
-            messageDiv.className = `flex mb-4 ${isUser ? 'justify-end' : 'justify-start'}`;
-            
-            const bubble = document.createElement('div');
-            bubble.className = `px-4 py-2 rounded-lg max-w-lg ${isUser ? 'bg-blue-600 text-white' : 'bg-gray-700'}`;
-            bubble.innerText = content;
-
-            messageDiv.appendChild(bubble);
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        };
-
-        const displayThoughts = async () => {
-            const thoughts = [
-                "User input received. Initiating active inference cycle...",
-                "Querying Mind for relevant context (K-12 & Episodic)...",
-                "Assembling Mega-Prompt for Brain...",
-                "Sending context to Cognitive Core (Llama-3)...",
-                "Brain is reasoning...",
-                "Receiving response from Brain...",
-                "Verifying output with Safety Inhibitor...",
-                "Forwarding response to Chat Adapter..."
-            ];
-            
-            thoughtVisualizer.innerHTML = '';
-            for (const thought of thoughts) {
-                const p = document.createElement('p');
-                p.innerText = `> ${thought}`;
-                thoughtVisualizer.appendChild(p);
-                thoughtVisualizer.scrollTop = thoughtVisualizer.scrollHeight;
-                await new Promise(resolve => setTimeout(resolve, 250)); // Simulate processing time
-            }
-        };
-
-        const handleSubmit = async (event) => {
-            event.preventDefault();
-            const userInput = chatInput.value.trim();
-            if (!userInput) return;
-
-            // 1. Update UI immediately
-            addMessageToUI('user', userInput);
-            messages.push({ role: 'user', content: userInput });
-            chatInput.value = '';
-
-            // 2. Show simulated thought process
-            await displayThoughts();
-
-            // 3. Make the API call
-            try {
-                const apiKey = localStorage.getItem('aethermind_api_key') || prompt("Please enter your AetherMind API Key (AM_LIVE_KEY):");
-                if (!apiKey) {
-                    addMessageToUI('assistant', 'API Key is required to chat. Please refresh and enter your key.');
-                    thoughtVisualizer.innerHTML = '<p class="text-red-400">> Cycle aborted: Missing API Key.</p>';
-                    return;
-                }
-                localStorage.setItem('aethermind_api_key', apiKey);
-
-                const response = await fetch(aethermindApiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Aether-Key': apiKey,
-                    },
-                    body: JSON.stringify({
-                        model: 'aethermind-v1',
-                        user: 'flask_user_01', // In a real app, this would be dynamic
-                        messages: messages,
-                    }),
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`API Error: ${response.status} - ${errorText}`);
-                }
-
-                const data = await response.json();
-                const assistantMessage = data.choices[0].message;
-
-                // 4. Display final response
-                addMessageToUI(assistantMessage.role, assistantMessage.content);
-                messages.push(assistantMessage);
-                thoughtVisualizer.innerHTML += '<p class="text-green-400">> Cycle Complete. Response sent.</p>';
-
-            } catch (error) {
-                console.error('Failed to get response from AetherMind:', error);
-                const errorMessage = `Sorry, I encountered an error: ${error.message}`;
-                addMessageToUI('assistant', errorMessage);
-                thoughtVisualizer.innerHTML = `<p class="text-red-400">> CRITICAL ERROR: ${error.message}</p>`;
-            }
-        };
-
-        chatForm.addEventListener('submit', handleSubmit);
-    </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
