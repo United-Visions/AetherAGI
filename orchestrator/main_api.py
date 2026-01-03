@@ -15,8 +15,7 @@ from .active_inference import ActiveInferenceLoop
 from .auth_manager import AuthManager
 from .router import Router
 from brain.logic_engine import LogicEngine
-from brain.empathy_engine import EmpathyEngine
-from brain.affective_core import AffectiveCore
+from heart.heart_orchestrator import Heart # New Heart import
 from mind.vector_store import AetherVectorStore
 from mind.episodic_memory import EpisodicMemory
 
@@ -48,9 +47,8 @@ STORE = AetherVectorStore(api_key=os.getenv("PINECONE_API_KEY"))
 MEMORY = EpisodicMemory(STORE)
 BRAIN = LogicEngine(runpod_key=os.getenv("RUNPOD_API_KEY"), endpoint_id=os.getenv("RUNPOD_ENDPOINT_ID"), pinecone_key=os.getenv("PINECONE_API_KEY"))
 ROUTER = Router()
-HEART = EmpathyEngine()
-AFFECTIVE_CORE = AffectiveCore() # Initialize the new emotional state manager
-AETHER = ActiveInferenceLoop(BRAIN, MEMORY, STORE, ROUTER, HEART, AFFECTIVE_CORE)
+HEART = Heart(pinecone_key=os.getenv("PINECONE_API_KEY")) # Initialize the new Heart
+AETHER = ActiveInferenceLoop(BRAIN, MEMORY, STORE, ROUTER, HEART)
 AUTH = AuthManager()
 
 # --- Schemas ---
@@ -58,6 +56,9 @@ class ChatCompletionRequest(BaseModel):
     model: str = "aethermind-v1"
     messages: list
     user: str # The user_id for episodic memory tracking
+    # Add a field for user feedback
+    reaction_score: Optional[float] = None 
+    last_message_id: Optional[str] = None
 
 # --- Middleware-like Auth ---
 async def get_user_id(api_key: str = Security(api_key_header)):
@@ -75,16 +76,25 @@ async def chat_completions(
 ):
     """
     OpenAI-Compatible Endpoint for AetherMind Reasoning.
+    Now includes logic to handle the feedback loop for the Heart.
     """
-    # Extract the last message from the list (standard OpenAI format)
+    # If this request includes a reaction, it's for closing the loop, not generating a new response.
+    if request.last_message_id and request.reaction_score is not None:
+        # Here you would retrieve the full trace data saved from the previous turn
+        # For simplicity, we'll assume it was cached or stored somewhere accessible.
+        # This part requires a more complex state management (e.g., Redis) to be fully implemented.
+        # heart.close_loop(retrieved_trace, request.reaction_score)
+        return {"status": "feedback_received"}
+
+    # Extract the last message from the list
     last_message = request.messages[-1]["content"]
     
     # Run the DCLA Logic Cycle
-    response_text = await AETHER.run_cycle(user_id, last_message)
+    response_text, message_id = await AETHER.run_cycle(user_id, last_message)
     
-    # Return in a standardized format
+    # Return in a standardized format, now including the message_id
     return {
-        "id": "aether-gen-123",
+        "id": message_id, # Return the actual message_id for the feedback loop
         "object": "chat.completion",
         "model": request.model,
         "choices": [{
