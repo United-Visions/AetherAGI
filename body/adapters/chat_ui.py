@@ -3,7 +3,7 @@ AetherMind DCLA - Universal Body Component
 Path: body/adapters/chat_ui.py
 """
 
-from .adapter_base import BodyAdapter
+from ..adapter_base import BodyAdapter
 from loguru import logger
 
 class ChatAdapter(BodyAdapter):
