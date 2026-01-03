@@ -37,6 +37,10 @@ class RewardModel(nn.Module):
         """
         Takes a state vector, converts to tensor, and predicts flourishing.
         """
+        if not state_vector or len(state_vector) != 1024:
+            logger.warning(f"Invalid state vector shape: {len(state_vector) if state_vector else 'None'}")
+            return 0.0  # Neutral fallback
+
         self.eval() # Set model to evaluation mode
         with torch.no_grad():
             tensor_in = torch.FloatTensor(state_vector).unsqueeze(0)

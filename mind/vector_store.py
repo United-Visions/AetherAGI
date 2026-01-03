@@ -67,8 +67,12 @@ class AetherVectorStore:
             )
             
             contexts = [m['metadata']['text'] for m in results['matches']]
-            state_vector = results['matches'][0]['values'] if results['matches'] else [0]*1024
             
+            if not results['matches']:
+                logger.warning("No matches found in vector store — returning zero vector.")
+                return [], [0.0] * 1024  # Fallback
+
+            state_vector = results['matches'][0]['values']
             return contexts, state_vector
         except Exception as e:
             logger.error(f"Query failed: {e}")
