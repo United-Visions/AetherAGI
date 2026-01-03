@@ -13,7 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('file-input');
     const videoPreview = document.getElementById('video-preview');
 
-    const aethermindApiUrl = 'https://aetheragi.onrender.com/v1/chat/completions'; // Replace if local
+    let aethermindApiUrl;
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        aethermindApiUrl = 'http://127.0.0.1:8000/v1/chat/completions'; // Local backend
+    } else {
+        aethermindApiUrl = 'https://aetheragi.onrender.com/v1/chat/completions'; // Deployed backend
+    }
     let messages = [];
 
     // --- Core Functions ---
@@ -38,14 +43,10 @@ document.addEventListener('DOMContentLoaded', () => {
         await new Promise(resolve => setTimeout(resolve, 150));
         
         const thoughts = [
-            "Analyzing input type...",
-            "Querying Mind for relevant context (K-12 & Episodic)...",
-            "Assembling Mega-Prompt for Brain...",
-            "Sending context to Cognitive Core (Llama-3)...",
-            "Brain is reasoning...",
-            "Receiving response from Brain...",
-            "Verifying output with Safety Inhibitor...",
-            "Forwarding response to Chat Adapter..."
+            "Thinking...",
+            "Checking my knowledge...",
+            "Formulating a response...",
+            "One moment...",
         ];
         
         for (const thought of thoughts) {

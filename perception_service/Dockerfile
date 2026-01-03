@@ -16,16 +16,16 @@ RUN apt-get update && apt-get install -y \
 
 # Copy the application code into the container
 # First, copy the requirements file to leverage Docker layer caching
-COPY requirements.txt .
+COPY perception_service/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code
 # We need to copy the main aethermind perception/ and mind/ folders for imports
-COPY . .
-COPY ../perception ../perception
-COPY ../mind ../mind
+COPY perception_service/ ./
+COPY perception ./perception
+COPY mind ./mind
 
 # Define the command to start the RunPod handler
 CMD ["python", "-u", "runpod_handler.py"]

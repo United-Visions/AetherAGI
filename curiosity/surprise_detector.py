@@ -7,11 +7,11 @@ from loguru import logger
 from sklearn.metrics.pairwise import cosine_similarity
 from cachetools import TTLCache
 
-from mind.vector_store import VectorStore
+from mind.vector_store import AetherVectorStore
 from brain.jepa_aligner import JEPAAligner
 
 class SurpriseDetector:
-    def __init__(self, jepa: JEPAAligner, store: VectorStore, novelty_threshold=0.5):
+    def __init__(self, jepa: JEPAAligner, store: AetherVectorStore, novelty_threshold=0.5):
         self.jepa = jepa # Now using the real, injected JEPA Aligner
         self.store = store
         self.novelty_threshold = novelty_threshold

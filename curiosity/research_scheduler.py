@@ -6,6 +6,7 @@ import redis.asyncio as redis
 import json
 from loguru import logger
 from datetime import datetime
+from typing import Optional
 
 class ResearchScheduler:
     def __init__(self, redis_url: str):
@@ -52,7 +53,7 @@ class ResearchScheduler:
         except Exception as e:
             logger.error(f"Failed to push job to Redis: {e}")
 
-    async def pop(self) -> dict | None:
+    async def pop(self) -> Optional[dict]:
         """
         Pops the highest-priority research job from the queue.
         Uses ZREVRANGE with ZREM to atomically get and remove the top item.

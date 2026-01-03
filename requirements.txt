@@ -3,7 +3,7 @@ fastapi
 uvicorn[standard]
 httpx
 pinecone
-numpy
+numpy==1.26.4
 loguru
 firecrawl-py
 pydantic
@@ -23,6 +23,8 @@ pdfminer.six
 pytesseract
 loguru
 pillow
-numpy
+numpy==1.26.4
 scikit-learn
 beautifulsoup4
+cachetools
+runpod

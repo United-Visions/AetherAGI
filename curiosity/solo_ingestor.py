@@ -53,7 +53,8 @@ class SoloIngestor:
                     
                     logger.info(f"Upserting {len(chunks)} new chunks of knowledge...")
                     # This is a placeholder for the actual upsert logic
-                    # self.store.upsert_knowledge(chunks, namespace="autonomous_research", metadata={"source": "curiosity", "query": job["query"]})
+                    for c in chunks:
+                        self.store.upsert_knowledge(c, namespace="autonomous_research", metadata={"source": "curiosity", "query": job["query"]})
                     logger.success(f"Autonomous research for '{job['query']}' completed.")
                 
             else:

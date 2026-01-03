@@ -14,6 +14,8 @@ from datetime import datetime, timedelta
 import numpy as np
 import httpx
 
+from loguru import logger
+
 from .active_inference import ActiveInferenceLoop
 from .auth_manager import AuthManager
 from .router import Router
@@ -34,15 +36,18 @@ app = FastAPI(title="AetherMind AGI API", version="1.0.0")
 origins = [
     "https://aethermind-frontend.onrender.com",
     "http://localhost:5000", # For local testing
+    "http://127.0.0.1:5000", # For local testing with explicit IP
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"], # Allows all methods (GET, POST, etc.)
-    allow_headers=["*"], # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
+logger.info(f"CORS middleware configured with allowed origins: {origins}")
 
 # Setup Security
 API_KEY_NAME = "X-Aether-Key"
