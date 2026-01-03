@@ -2,6 +2,7 @@
 Path: heart/moral_emotion.py
 Role: Emotion vectoriser & valence regressor for the Heart.
 """
+import datetime
 from loguru import logger
 
 class MoralEmotion:
@@ -46,7 +47,7 @@ class MoralEmotion:
             "arousal": round(arousal, 4),
             "dominance": round(dominance, 4),
             "moral_sentiment": round(moral_sentiment, 4),
-            "timestamp": logger.now().isoformat(),
+            "timestamp": datetime.datetime.now().isoformat(),
             "user_id": user_id,
             "message_id": message_id
         }

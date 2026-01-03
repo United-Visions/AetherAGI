@@ -107,6 +107,8 @@ response = heart.embellish(response, emotion, virtue_score)   # tone adapter
 # after user reacts (next cycle):
 heart.close_loop(last_message_id, user_reaction)
 
+[x] Fix logger.now() issue in heart/moral_emotion.py
+
 --------------------------------------------------------
 9. What “More” You Get
 --------------------------------------------------------
