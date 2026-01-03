@@ -6,7 +6,7 @@ transformers
 sentencepiece
 accelerate
 bitsandbytes
-whisper-cpp-python
+openai-whisper
 av
 pdfminer.six
 pytesseract

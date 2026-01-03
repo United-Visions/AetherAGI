@@ -1,7 +1,7 @@
 # perception_service/Dockerfile
 
 # Use the official RunPod base image for PyTorch
-FROM runpod/pytorch:2.1.0-py3.10-cuda12.1.0-devel-ubuntu22.04
+FROM runpod/pytorch:1.0.3-cu1290-torch290-ubuntu2204
 
 # Set the working directory
 WORKDIR /app
@@ -9,6 +9,7 @@ WORKDIR /app
 # Install system dependencies required for Tesseract OCR and other libraries
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
+    ffmpeg \
     libgl1-mesa-glx \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*

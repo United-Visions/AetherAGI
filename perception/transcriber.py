@@ -1,10 +1,11 @@
 """
 Path: perception/transcriber.py
-Role: Handles audio transcription using a Whisper model.
+Role: Handles audio transcription using the official OpenAI Whisper model.
 """
-from whisper_cpp_python import Whisper
+import whisper
 from loguru import logger
 import numpy as np
+import io
 
 class Transcriber:
     def __init__(self, model_name: str = "base"):
@@ -15,7 +16,7 @@ class Transcriber:
         """
         logger.info(f"Loading Whisper model: {model_name}")
         try:
-            self.model = Whisper(model_path=model_name)
+            self.model = whisper.load_model(model_name)
             logger.success("Whisper model loaded successfully.")
         except Exception as e:
             logger.error(f"Failed to load Whisper model: {e}")
@@ -34,11 +35,15 @@ class Transcriber:
             return ""
             
         try:
-            # The model expects a numpy array of f32le format
-            audio_np = np.frombuffer(audio_bytes, dtype=np.int16).astype(np.float32) / 32768.0
+            # Convert bytes to a file-like object
+            audio_file = io.BytesIO(audio_bytes)
+            audio_file.name = "audio.wav" # Whisper needs a file extension hint
+
+            # The official library can handle the conversion directly
+            audio_np = whisper.load_audio(audio_file)
             
-            logger.info(f"Transcribing audio buffer of length {len(audio_np)}...")
-            result = self.model.transcribe(audio_np)
+            logger.info(f"Transcribing audio buffer...")
+            result = self.model.transcribe(audio_np, fp16=False) # fp16=False for CPU compatibility
             
             text = result.get('text', '').strip()
             logger.success("Transcription completed successfully.")
