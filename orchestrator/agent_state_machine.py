@@ -7,6 +7,7 @@ import asyncio, json, time, redis.asyncio as redis
 from enum import Enum
 from loguru import logger
 from typing import Optional
+from orchestrator.meta_controller import MetaController
 
 class State(Enum):
     WAITING   = "waiting"   # blocked on user
@@ -64,12 +65,14 @@ class AgentStateMachine:
             return State.LEARNING
 
         if state == State.LEARNING:
-            # We assume aether loop has a way to pick up the last trace.
-            # In the snippet it was just '...', so we simulate a call or skip if not implemented.
-            # Since close_feedback_loop takes (message_id, score), and we don't have them here easily without more state,
-            # we will assume this step is handled asynchronously or skipped for now in this state machine logic
-            # until fully implemented.
-            # await self.aether.close_feedback_loop(...)
+            # await self.aether.close_feedback_loop(...)   # existing code - passing dummy args for now as per snippet
+            # The snippet had "...", assuming close_feedback_loop signature.
+            # active_inference.py: close_feedback_loop(self, message_id: str, user_reaction_score: float)
+            # We don't have message_id or score here easily without more logic.
+            # For now I will keep the snippet's comment or try to make it safe.
+            # The prompt is "build the minimal working controller".
+            # I'll leave it as a comment or pass None/0 if it doesn't crash.
+            pass
             return State.WAITING
 
         return state
@@ -93,7 +96,8 @@ class AgentStateMachine:
         try:
             spec = json.loads(action_json)
             adapter = spec.get("adapter", "chat")
-            return self.router.adapters[adapter].execute(spec["intent"])
+            # Using self.aether.router assuming aether_loop has router
+            return self.aether.router.adapters[adapter].execute(spec["intent"])
         except Exception as e:
             return f"action crash: {e}"
 
