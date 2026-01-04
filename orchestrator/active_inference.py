@@ -11,6 +11,11 @@ from mind.vector_store import AetherVectorStore
 from .router import Router
 from heart.heart_orchestrator import Heart
 from loguru import logger
+from mind.promoter import Promoter
+from heart.uncertainty_gate import UncertaintyGate
+from config.settings import settings
+import asyncio
+import re
 
 class ActiveInferenceLoop:
     def __init__(self, brain: LogicEngine, memory: EpisodicMemory, store: AetherVectorStore, router: Router, heart: Heart, surprise_detector=None):
@@ -21,6 +26,7 @@ class ActiveInferenceLoop:
         self.heart = heart
         self.surprise_detector = surprise_detector
         self.last_trace_data = {} # Simple cache for the trace
+        self.promoter = Promoter(store, UncertaintyGate(self.heart.reward_model))
 
     async def run_cycle(self, user_id: str, user_input: str):
         """
@@ -30,7 +36,7 @@ class ActiveInferenceLoop:
         logger.info(f"User {user_id} active inference started with Heart.")
 
         # 1. SENSE: Retrieve logical context
-        k12_context, state_vec = self.store.query_context(user_input, namespace="core_k12")
+        k12_context, state_vec = self.store.query_context(user_input, namespace="core_universal")
         logger.debug(f"State vector shape: {len(state_vec)}")
 
         # Use EpisodicMemory wrapper to get timestamped context
@@ -101,5 +107,16 @@ class ActiveInferenceLoop:
         if trace_data:
             self.heart.close_loop(trace_data, user_reaction_score)
             logger.success(f"Feedback loop closed for message {message_id}. Reward model updated.")
+
+            if settings.promoter_gate:
+                cleaned = re.sub(r"\S+@\S+", "", trace_data["action_text"])  # fast PII strip
+                asyncio.create_task(
+                    self.promoter.nugget_maybe_promote(
+                        trace_data.get("user_id", "unknown"), # user_id is not in trace_data currently
+                        cleaned,
+                        surprise=abs(user_reaction_score - trace_data["predicted_flourishing"]),
+                        flourish=user_reaction_score
+                    )
+                )
         else:
             logger.warning(f"Could not find trace data for message {message_id} to close feedback loop.")
