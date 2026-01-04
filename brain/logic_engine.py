@@ -10,6 +10,8 @@ from pinecone import Pinecone
 from .safety_inhibitor import SafetyInhibitor
 from .core_knowledge_priors import CoreKnowledgePriors
 from .jepa_aligner import JEPAAligner
+from brain.imagination_engine import ImaginationEngine
+from config.settings import settings
 from loguru import logger
 
 class LogicEngine:
@@ -96,6 +98,11 @@ class LogicEngine:
                     # Trigger online learning update in the JEPA predictor
                     self.jepa.update_world_model(np.array(context_vec), thought_vec)
                     raw_output = f"[Internal Update] {raw_output}"
+
+            if settings.imagination and context_vec:
+                im = ImaginationEngine(self.jepa, horizon=3)
+                hyp = im.imagine(np.array(context_vec), ["action_A", "action_B"])
+                context_text += "\nImagined:\n" + "\n".join(hyp)
 
             # 4. SAFETY INHIBITION
             final_output = self.inhibitor.scan(raw_output)
