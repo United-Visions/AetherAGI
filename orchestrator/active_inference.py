@@ -3,6 +3,7 @@ Path: orchestrator/active_inference.py
 Role: The Production Active Inference Loop.
 """
 
+import numpy as np
 from brain.logic_engine import LogicEngine
 from mind.episodic_memory import EpisodicMemory
 from mind.vector_store import AetherVectorStore
@@ -11,12 +12,13 @@ from heart.heart_orchestrator import Heart
 from loguru import logger
 
 class ActiveInferenceLoop:
-    def __init__(self, brain: LogicEngine, memory: EpisodicMemory, store: AetherVectorStore, router: Router, heart: Heart):
+    def __init__(self, brain: LogicEngine, memory: EpisodicMemory, store: AetherVectorStore, router: Router, heart: Heart, surprise_detector=None):
         self.brain = brain
         self.memory = memory
         self.store = store
         self.router = router
         self.heart = heart
+        self.surprise_detector = surprise_detector
         self.last_trace_data = {} # Simple cache for the trace
 
     async def run_cycle(self, user_id: str, user_input: str):
@@ -35,6 +37,23 @@ class ActiveInferenceLoop:
         emotion_vector = self.heart.compute_emotion(user_input, user_id)
         predicted_flourishing = self.heart.predict_flourishing(state_vec)
 
+        # Calculate surprise (Agent State)
+        surprise_score = 0.0
+        is_researching = False
+        if self.surprise_detector:
+             # Use the state vector for surprise calculation
+             try:
+                surprise_score = await self.surprise_detector.score(np.array(state_vec))
+                is_researching = surprise_score > self.surprise_detector.novelty_threshold
+             except Exception as e:
+                 logger.warning(f"Surprise detection failed: {e}")
+
+        agent_state = {
+            "surprise_score": surprise_score,
+            "is_researching": is_researching,
+            "reason": "High novelty detected in context." if is_researching else "Routine interaction."
+        }
+
         combined_context = "\n".join(k12_context + episodic_context)
 
         # 3. REASON: Brain processes input with all available context
@@ -47,7 +66,7 @@ class ActiveInferenceLoop:
         )
 
         if "500" in brain_response: 
-            return "The Brain is still waking up. Please wait 30 seconds and try again.", None
+            return "The Brain is still waking up. Please wait 30 seconds and try again.", None, {}, {}
 
         # 4. EMBELLISH: Heart adapts the response based on emotion and morals
         embellished_response = self.heart.embellish_response(brain_response, emotion_vector, predicted_flourishing)
@@ -68,7 +87,7 @@ class ActiveInferenceLoop:
         logger.info(f"Successful interaction saved to user_{user_id}_episodic")
 
         logger.info(f"Cycle complete for User {user_id}")
-        return final_output, emotion_vector["message_id"]
+        return final_output, emotion_vector["message_id"], emotion_vector, agent_state
 
     def close_feedback_loop(self, message_id: str, user_reaction_score: float):
         """

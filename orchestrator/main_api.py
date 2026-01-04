@@ -59,12 +59,14 @@ MEMORY = EpisodicMemory(STORE)
 BRAIN = LogicEngine(runpod_key=os.getenv("RUNPOD_API_KEY"), endpoint_id=os.getenv("RUNPOD_ENDPOINT_ID"), pinecone_key=os.getenv("PINECONE_API_KEY"))
 ROUTER = Router()
 HEART = Heart(pinecone_key=os.getenv("PINECONE_API_KEY")) # Initialize the new Heart
-AETHER = ActiveInferenceLoop(BRAIN, MEMORY, STORE, ROUTER, HEART)
 AUTH = AuthManager()
 
 # Initialize Sensory & Curiosity Components
 JEPA = JEPAAligner()
 SURPRISE_DETECTOR = SurpriseDetector(jepa=JEPA, store=STORE)
+
+# AETHER now takes SURPRISE_DETECTOR
+AETHER = ActiveInferenceLoop(BRAIN, MEMORY, STORE, ROUTER, HEART, surprise_detector=SURPRISE_DETECTOR)
 RESEARCH_SCHEDULER = ResearchScheduler(redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"))
 
 # --- HTTP Client for External Services ---
@@ -173,9 +175,10 @@ async def chat_completions(
     last_message = request.messages[-1]["content"]
     
     # Run the DCLA Logic Cycle
-    response_text, message_id = await AETHER.run_cycle(user_id, last_message)
+    # Now unpacks updated return values
+    response_text, message_id, emotion_vector, agent_state = await AETHER.run_cycle(user_id, last_message)
     
-    # Return in a standardized format, now including the message_id
+    # Return in a standardized format, now including the message_id and metadata
     return {
         "id": message_id, # Return the actual message_id for the feedback loop
         "object": "chat.completion",
@@ -187,7 +190,11 @@ async def chat_completions(
             },
             "finish_reason": "stop"
         }],
-        "usage": {"total_tokens": len(response_text) // 4} # Simple estimate
+        "usage": {"total_tokens": len(response_text) // 4}, # Simple estimate
+        "metadata": {
+            "user_emotion": emotion_vector,
+            "agent_state": agent_state
+        }
     }
 
 @app.post("/admin/generate_key")
