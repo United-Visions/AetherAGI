@@ -11,6 +11,8 @@ from .safety_inhibitor import SafetyInhibitor
 from .core_knowledge_priors import CoreKnowledgePriors
 from .jepa_aligner import JEPAAligner
 from loguru import logger
+from config.settings import settings
+import torch
 
 class LogicEngine:
     def __init__(self, runpod_key: str, endpoint_id: str, pinecone_key: str):
@@ -54,6 +56,14 @@ class LogicEngine:
         logger.info("Initiating Reasoning Cycle...")
 
         # 1. GROUNDING
+        if settings.diff_retrieval and torch is not None:
+            from mind.differentiable_store import DifferentiableStore
+            namespace = "core_universal"
+            store = DifferentiableStore(self.pc.Index("aethermind-genesis"), namespace, top_k=5)
+            context_vec_torch = torch.FloatTensor(context_vec)
+            context_vec, _ = store(context_vec_torch)  # now differentiable
+            contexts = ["[diff retrieved]"]  # placeholder for logging
+
         system_dna = self.priors.get_foundation_prompt()
         
         emotional_prompt = (
