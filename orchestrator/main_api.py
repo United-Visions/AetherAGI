@@ -26,6 +26,9 @@ from mind.episodic_memory import EpisodicMemory
 from brain.jepa_aligner import JEPAAligner
 from curiosity.surprise_detector import SurpriseDetector
 from curiosity.research_scheduler import ResearchScheduler
+from orchestrator.agent_state_machine import AgentStateMachine
+from config.settings import settings
+import asyncio
 
 load_dotenv()
 
@@ -76,6 +79,28 @@ if not perception_service_url:
     print("WARNING: PERCEPTION_ENDPOINT_URL environment variable not set. Multimodal features will fail.")
 
 http_client = httpx.AsyncClient(timeout=60.0) # 60 second timeout for model processing
+
+# --- Startup ---
+
+@app.on_event("startup")
+async def startup_event():
+    if settings.features.agent_state_machine:
+        # Mock MetaController until fully implemented
+        class MockMetaController:
+            async def decide_next_action(self, user_id):
+                return {"adapter": "chat", "intent": "System: MetaController not ready."}
+
+        agent_sm = AgentStateMachine(
+            redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"),
+            aether_loop=AETHER,
+            meta_ctrl=MockMetaController(),
+            router=ROUTER
+        )
+
+        pilot_users = settings.pilot_users or []
+        for uid in pilot_users:
+            asyncio.create_task(agent_sm.run(uid))
+            logger.info(f"Started AgentStateMachine for pilot user: {uid}")
 
 # --- Schemas ---
 class ChatCompletionRequest(BaseModel):

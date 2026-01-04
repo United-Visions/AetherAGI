@@ -3,13 +3,10 @@
 Path: orchestrator/agent_state_machine.py
 Drop-in replacement for ActiveInferenceLoop.run_cycle
 """
-import asyncio, json, time, os, redis.asyncio as redis
+import asyncio, json, time, redis.asyncio as redis
 from enum import Enum
 from loguru import logger
 from typing import Optional
-from .router import Router
-
-router = Router()
 
 class State(Enum):
     WAITING   = "waiting"   # blocked on user
@@ -96,7 +93,7 @@ class AgentStateMachine:
         try:
             spec = json.loads(action_json)
             adapter = spec.get("adapter", "chat")
-            return router.adapters[adapter].execute(spec["intent"])
+            return self.router.adapters[adapter].execute(spec["intent"])
         except Exception as e:
             return f"action crash: {e}"
 

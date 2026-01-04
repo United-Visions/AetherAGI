@@ -6,6 +6,17 @@ import os
 import yaml
 from loguru import logger
 
+class Box(dict):
+    """
+    A simple dictionary wrapper that allows access to keys as attributes.
+    Supports nested dictionaries by wrapping them recursively.
+    """
+    def __getattr__(self, name):
+        val = self.get(name)
+        if isinstance(val, dict):
+            return Box(val)
+        return val
+
 class Settings:
     def __init__(self):
         self._config = {}
@@ -25,6 +36,9 @@ class Settings:
             pass
 
     def __getattr__(self, name):
-        return self._config.get(name, None)
+        val = self._config.get(name, None)
+        if isinstance(val, dict):
+            return Box(val)
+        return val
 
 settings = Settings()
