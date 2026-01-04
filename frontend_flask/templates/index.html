@@ -13,10 +13,17 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
 <body>
-    <div id="chat-wrapper">
-        <header>
-            <div id="header-title">AetherMind</div>
-        </header>
+    <div class="app-layout">
+        <aside id="sidebar">
+            <h3>Repositories <button class="add-repo-btn" title="Add Repository">+</button></h3>
+            <ul class="repo-list">
+                <li class="repo-item empty-state">No repositories linked</li>
+            </ul>
+        </aside>
+        <div id="chat-wrapper">
+            <header>
+                <div id="header-title">AetherMind</div>
+            </header>
 
         <main id="messages">
             <!-- Messages injected by JS -->
@@ -60,6 +67,7 @@
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </form>
+        </div>
         </div>
     </div>
 
