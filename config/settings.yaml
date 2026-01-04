@@ -1,1 +1,4 @@
 promoter_gate: false
+features:
+  agent_state_machine: false   # keep OFF in prod for now
+pilot_users: ["demo_user"]     # add your own test id
