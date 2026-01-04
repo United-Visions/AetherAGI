@@ -1,0 +1,122 @@
+
+████████████████████████████████████████████████████████████████████████████████
+████████████████████████████████████████████████████████████████████████████████
+███                                                                          ███
+███   ▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄  ▄   ▄  ▄▄▄▄▄▄▄  ▄▄▄▄▄▄   ▄▄   ▄▄  ▄▄▄▄▄▄▄  ███
+███  █   ▄   ██   ▄   ██▄▄▄▄▄  ███▄  █▄█   ▄   ██   ▄   ██ ▀█▄█▀ ██   ▄   █ ███
+███  █  █▄▀  ██  █▄▀  █ ▀▀▀▀▀█ ███ █▄  █  █▄▀  ██  █ █  ██  ███  ██  █ █  █ ███
+███  █   ▄   ██   ▄▄▄█▄█▄▄▄▄▄█▄██  ▀█ ██   ▄   ██   █▄▄█ ██     ███  █▄▄█▄█ ███
+███  █  █ █  ██  █▀▀▀▀▀▀▀▀▀▀▀▀▀▀█    ██  █ █  ██       ███     ███  ▄▄▄▄▄▄█ ███
+███  █  █▄█  ██  █▄▄▄▄▄▄▄▄▄▄▄▄▄▄█    ██  █▄█  ██  █████▀██     ███  █▀▀▀▀▀▀ ███
+███  █▄▄▄▄▄▄▄██▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄██▄▄▄▄▄▄▄██▄▄▄▄▄▄▄▄▄█▄▄▄▄▄▄▄██▄▄▄▄▄▄▄▄ ███
+███                                                                          ███
+███                        Real AGI, Not Role-Playing                        ███
+███                                                                          ███
+████████████████████████████████████████████████████████████████████████████████
+████████████████████████████████████████████████████████████████████████████████
+
+🧠 Welcome to AetherMind - The Digital Organism
+
+AetherMind isn't just another chatbot. It's a complete AGI system designed for
+continuous learning, infinite memory, and genuine understanding.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 What Makes AetherMind Different?
+
+  ✅ AXIOM-BASED LEARNING
+     Bootstrapped with fundamental logic, physics, and mathematics - not web data
+
+  ✅ INFINITE EPISODIC MEMORY
+     Remembers every conversation forever with perfect recall
+
+  ✅ ACTIVE INFERENCE
+     Minimizes "surprise" through goal-oriented reasoning, not next-token prediction
+
+  ✅ HARD-WIRED SAFETY
+     Non-trainable safety inhibitor ensures alignment (Prime Directive: Do No Harm)
+
+  ✅ TOOLFORGE
+     Create and deploy custom tools at runtime
+
+  ✅ DOMAIN SPECIALISTS
+     Legal, Medical, Finance, Code, Research - true expertise per domain
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📦 Install the SDK
+
+  Python:       pip install aethermind
+  JavaScript:   npm install @aethermind/sdk
+  React Native: npm install @aethermind/sdk
+  Flutter:      flutter pub add aethermind (coming soon)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 Quick Start (Python)
+
+  from aethermind import AetherMindClient
+
+  client = AetherMindClient(api_key="am_live_your_key")
+  response = client.chat("What is the nature of consciousness?")
+  print(response["answer"])
+
+🚀 Quick Start (JavaScript)
+
+  const { AetherMindClient } = require('@aethermind/sdk');
+
+  const client = new AetherMindClient({ apiKey: 'am_live_your_key' });
+  const response = await client.chat({ message: 'What is AGI?' });
+  console.log(response.answer);
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🌟 Core Features
+
+  💬 CHAT             Natural conversation with reasoning & confidence scores
+  🧠 MEMORY SEARCH    Query infinite episodic & knowledge memories
+  🔧 TOOLFORGE        Create custom tools at runtime
+  🎯 NAMESPACES       Specialized domains (legal, medical, finance, code)
+  📦 CARTRIDGES       Load custom knowledge bases
+  📊 USAGE TRACKING   Monitor API usage and rate limits
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💰 Pricing
+
+  FREE         $0/mo      100 req/min    1M tokens/month
+  PRO          $99/mo     1K req/min     50M tokens/month
+  ENTERPRISE   Custom     10K req/min    Unlimited tokens
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 Learn More
+
+  🌐 Website:       https://aethermind.ai
+  📚 Documentation: https://aethermind.ai/documentation
+  💻 GitHub:        https://github.com/United-Visions/AetherAGI
+  💬 Discord:       https://discord.gg/aethermind
+  📧 Email:         dev@aethermind.ai
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 Run Examples
+
+  Python:       python sdk/examples/hello_aethermind.py
+  JavaScript:   node sdk/examples/hello_aethermind.js
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🗺️  Roadmap
+
+  ✅ Phase 1: Linguistic Genesis    (Chat, Memory, ToolForge)
+  🚧 Phase 2: Sensory Awakening     (Vision, JEPA, Multi-modal)
+  📅 Phase 3: Phonetic Articulation (Speech synthesis, voice)
+  📅 Phase 4: Physical Embodiment   (Humanoid robotics)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+                    Built with ❤️ by the AetherMind Team
+                         Real AGI, Not Role-Playing
+
+████████████████████████████████████████████████████████████████████████████████

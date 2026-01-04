@@ -1,0 +1,51 @@
+{
+  "name": "@aethermind/sdk",
+  "version": "1.0.0",
+  "description": "Official JavaScript/TypeScript SDK for AetherMind AGI",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "aethermind",
+    "agi",
+    "ai",
+    "artificial-intelligence",
+    "sdk",
+    "api"
+  ],
+  "author": "AetherMind Team <dev@aethermind.ai>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/United-Visions/AetherAGI.git",
+    "directory": "sdk/javascript"
+  },
+  "bugs": {
+    "url": "https://github.com/United-Visions/AetherAGI/issues"
+  },
+  "homepage": "https://aethermind.ai",
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}

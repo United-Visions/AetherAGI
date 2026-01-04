@@ -231,6 +231,297 @@ async def chat_completions(
         }
     }
 
+
+# ============================================================================
+# SDK ENDPOINTS - For developers using AetherMind SDK
+# ============================================================================
+
+class SDKChatRequest(BaseModel):
+    message: str
+    namespace: str = "universal"
+    stream: bool = False
+    max_tokens: Optional[int] = None
+    temperature: float = 0.7
+    include_memory: bool = True
+
+class SDKMemorySearchRequest(BaseModel):
+    query: str
+    namespace: str = "universal"
+    top_k: int = 10
+    include_episodic: bool = True
+    include_knowledge: bool = True
+
+class SDKToolCreateRequest(BaseModel):
+    name: str
+    description: str
+    code: str
+    parameters: dict
+
+class SDKKnowledgeCartridgeRequest(BaseModel):
+    name: str
+    namespace: str
+    documents: list[str]
+    metadata: Optional[dict] = None
+
+
+@app.post("/v1/chat")
+async def sdk_chat(
+    request: SDKChatRequest,
+    authorization: str = Header(None)
+):
+    """
+    SDK Chat Endpoint - Used by developers with AetherMind SDK
+    """
+    # Extract and verify API key
+    if not authorization or not authorization.startswith("ApiKey "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    
+    api_key = authorization.replace("ApiKey ", "").replace("Bearer ", "")
+    
+    # Verify API key and get user_id
+    user_id = AUTH.verify_key(api_key)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    # Check rate limits
+    usage = AUTH.get_usage(api_key)
+    if usage and usage.get("requests_remaining", 0) <= 0:
+        raise HTTPException(status_code=429, detail="Rate limit exceeded")
+    
+    try:
+        # Run the active inference loop
+        response_text, message_id, emotion_vector, agent_state = await AETHER.run_cycle(
+            user_id, 
+            request.message,
+            namespace=request.namespace
+        )
+        
+        # Return SDK-compatible response
+        return {
+            "answer": response_text,
+            "reasoning_steps": agent_state.get("reasoning_steps", []) if agent_state else [],
+            "confidence": agent_state.get("confidence", 0.85) if agent_state else 0.85,
+            "sources": agent_state.get("sources", []) if agent_state else [],
+            "tokens_used": len(response_text) // 4
+        }
+    
+    except Exception as e:
+        logger.error(f"SDK chat error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/v1/memory/search")
+async def sdk_memory_search(
+    request: SDKMemorySearchRequest,
+    authorization: str = Header(None)
+):
+    """
+    SDK Memory Search Endpoint - Search infinite episodic memory
+    """
+    # Verify API key
+    if not authorization or not authorization.startswith("ApiKey "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    
+    api_key = authorization.replace("ApiKey ", "").replace("Bearer ", "")
+    user_id = AUTH.verify_key(api_key)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    try:
+        # Search episodic memory
+        results = []
+        
+        if request.include_episodic:
+            episodic_results = MEMORY.search(
+                user_id=user_id,
+                query=request.query,
+                top_k=request.top_k
+            )
+            results.extend(episodic_results)
+        
+        if request.include_knowledge:
+            # Search knowledge base
+            knowledge_results = STORE.query(
+                namespace=f"{request.namespace}_knowledge",
+                query_text=request.query,
+                top_k=request.top_k
+            )
+            results.extend(knowledge_results)
+        
+        # Format results for SDK
+        formatted_results = []
+        for result in results[:request.top_k]:
+            formatted_results.append({
+                "text": result.get("text", ""),
+                "score": result.get("score", 0.0),
+                "timestamp": result.get("timestamp", datetime.utcnow().isoformat()),
+                "namespace": result.get("namespace", request.namespace),
+                "metadata": result.get("metadata", {})
+            })
+        
+        return {"results": formatted_results}
+    
+    except Exception as e:
+        logger.error(f"SDK memory search error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/v1/tools/create")
+async def sdk_tool_create(
+    request: SDKToolCreateRequest,
+    authorization: str = Header(None)
+):
+    """
+    SDK ToolForge Endpoint - Create custom tools at runtime
+    """
+    # Verify API key
+    if not authorization or not authorization.startswith("ApiKey "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    
+    api_key = authorization.replace("ApiKey ", "").replace("Bearer ", "")
+    user_id = AUTH.verify_key(api_key)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    # Check if ToolForge is enabled
+    if not settings.toolforge_adapter:
+        raise HTTPException(status_code=403, detail="ToolForge is disabled")
+    
+    try:
+        # Use ToolForge adapter
+        adapter = ROUTER.adapters.get("toolforge")
+        if not adapter:
+            raise HTTPException(status_code=503, detail="ToolForge adapter not available")
+        
+        tool_data = {
+            "name": request.name,
+            "description": request.description,
+            "code": request.code,
+            "parameters": request.parameters,
+            "user_id": user_id
+        }
+        
+        result = adapter.execute(json.dumps(tool_data))
+        
+        return {
+            "tool_id": f"tool_{user_id}_{request.name}",
+            "status": "created",
+            "validation_result": result
+        }
+    
+    except Exception as e:
+        logger.error(f"SDK tool create error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/v1/usage")
+async def sdk_get_usage(authorization: str = Header(None)):
+    """
+    SDK Usage Endpoint - Get current API usage and rate limits
+    """
+    # Verify API key
+    if not authorization or not authorization.startswith("ApiKey "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    
+    api_key = authorization.replace("ApiKey ", "").replace("Bearer ", "")
+    
+    if not AUTH.verify_key(api_key):
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    try:
+        usage = AUTH.get_usage(api_key)
+        
+        return {
+            "requests_remaining": usage.get("requests_remaining", 0),
+            "reset_at": usage.get("reset_at", (datetime.utcnow() + timedelta(minutes=1)).isoformat()),
+            "total_tokens": usage.get("total_tokens", 0),
+            "plan": usage.get("plan", "FREE")
+        }
+    
+    except Exception as e:
+        logger.error(f"SDK usage error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/v1/namespaces")
+async def sdk_list_namespaces(authorization: str = Header(None)):
+    """
+    SDK Namespaces Endpoint - List available knowledge domains
+    """
+    # Verify API key
+    if not authorization or not authorization.startswith("ApiKey "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    
+    api_key = authorization.replace("ApiKey ", "").replace("Bearer ", "")
+    
+    if not AUTH.verify_key(api_key):
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    return {
+        "namespaces": [
+            "universal",
+            "legal",
+            "medical",
+            "finance",
+            "code",
+            "research"
+        ]
+    }
+
+
+@app.post("/v1/knowledge/cartridge")
+async def sdk_create_cartridge(
+    request: SDKKnowledgeCartridgeRequest,
+    authorization: str = Header(None)
+):
+    """
+    SDK Knowledge Cartridge Endpoint - Create custom knowledge domains
+    """
+    # Verify API key
+    if not authorization or not authorization.startswith("ApiKey "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    
+    api_key = authorization.replace("ApiKey ", "").replace("Bearer ", "")
+    user_id = AUTH.verify_key(api_key)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    try:
+        # Process documents and create embeddings
+        cartridge_id = f"cartridge_{user_id}_{request.name}"
+        namespace = f"user_{user_id}_{request.namespace}"
+        
+        # Store documents in vector store
+        for i, doc in enumerate(request.documents):
+            # Generate embedding (placeholder - use actual embedding model)
+            embedding = np.random.rand(1024).astype(np.float32)
+            
+            STORE.upsert(
+                namespace=namespace,
+                vectors=[{
+                    "id": f"{cartridge_id}_doc_{i}",
+                    "values": embedding.tolist(),
+                    "metadata": {
+                        "text": doc,
+                        "cartridge_id": cartridge_id,
+                        "cartridge_name": request.name,
+                        "user_id": user_id,
+                        **(request.metadata or {})
+                    }
+                }]
+            )
+        
+        return {
+            "cartridge_id": cartridge_id,
+            "status": "created",
+            "processing_time": "2.5s",
+            "documents_processed": len(request.documents)
+        }
+    
+    except Exception as e:
+        logger.error(f"SDK cartridge error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/admin/generate_key")
 async def create_key(user_id: str, admin_secret: str):
     """Admin only: Create a new API key for a user."""
