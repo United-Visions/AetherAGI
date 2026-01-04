@@ -6,5 +6,6 @@ meta_controller: false
 pilot_users: ["demo_user"]     # add your own test id
 diff_retrieval: false
 imagination: false
+imagination_horizon: 5
 practice_adapter: false
 toolforge_adapter: false   # off by default

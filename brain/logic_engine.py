@@ -11,10 +11,9 @@ from .safety_inhibitor import SafetyInhibitor
 from .core_knowledge_priors import CoreKnowledgePriors
 from .jepa_aligner import JEPAAligner
 from brain.imagination_engine import ImaginationEngine
+import torch
 from config.settings import settings
 from loguru import logger
-from config.settings import settings
-import torch
 
 class LogicEngine:
     def __init__(self, runpod_key: str, endpoint_id: str, pinecone_key: str):
@@ -79,6 +78,21 @@ class LogicEngine:
             f"My predicted flourishing score for this interaction is {predicted_flourishing:.2f}. "
             "Acknowledge sensitive topics and proceed with care if the score is low."
         )
+
+        # 2b. IMAGINE – roll out candidate plans if horizon > 1
+        if settings.imagination and context_vec and "plan" in user_input:
+            im = ImaginationEngine(self.jepa, horizon=settings.imagination_horizon)
+            candidates = [["plan_step_1", "plan_step_2"], ["alt_plan_A", "alt_plan_B"]]
+            best_plan = im.pick_best_plan(np.array(context_vec), candidates)
+            context_text += f"\nBest imagined plan: {' -> '.join(best_plan)}"
+
+        # 3. DIFFERENTIAL RETRIEVAL (learn what to remember)
+        if settings.diff_retrieval and torch is not None:
+            from mind.differentiable_store import DifferentiableStore
+            store = DifferentiableStore(self.pc.Index("aethermind-genesis"), namespace, top_k=5)
+            context_vec_torch = torch.FloatTensor(context_vec)
+            context_vec, _ = store(context_vec_torch)  # now differentiable
+            contexts = ["[diff retrieved]"]  # keep log simple
 
         payload = {
             "model": "meta-llama/llama-3.2-3b-instruct",
