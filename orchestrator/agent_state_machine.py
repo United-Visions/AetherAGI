@@ -8,6 +8,7 @@ from enum import Enum
 from loguru import logger
 from typing import Optional
 from orchestrator.meta_controller import MetaController
+from orchestrator.planning_scheduler import PlanningScheduler
 
 class State(Enum):
     WAITING   = "waiting"   # blocked on user
@@ -26,6 +27,7 @@ class AgentStateMachine:
         self.redis = redis.from_url(redis_url, decode_responses=True)
         self.aether = aether_loop
         self.meta   = meta_ctrl
+        self.planner = PlanningScheduler(redis_url)
 
     async def run(self, user_id: str) -> None:
         """Main coroutine – runs forever for one user."""
@@ -65,14 +67,12 @@ class AgentStateMachine:
             return State.LEARNING
 
         if state == State.LEARNING:
-            # await self.aether.close_feedback_loop(...)   # existing code - passing dummy args for now as per snippet
-            # The snippet had "...", assuming close_feedback_loop signature.
-            # active_inference.py: close_feedback_loop(self, message_id: str, user_reaction_score: float)
-            # We don't have message_id or score here easily without more logic.
-            # For now I will keep the snippet's comment or try to make it safe.
-            # The prompt is "build the minimal working controller".
-            # I'll leave it as a comment or pass None/0 if it doesn't crash.
-            pass
+            await self.aether.close_feedback_loop(None, 0.0)
+            # Long-horizon reschedule
+            job = await self.planner.pop_next_step()
+            if job and job["user_id"] == user_id:
+                await self._append_stream(user_id, "system", f"Next plan step: {job['plan'][job['step_idx']]}")
+                await self.planner.reschedule_step(job)
             return State.WAITING
 
         return state

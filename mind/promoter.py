@@ -57,3 +57,8 @@ class Promoter:
         self.store.upsert_knowledge(cleaned, namespace="core_universal", metadata=metadata)
         logger.success(f"Promoter accepted insight from {user_id}")
         return "promoted"
+
+    def record_plan_outcome(self, plan_id: str, success: bool):
+        text = f"Plan {plan_id} outcome: {'success' if success else 'failed'}"
+        metadata = {"type": "plan", "id": plan_id, "success": success}
+        self.store.upsert_knowledge(text, namespace="core_universal", metadata=metadata)
