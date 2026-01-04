@@ -2,19 +2,162 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Welcome – AetherMind</title>
+  <title>Welcome to AetherMind – Setup Your AGI</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .gradient-text {
+      background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .domain-card {
+      background: rgba(31, 41, 55, 0.8);
+      border: 2px solid rgba(75, 85, 99, 0.5);
+      border-radius: 1rem;
+      padding: 2rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .domain-card:hover {
+      border-color: #10b981;
+      transform: translateY(-4px);
+      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2);
+    }
+    .domain-card.selected {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.15);
+    }
+  </style>
 </head>
 <body class="bg-gray-900 text-white">
-  <div class="container mx-auto px-4 py-16 text-center">
-    <h1 class="text-3xl mb-4">Welcome {{ github_user }}!</h1>
-    <p class="mb-6">Generate your personal API key to start chatting.</p>
-    <form action="{{ url_for('create_key') }}" method="post">
-      <button type="submit"
-              class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold">
-        Create API Key → Enter Chat
-      </button>
+  <div class="container mx-auto px-4 py-12 max-w-5xl">
+    <div class="text-center mb-12">
+      <i class="fas fa-robot text-6xl text-green-400 mb-4"></i>
+      <h1 class="text-5xl font-bold mb-4">
+        Welcome <span class="gradient-text">{{ github_user }}</span>!
+      </h1>
+      <p class="text-xl text-gray-400">Let's set up your continuous learning AGI</p>
+    </div>
+
+    <form action="{{ url_for('create_key') }}" method="post" id="onboarding-form">
+      <!-- Step 1: Choose Domain -->
+      <div class="mb-12">
+        <h2 class="text-3xl font-bold mb-6 text-center">What will you use AetherMind for?</h2>
+        <p class="text-center text-gray-400 mb-8">Choose your primary domain (you can add more later)</p>
+        
+        <div class="grid md:grid-cols-3 gap-6">
+          <div class="domain-card" data-domain="code">
+            <div class="text-center">
+              <i class="fas fa-code text-5xl text-purple-400 mb-4"></i>
+              <h3 class="text-xl font-bold mb-2">Software Development</h3>
+              <p class="text-gray-400 text-sm">Code generation, debugging, testing, architecture</p>
+            </div>
+          </div>
+          
+          <div class="domain-card" data-domain="research">
+            <div class="text-center">
+              <i class="fas fa-microscope text-5xl text-yellow-400 mb-4"></i>
+              <h3 class="text-xl font-bold mb-2">Research & Analysis</h3>
+              <p class="text-gray-400 text-sm">Papers, literature review, data analysis</p>
+            </div>
+          </div>
+          
+          <div class="domain-card" data-domain="business">
+            <div class="text-center">
+              <i class="fas fa-briefcase text-5xl text-blue-400 mb-4"></i>
+              <h3 class="text-xl font-bold mb-2">Business & Strategy</h3>
+              <p class="text-gray-400 text-sm">Analysis, reports, presentations, planning</p>
+            </div>
+          </div>
+          
+          <div class="domain-card" data-domain="legal">
+            <div class="text-center">
+              <i class="fas fa-balance-scale text-5xl text-blue-400 mb-4"></i>
+              <h3 class="text-xl font-bold mb-2">Legal</h3>
+              <p class="text-gray-400 text-sm">Case research, contracts, legal writing</p>
+            </div>
+          </div>
+          
+          <div class="domain-card" data-domain="finance">
+            <div class="text-center">
+              <i class="fas fa-chart-line text-5xl text-green-400 mb-4"></i>
+              <h3 class="text-xl font-bold mb-2">Finance</h3>
+              <p class="text-gray-400 text-sm">Modeling, analysis, reports, forecasting</p>
+            </div>
+          </div>
+          
+          <div class="domain-card" data-domain="general">
+            <div class="text-center">
+              <i class="fas fa-star text-5xl text-gray-400 mb-4"></i>
+              <h3 class="text-xl font-bold mb-2">General Purpose</h3>
+              <p class="text-gray-400 text-sm">I'll explore multiple domains</p>
+            </div>
+          </div>
+        </div>
+        
+        <input type="hidden" name="domain" id="selected-domain" value="general">
+      </div>
+
+      <!-- Step 2: How It Works -->
+      <div class="bg-gray-800 rounded-lg p-8 mb-12">
+        <h2 class="text-2xl font-bold mb-6 text-center">What Happens Next</h2>
+        <div class="space-y-4">
+          <div class="flex items-start">
+            <div class="text-3xl font-bold text-green-400 mr-4">1</div>
+            <div>
+              <h3 class="font-bold mb-1">Axiom Seeding</h3>
+              <p class="text-gray-400">Your AGI is initialized with logic, physics, and meta-cognition priors from <code class="bg-gray-900 px-2 py-1 rounded text-sm">seed_axioms.py</code></p>
+            </div>
+          </div>
+          <div class="flex items-start">
+            <div class="text-3xl font-bold text-blue-400 mr-4">2</div>
+            <div>
+              <h3 class="font-bold mb-1">Memory Namespace Created</h3>
+              <p class="text-gray-400">Your personal namespace <code class="bg-gray-900 px-2 py-1 rounded text-sm">user_{{ github_user }}_knowledge</code> is created for infinite episodic memory</p>
+            </div>
+          </div>
+          <div class="flex items-start">
+            <div class="text-3xl font-bold text-purple-400 mr-4">3</div>
+            <div>
+              <h3 class="font-bold mb-1">Continuous Learning Begins</h3>
+              <p class="text-gray-400">Every interaction is stored and learned from. Your AGI gets better at YOUR specific tasks every day</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Create Key -->
+      <div class="text-center">
+        <button type="submit" id="submit-btn"
+                class="bg-green-600 hover:bg-green-700 px-12 py-4 rounded-lg font-bold text-xl transition shadow-lg">
+          <i class="fas fa-key mr-2"></i> Create API Key & Enter Chat
+        </button>
+        <p class="text-gray-500 mt-4 text-sm">Your API key enables secure, continuous learning</p>
+      </div>
     </form>
   </div>
+
+  <script>
+    // Domain selection
+    const domainCards = document.querySelectorAll('.domain-card');
+    const selectedDomainInput = document.getElementById('selected-domain');
+    
+    domainCards.forEach(card => {
+      card.addEventListener('click', () => {
+        // Remove selected class from all
+        domainCards.forEach(c => c.classList.remove('selected'));
+        // Add to clicked
+        card.classList.add('selected');
+        // Update hidden input
+        selectedDomainInput.value = card.getAttribute('data-domain');
+      });
+    });
+    
+    // Pre-select general by default
+    document.querySelector('[data-domain="general"]').classList.add('selected');
+  </script>
 </body>
 </html>

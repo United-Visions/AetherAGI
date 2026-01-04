@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AetherMind Pricing – 95% Cheaper Than GPT-4</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .gradient-text {
+      background: linear-gradient(135deg, #10b981 0%, #3b82f6 50%, #8b5cf6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .pricing-card {
+      background: rgba(31, 41, 55, 0.8);
+      border: 2px solid rgba(75, 85, 99, 0.5);
+      border-radius: 1rem;
+      transition: all 0.3s;
+    }
+    .pricing-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+    .pricing-card.featured {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white">
+  
+  <nav class="container mx-auto px-4 py-6">
+    <div class="flex justify-between items-center">
+      <a href="{{ url_for('home') }}" class="text-2xl font-bold gradient-text">AetherMind</a>
+      <a href="{{ url_for('github_login') }}" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg font-semibold">Start Free</a>
+    </div>
+  </nav>
+
+  <div class="container mx-auto px-4 py-16">
+    <div class="text-center mb-16">
+      <h1 class="text-6xl font-extrabold mb-4">
+        <span class="gradient-text">Simple, Transparent Pricing</span>
+      </h1>
+      <p class="text-2xl text-gray-400 mb-6">95% cheaper than GPT-4. Gets better every day.</p>
+      <p class="text-xl text-gray-500">No hidden fees. Cancel anytime.</p>
+    </div>
+
+    <!-- Pricing Cards -->
+    <div class="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto mb-16">
+      
+      <!-- Free Tier -->
+      <div class="pricing-card p-8">
+        <div class="text-center mb-6">
+          <h2 class="text-3xl font-bold mb-2">Free</h2>
+          <div class="text-5xl font-bold mb-4">$0</div>
+          <p class="text-gray-400">Forever free</p>
+        </div>
+        
+        <ul class="space-y-3 mb-8">
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span>100 messages per day</span>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span>5 GB memory storage</span>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span>Community support (Discord)</span>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span>Open source core</span>
+          </li>
+          <li class="flex items-start text-gray-500">
+            <i class="fas fa-times mr-3 mt-1"></i>
+            <span>No meta-controller</span>
+          </li>
+          <li class="flex items-start text-gray-500">
+            <i class="fas fa-times mr-3 mt-1"></i>
+            <span>No self-modification</span>
+          </li>
+          <li class="flex items-start text-gray-500">
+            <i class="fas fa-times mr-3 mt-1"></i>
+            <span>No ToolForge</span>
+          </li>
+        </ul>
+        
+        <a href="{{ url_for('github_login') }}" class="block w-full text-center bg-gray-700 hover:bg-gray-600 py-3 rounded-lg font-semibold transition">
+          Start Free
+        </a>
+      </div>
+
+      <!-- Pro Tier (Featured) -->
+      <div class="pricing-card featured p-8 relative">
+        <div class="absolute top-0 right-0 bg-green-500 text-white px-4 py-1 rounded-bl-lg rounded-tr-lg text-sm font-bold">
+          POPULAR
+        </div>
+        
+        <div class="text-center mb-6">
+          <h2 class="text-3xl font-bold mb-2">Pro</h2>
+          <div class="text-5xl font-bold mb-2">$99</div>
+          <p class="text-gray-400">per month</p>
+          <p class="text-sm text-green-400 mt-2">or $990/year (save 17%)</p>
+        </div>
+        
+        <ul class="space-y-3 mb-8">
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span><strong>Unlimited messages</strong></span>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span><strong>Unlimited memory</strong></span>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span>Email support (24h response)</span>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span><strong>Meta-controller</strong> (proactive agent)</span>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span><strong>Self-modification</strong> (continuous improvement)</span>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span><strong>ToolForge</strong> (autonomous tool generation)</span>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span>GitHub integration</span>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span>Priority inference</span>
+          </li>
+        </ul>
+        
+        <a href="{{ url_for('github_login') }}" class="block w-full text-center bg-green-600 hover:bg-green-700 py-3 rounded-lg font-semibold transition">
+          Start Pro Trial
+        </a>
+      </div>
+
+      <!-- Enterprise Tier -->
+      <div class="pricing-card p-8">
+        <div class="text-center mb-6">
+          <h2 class="text-3xl font-bold mb-2">Enterprise</h2>
+          <div class="text-5xl font-bold mb-4">Custom</div>
+          <p class="text-gray-400">Contact sales</p>
+        </div>
+        
+        <ul class="space-y-3 mb-8">
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span><strong>Everything in Pro</strong></span>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span>On-premise deployment</span>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span>SSO / SAML integration</span>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span>SOC2, HIPAA compliance</span>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span>Dedicated support team</span>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span>Custom SLA</span>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span>Training & onboarding</span>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-check text-green-400 mr-3 mt-1"></i>
+            <span>Volume discounts</span>
+          </li>
+        </ul>
+        
+        <a href="mailto:sales@aethermind.ai" class="block w-full text-center bg-purple-600 hover:bg-purple-700 py-3 rounded-lg font-semibold transition">
+          Contact Sales
+        </a>
+      </div>
+    </div>
+
+    <!-- Comparison with GPT-4 -->
+    <div class="max-w-5xl mx-auto mb-16">
+      <h2 class="text-4xl font-bold text-center mb-12">Cost Comparison</h2>
+      
+      <div class="bg-gray-800 rounded-lg p-8">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-gray-700">
+              <th class="text-left py-4 px-4">Feature</th>
+              <th class="text-center py-4 px-4">GPT-4</th>
+              <th class="text-center py-4 px-4 text-green-400">AetherMind Pro</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-gray-700">
+              <td class="py-4 px-4">Cost per 1M tokens</td>
+              <td class="text-center py-4 px-4">$30</td>
+              <td class="text-center py-4 px-4 text-green-400"><strong>$0.50</strong></td>
+            </tr>
+            <tr class="border-b border-gray-700">
+              <td class="py-4 px-4">Monthly cost (typical use)</td>
+              <td class="text-center py-4 px-4">$500-2000</td>
+              <td class="text-center py-4 px-4 text-green-400"><strong>$99</strong></td>
+            </tr>
+            <tr class="border-b border-gray-700">
+              <td class="py-4 px-4">Memory</td>
+              <td class="text-center py-4 px-4">128K context</td>
+              <td class="text-center py-4 px-4 text-green-400"><strong>Infinite</strong></td>
+            </tr>
+            <tr class="border-b border-gray-700">
+              <td class="py-4 px-4">Learning</td>
+              <td class="text-center py-4 px-4">Static (no learning)</td>
+              <td class="text-center py-4 px-4 text-green-400"><strong>Continuous</strong></td>
+            </tr>
+            <tr class="border-b border-gray-700">
+              <td class="py-4 px-4">Tool generation</td>
+              <td class="text-center py-4 px-4">No</td>
+              <td class="text-center py-4 px-4 text-green-400"><strong>Yes (ToolForge)</strong></td>
+            </tr>
+            <tr>
+              <td class="py-4 px-4">Self-improvement</td>
+              <td class="text-center py-4 px-4">No</td>
+              <td class="text-center py-4 px-4 text-green-400"><strong>Yes (patches own code)</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="max-w-4xl mx-auto mb-16">
+      <h2 class="text-4xl font-bold text-center mb-12">Frequently Asked Questions</h2>
+      
+      <div class="space-y-6">
+        <div class="bg-gray-800 p-6 rounded-lg">
+          <h3 class="text-xl font-bold mb-3">Can I try Pro for free?</h3>
+          <p class="text-gray-400">Yes! Start with Free tier, upgrade to Pro anytime. First 14 days of Pro are free.</p>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+          <h3 class="text-xl font-bold mb-3">How does pricing work for teams?</h3>
+          <p class="text-gray-400">Pro: $99/user/month. Enterprise: Custom pricing with volume discounts for 10+ users.</p>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+          <h3 class="text-xl font-bold mb-3">What happens to my data if I cancel?</h3>
+          <p class="text-gray-400">You keep full access for 30 days. Export all data anytime. After 30 days, data is deleted (GDPR compliant).</p>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+          <h3 class="text-xl font-bold mb-3">Can I self-host?</h3>
+          <p class="text-gray-400">Yes! 70% of our code is open source. Self-hosting guide available. Enterprise plan includes on-premise support.</p>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+          <h3 class="text-xl font-bold mb-3">Is there a refund policy?</h3>
+          <p class="text-gray-400">Yes. 30-day money-back guarantee. No questions asked.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Final CTA -->
+    <div class="text-center py-16">
+      <h2 class="text-4xl font-bold mb-6">Ready to Get Started?</h2>
+      <p class="text-xl text-gray-400 mb-8">Start free. Upgrade anytime. Cancel anytime.</p>
+      <a href="{{ url_for('github_login') }}" class="bg-green-600 hover:bg-green-700 px-12 py-4 rounded-lg font-bold text-xl inline-block">
+        Start Free Now
+      </a>
+    </div>
+
+    <!-- Footer Links -->
+    <div class="text-center py-12 border-t border-white/10">
+      <div class="mb-6 space-x-8">
+        <a href="{{ url_for('documentation') }}" class="text-green-500 hover:text-green-400">
+          <i class="fas fa-book mr-2"></i>API Documentation
+        </a>
+        <a href="{{ url_for('index') }}" class="text-green-500 hover:text-green-400">
+          <i class="fas fa-comments mr-2"></i>Try Chat
+        </a>
+        <a href="{{ url_for('home') }}" class="text-green-500 hover:text-green-400">
+          <i class="fas fa-home mr-2"></i>Home
+        </a>
+      </div>
+      <p class="text-gray-500 text-sm">Need help? Contact <a href="mailto:sales@aethermind.ai" class="text-green-500 hover:text-green-400">sales@aethermind.ai</a></p>
+    </div>
+  </div>
+
+</body>
+</html>

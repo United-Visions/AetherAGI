@@ -22,7 +22,23 @@
         </aside>
         <div id="chat-wrapper">
             <header>
-                <div id="header-title">AetherMind</div>
+                <div id="header-title" style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <span style="font-size: 1.4em; font-weight: 700;">AetherMind</span>
+                        <span style="font-size: 0.65em; color: #10b981; margin-left: 10px; font-weight: 400;">Continuous Learning AGI</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <a href="{{ url_for('documentation') }}" target="_blank" 
+                           style="font-size: 0.8em; color: #10b981; text-decoration: none; display: flex; align-items: center; gap: 5px;">
+                            <i class="fas fa-book"></i>
+                            <span>API Docs</span>
+                        </a>
+                        <div style="font-size: 0.75em; color: #6b7280;">
+                            <i class="fas fa-brain" style="color: #10b981; margin-right: 5px;"></i>
+                            <span id="namespace-indicator">Universal Mode</span>
+                        </div>
+                    </div>
+                </div>
             </header>
 
         <main id="messages">
@@ -30,7 +46,16 @@
             <div class="message-row assistant">
                 <div style="display:flex; align-items:flex-start;">
                     <div class="agent-avatar-icon"><i class="fas fa-robot"></i></div>
-                    <div class="assistant-text">Hello. I am AetherMind. How can I assist you today?</div>
+                    <div class="assistant-text">
+                        <strong>Hello. I am AetherMind</strong>—a continuous learning AGI seeded with axioms in logic, physics, and meta-cognition.<br><br>
+                        I don't use prompt engineering or fine-tuning. I learn from every interaction and store it in infinite memory. The more we work together, the better I become at <em>your</em> specific tasks.<br><br>
+                        My architecture:<br>
+                        🧠 <strong>Brain</strong>: Logic & reasoning priors<br>
+                        🗄️ <strong>Mind</strong>: Infinite episodic memory<br>
+                        🎯 <strong>Orchestrator</strong>: Active inference loop<br>
+                        🤖 <strong>Body</strong>: Adaptive tools & interfaces<br><br>
+                        How can I assist you today?
+                    </div>
                 </div>
             </div>
         </main>

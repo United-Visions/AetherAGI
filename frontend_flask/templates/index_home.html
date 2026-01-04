@@ -2,17 +2,326 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>AetherMind – Universal AGI Co-pilot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AetherMind – Real AGI, Not Role-Playing</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Fira+Code:wght@400;600&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .gradient-text {
+      background: linear-gradient(135deg, #10b981 0%, #3b82f6 50%, #8b5cf6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .feature-card {
+      backdrop-filter: blur(10px);
+      background: rgba(31, 41, 55, 0.6);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      transition: all 0.3s ease;
+    }
+    
+    .feature-card:hover {
+      border-color: rgba(16, 185, 129, 0.5);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.1);
+    }
+    
+    .comparison-bad {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    .comparison-good {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .hero-stat {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: #10b981;
+    }
+    
+    code {
+      font-family: 'Fira Code', monospace;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 0.2rem 0.4rem;
+      border-radius: 0.25rem;
+      font-size: 0.9em;
+    }
+    
+    .architecture-box {
+      border: 2px solid;
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      margin: 0.5rem 0;
+    }
+    
+    .nav-link {
+      transition: color 0.2s;
+    }
+    
+    .nav-link:hover {
+      color: #10b981;
+    }
+  </style>
 </head>
 <body class="bg-gray-900 text-white">
-  <div class="container mx-auto px-4 py-16 text-center">
-    <h1 class="text-5xl font-bold mb-4">AetherMind</h1>
-    <p class="text-xl mb-8">Self-improving AGI that works inside your GitHub repos.</p>
-    <a href="{{ url_for('github_login') }}"
-       class="inline-block bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-semibold">
-      Sign up / Log in with GitHub
-    </a>
+  
+  <!-- Navigation -->
+  <nav class="container mx-auto px-4 py-6">
+    <div class="flex justify-between items-center">
+      <div class="text-2xl font-bold gradient-text">AetherMind</div>
+      <div class="space-x-6">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#architecture" class="nav-link">Architecture</a>
+        <a href="{{ url_for('pricing') }}" class="nav-link">Pricing</a>
+        <a href="#domains" class="nav-link">Domains</a>
+        <a href="{{ url_for('documentation') }}" class="nav-link"><i class="fas fa-book mr-1"></i>Docs</a>
+        <a href="{{ url_for('github_login') }}" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg font-semibold transition">Start Free</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <div class="container mx-auto px-4 py-20 text-center">
+    <h1 class="text-7xl font-extrabold mb-6">
+      <span class="gradient-text">Real AGI, Not Role-Playing</span>
+    </h1>
+    <p class="text-3xl mb-4 text-gray-300">No fine-tuning. No prompt engineering theater.</p>
+    <p class="text-2xl mb-12 text-gray-400">One brain + axioms + experience = infinite specialization</p>
+    
+    <div class="flex justify-center gap-4 mb-16">
+      <a href="{{ url_for('github_login') }}"
+         class="bg-green-600 hover:bg-green-700 px-10 py-4 rounded-lg font-bold text-xl transition shadow-lg">
+        <i class="fab fa-github mr-2"></i> Sign up with GitHub
+      </a>
+      <a href="#how-it-works"
+         class="border-2 border-green-600 hover:bg-green-600 px-10 py-4 rounded-lg font-bold text-xl transition">
+        Learn How It Works
+      </a>
+    </div>
+    
+    <!-- Stats -->
+    <div class="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+      <div>
+        <div class="hero-stat">95%</div>
+        <div class="text-gray-400">Cost Reduction vs GPT-4</div>
+      </div>
+      <div>
+        <div class="hero-stat">∞</div>
+        <div class="text-gray-400">Memory Capacity</div>
+      </div>
+      <div>
+        <div class="hero-stat">24/7</div>
+        <div class="text-gray-400">Continuous Learning</div>
+      </div>
+    </div>
   </div>
+
+  <!-- Comparison Section -->
+  <div class="container mx-auto px-4 py-16" id="features">
+    <h2 class="text-5xl font-bold text-center mb-16">What Makes AetherMind Different</h2>
+    
+    <div class="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+      <div class="comparison-bad p-8 rounded-lg">
+        <h3 class="text-3xl font-bold mb-6 text-red-400">
+          <i class="fas fa-times-circle mr-2"></i>Traditional AI (ChatGPT, Claude)
+        </h3>
+        <ul class="space-y-4 text-lg text-gray-300">
+          <li><i class="fas fa-theater-masks text-red-400 mr-3"></i>"Act as a senior lawyer..." prompts</li>
+          <li><i class="fas fa-clone text-red-400 mr-3"></i>Same model for everything</li>
+          <li><i class="fas fa-memory text-red-400 mr-3"></i>Forgets context between sessions</li>
+          <li><i class="fas fa-ban text-red-400 mr-3"></i>No learning from your interactions</li>
+          <li><i class="fas fa-dollar-sign text-red-400 mr-3"></i>$30/1M tokens, never improves</li>
+          <li><i class="fas fa-brain text-red-400 mr-3"></i>10-20% hallucination rate</li>
+        </ul>
+      </div>
+
+      <div class="comparison-good p-8 rounded-lg">
+        <h3 class="text-3xl font-bold mb-6 text-green-400">
+          <i class="fas fa-check-circle mr-2"></i>AetherMind (True AGI)
+        </h3>
+        <ul class="space-y-4 text-lg text-gray-300">
+          <li><i class="fas fa-atom text-green-400 mr-3"></i><strong>Axiom-seeded</strong>: Logic, physics, math priors</li>
+          <li><i class="fas fa-chart-line text-green-400 mr-3"></i><strong>Continuous learning</strong>: Gets smarter every day</li>
+          <li><i class="fas fa-infinity text-green-400 mr-3"></i><strong>Infinite memory</strong>: Remembers everything forever</li>
+          <li><i class="fas fa-cogs text-green-400 mr-3"></i><strong>Domain adaptation</strong>: Learns YOUR domain through use</li>
+          <li><i class="fas fa-tools text-green-400 mr-3"></i><strong>Self-modifying</strong>: Patches its own code</li>
+          <li><i class="fas fa-check-double text-green-400 mr-3"></i><strong>1-3% hallucination rate</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Architecture Section -->
+  <div class="container mx-auto px-4 py-16" id="architecture">
+    <h2 class="text-5xl font-bold text-center mb-16">The Architecture</h2>
+    <p class="text-xl text-center text-gray-400 mb-12 max-w-3xl mx-auto">
+      AetherMind separates reasoning from knowledge, enabling infinite learning without retraining.
+    </p>
+    
+    <div class="max-w-5xl mx-auto space-y-6">
+      <div class="architecture-box border-purple-500 bg-purple-900 bg-opacity-20">
+        <div class="flex items-start">
+          <i class="fas fa-brain text-4xl text-purple-400 mr-6 mt-2"></i>
+          <div>
+            <h3 class="text-2xl font-bold text-purple-400 mb-2">The Brain (Cognitive Core)</h3>
+            <p class="text-gray-300 text-lg">Fixed reasoning engine with core logic priors. Knows <em>how</em> to think, not <em>what</em> to think. Seeded with axioms from <code>seed_axioms.py</code>.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="architecture-box border-blue-500 bg-blue-900 bg-opacity-20">
+        <div class="flex items-start">
+          <i class="fas fa-database text-4xl text-blue-400 mr-6 mt-2"></i>
+          <div>
+            <h3 class="text-2xl font-bold text-blue-400 mb-2">The Mind (Knowledge Repository)</h3>
+            <p class="text-gray-300 text-lg">Infinite vector memory (Pinecone). Stores episodic memories, domain knowledge, and experiences. Expands forever through continuous learning.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="architecture-box border-green-500 bg-green-900 bg-opacity-20">
+        <div class="flex items-start">
+          <i class="fas fa-network-wired text-4xl text-green-400 mr-6 mt-2"></i>
+          <div>
+            <h3 class="text-2xl font-bold text-green-400 mb-2">The Orchestrator (Active Inference)</h3>
+            <p class="text-gray-300 text-lg">Minimizes "surprise" through continuous learning. Routes information between Brain and Mind. Manages meta-cognition and self-modification.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="architecture-box border-yellow-500 bg-yellow-900 bg-opacity-20">
+        <div class="flex items-start">
+          <i class="fas fa-robot text-4xl text-yellow-400 mr-6 mt-2"></i>
+          <div>
+            <h3 class="text-2xl font-bold text-yellow-400 mb-2">The Body (Adapters)</h3>
+            <p class="text-gray-300 text-lg">Chat, GitHub, Vision, Smart Home. Interface with any system. Generate new tools autonomously via ToolForge.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Learning Process -->
+  <div class="container mx-auto px-4 py-16" id="how-it-works">
+    <h2 class="text-5xl font-bold text-center mb-16">Learning Without Fine-Tuning</h2>
+    
+    <div class="max-w-4xl mx-auto space-y-8">
+      <div class="feature-card p-8 rounded-lg">
+        <div class="flex items-start">
+          <div class="text-5xl font-bold text-green-400 mr-6">1</div>
+          <div>
+            <h3 class="text-2xl font-bold mb-3">Day 1: Axiom Seeding</h3>
+            <p class="text-gray-300 text-lg">Bootstrapped with <code>seed_axioms.py</code>: logic, math, physics, cloud deployment, benchmarks, and meta-cognition (how to learn). No fine-tuning needed.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="feature-card p-8 rounded-lg">
+        <div class="flex items-start">
+          <div class="text-5xl font-bold text-blue-400 mr-6">2</div>
+          <div>
+            <h3 class="text-2xl font-bold mb-3">Week 1: Domain Exposure</h3>
+            <p class="text-gray-300 text-lg">Connect to your systems (GitHub, docs, databases). Scrapes and stores everything in your namespace: <code>user_yourcompany_knowledge</code>. Starts learning your domain.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="feature-card p-8 rounded-lg">
+        <div class="flex items-start">
+          <div class="text-5xl font-bold text-purple-400 mr-6">3</div>
+          <div>
+            <h3 class="text-2xl font-bold mb-3">Month 1: Pattern Recognition</h3>
+            <p class="text-gray-300 text-lg">Through interaction, learns what works. Every conversation stored in <code>user_yourcompany_episodic</code>. Builds domain expertise autonomously through experience.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="feature-card p-8 rounded-lg">
+        <div class="flex items-start">
+          <div class="text-5xl font-bold text-yellow-400 mr-6">4</div>
+          <div>
+            <h3 class="text-2xl font-bold mb-3">Month 3+: Specialization</h3>
+            <p class="text-gray-300 text-lg">Now specialized for YOUR domain, YOUR codebase, YOUR workflows. Better than GPT-4 at YOUR specific tasks. All without fine-tuning or retraining.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Domain Selection -->
+  <div class="container mx-auto px-4 py-16" id="domains">
+    <h2 class="text-5xl font-bold text-center mb-16">Choose Your Domain</h2>
+    <p class="text-xl text-center text-gray-400 mb-12 max-w-3xl mx-auto">
+      One AGI adapts to any domain through axiom-based learning.
+    </p>
+    
+    <div class="grid md:grid-cols-5 gap-6 max-w-6xl mx-auto">
+      <a href="{{ url_for('domain_legal') }}" class="feature-card p-6 rounded-lg text-center hover:scale-105 transition">
+        <i class="fas fa-balance-scale text-5xl text-blue-400 mb-4"></i>
+        <h3 class="text-xl font-bold mb-2">Legal</h3>
+        <p class="text-gray-400 text-sm">Case law, contracts, research</p>
+      </a>
+      
+      <a href="{{ url_for('domain_medical') }}" class="feature-card p-6 rounded-lg text-center hover:scale-105 transition">
+        <i class="fas fa-heartbeat text-5xl text-red-400 mb-4"></i>
+        <h3 class="text-xl font-bold mb-2">Medical</h3>
+        <p class="text-gray-400 text-sm">Research, diagnosis, literature</p>
+      </a>
+      
+      <a href="{{ url_for('domain_finance') }}" class="feature-card p-6 rounded-lg text-center hover:scale-105 transition">
+        <i class="fas fa-chart-line text-5xl text-green-400 mb-4"></i>
+        <h3 class="text-xl font-bold mb-2">Finance</h3>
+        <p class="text-gray-400 text-sm">Analysis, modeling, reports</p>
+      </a>
+      
+      <a href="{{ url_for('domain_code') }}" class="feature-card p-6 rounded-lg text-center hover:scale-105 transition">
+        <i class="fas fa-code text-5xl text-purple-400 mb-4"></i>
+        <h3 class="text-xl font-bold mb-2">Code</h3>
+        <p class="text-gray-400 text-sm">Development, debugging, testing</p>
+      </a>
+      
+      <a href="{{ url_for('domain_research') }}" class="feature-card p-6 rounded-lg text-center hover:scale-105 transition">
+        <i class="fas fa-microscope text-5xl text-yellow-400 mb-4"></i>
+        <h3 class="text-xl font-bold mb-2">Research</h3>
+        <p class="text-gray-400 text-sm">Papers, grants, methodology</p>
+      </a>
+    </div>
+  </div>
+
+  <!-- Final CTA -->
+  <div class="container mx-auto px-4 py-20 text-center">
+    <h2 class="text-5xl font-bold mb-6">Ready for Real AGI?</h2>
+    <p class="text-2xl mb-12 text-gray-400">No training costs. No prompt engineering. Just continuous learning.</p>
+    <a href="{{ url_for('github_login') }}"
+       class="inline-block bg-green-600 hover:bg-green-700 px-12 py-5 rounded-lg font-bold text-2xl transition shadow-lg">
+      Start Free Now
+    </a>
+    <p class="text-gray-500 mt-6">No credit card required • Open source core</p>
+  </div>
+
+  <!-- Footer -->
+  <footer class="container mx-auto px-4 py-8 border-t border-gray-800">
+    <div class="flex justify-between items-center">
+      <div class="text-gray-500">
+        <p>AetherMind © 2026 • One brain + axioms + experience = infinite specialization</p>
+      </div>
+      <div class="space-x-6">
+        <a href="#" class="text-gray-500 hover:text-green-400"><i class="fab fa-github text-2xl"></i></a>
+        <a href="#" class="text-gray-500 hover:text-green-400"><i class="fab fa-twitter text-2xl"></i></a>
+        <a href="#" class="text-gray-500 hover:text-green-400"><i class="fab fa-discord text-2xl"></i></a>
+      </div>
+    </div>
+  </footer>
+
 </body>
 </html>

@@ -42,6 +42,38 @@ def log_response_info(response):
 def home():
     return render_template("index_home.html")
 
+@app.route("/pricing")
+def pricing():
+    return render_template("pricing.html")
+
+@app.route("/documentation")
+def documentation():
+    return render_template("documentation.html")
+
+@app.route("/domain/legal")
+def domain_legal():
+    return render_template("domain_legal.html")
+
+@app.route("/domain/medical")
+def domain_medical():
+    # TODO: Create domain_medical.html
+    return render_template("domain_legal.html")  # Placeholder
+
+@app.route("/domain/finance")
+def domain_finance():
+    # TODO: Create domain_finance.html
+    return render_template("domain_legal.html")  # Placeholder
+
+@app.route("/domain/code")
+def domain_code():
+    # TODO: Create domain_code.html
+    return render_template("domain_legal.html")  # Placeholder
+
+@app.route("/domain/research")
+def domain_research():
+    # TODO: Create domain_research.html
+    return render_template("domain_legal.html")  # Placeholder
+
 @app.route("/github_login")
 def github_login():
     scope = "read:user repo invite"   # repo scope needed for ToolForge
@@ -95,6 +127,11 @@ def create_key():
     if "github_user" not in session:
         return redirect(url_for("home"))
     user_id = session["github_user"]
+    
+    # Get domain selection from form (optional)
+    domain = request.form.get("domain", "general")
+    session["user_domain"] = domain  # Store for later use
+    
     key = auth_mgr.generate_api_key(user_id)   # persistent key
     # pass key to chat page via query-param (client stores in localStorage)
     return redirect(url_for("index", api_key=key))

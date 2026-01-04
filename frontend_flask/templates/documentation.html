@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AetherMind Documentation</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Fira+Code:wght@400;600&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    
+    code {
+      font-family: 'Fira Code', monospace;
+    }
+    
+    .gradient-text {
+      background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .sidebar {
+      position: sticky;
+      top: 20px;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    
+    .sidebar::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .sidebar::-webkit-scrollbar-track {
+      background: rgba(75, 85, 99, 0.3);
+      border-radius: 3px;
+    }
+    
+    .sidebar::-webkit-scrollbar-thumb {
+      background: rgba(16, 185, 129, 0.5);
+      border-radius: 3px;
+    }
+    
+    .doc-section {
+      scroll-margin-top: 20px;
+    }
+    
+    .nav-item {
+      transition: all 0.2s;
+      border-left: 2px solid transparent;
+    }
+    
+    .nav-item:hover {
+      border-left-color: #10b981;
+      padding-left: 1rem;
+      background: rgba(16, 185, 129, 0.1);
+    }
+    
+    .nav-item.active {
+      border-left-color: #10b981;
+      background: rgba(16, 185, 129, 0.2);
+      padding-left: 1rem;
+    }
+    
+    pre {
+      background: rgba(0, 0, 0, 0.4) !important;
+      border-radius: 0.5rem;
+      padding: 1rem !important;
+      overflow-x: auto;
+    }
+    
+    .doc-content h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: #10b981;
+    }
+    
+    .doc-content h2 {
+      font-size: 2rem;
+      font-weight: 600;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      color: #3b82f6;
+    }
+    
+    .doc-content h3 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .doc-content p {
+      margin-bottom: 1rem;
+      line-height: 1.7;
+      color: #d1d5db;
+    }
+    
+    .doc-content ul, .doc-content ol {
+      margin-bottom: 1rem;
+      padding-left: 2rem;
+    }
+    
+    .doc-content li {
+      margin-bottom: 0.5rem;
+      color: #d1d5db;
+    }
+    
+    .doc-content table {
+      width: 100%;
+      margin-bottom: 1rem;
+      border-collapse: collapse;
+    }
+    
+    .doc-content th, .doc-content td {
+      padding: 0.75rem;
+      border: 1px solid rgba(75, 85, 99, 0.5);
+    }
+    
+    .doc-content th {
+      background: rgba(16, 185, 129, 0.1);
+      font-weight: 600;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 0.25rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    
+    .badge-success { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+    .badge-info { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+    .badge-warning { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+    .badge-danger { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+  </style>
+</head>
+<body class="bg-gray-900 text-white">
+  
+  <!-- Top Navigation -->
+  <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-8">
+          <a href="{{ url_for('home') }}" class="text-2xl font-bold gradient-text">AetherMind</a>
+          <div class="hidden md:flex space-x-6">
+            <a href="{{ url_for('home') }}" class="text-gray-300 hover:text-green-400 transition">Home</a>
+            <a href="{{ url_for('pricing') }}" class="text-gray-300 hover:text-green-400 transition">Pricing</a>
+            <a href="{{ url_for('documentation') }}" class="text-green-400 font-semibold">Documentation</a>
+            <a href="{{ url_for('index') }}" class="text-gray-300 hover:text-green-400 transition">Chat</a>
+          </div>
+        </div>
+        <a href="{{ url_for('github_login') }}" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg font-semibold transition">
+          Start Free
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mx-auto px-4 py-8">
+    <div class="grid md:grid-cols-4 gap-8">
+      
+      <!-- Sidebar Navigation -->
+      <aside class="md:col-span-1">
+        <div class="sidebar bg-gray-800 rounded-lg p-6">
+          <h3 class="text-xl font-bold mb-4 gradient-text">Documentation</h3>
+          
+          <nav class="space-y-2">
+            <a href="#getting-started" class="nav-item block py-2 px-3 rounded text-sm text-gray-300 hover:text-white">
+              <i class="fas fa-rocket mr-2"></i> Getting Started
+            </a>
+            <a href="#authentication" class="nav-item block py-2 px-3 rounded text-sm text-gray-300 hover:text-white">
+              <i class="fas fa-key mr-2"></i> Authentication
+            </a>
+            <a href="#api-keys" class="nav-item block py-2 px-3 rounded text-sm text-gray-300 hover:text-white">
+              <i class="fas fa-lock mr-2"></i> API Keys
+            </a>
+            <a href="#jwt-tokens" class="nav-item block py-2 px-3 rounded text-sm text-gray-300 hover:text-white">
+              <i class="fas fa-id-card mr-2"></i> JWT Tokens
+            </a>
+            <a href="#integrations" class="nav-item block py-2 px-3 rounded text-sm text-gray-300 hover:text-white">
+              <i class="fas fa-plug mr-2"></i> Integrations
+            </a>
+            <a href="#python" class="nav-item block py-2 px-3 pl-8 rounded text-sm text-gray-400 hover:text-white">
+              Python
+            </a>
+            <a href="#nextjs" class="nav-item block py-2 px-3 pl-8 rounded text-sm text-gray-400 hover:text-white">
+              Next.js
+            </a>
+            <a href="#react" class="nav-item block py-2 px-3 pl-8 rounded text-sm text-gray-400 hover:text-white">
+              React
+            </a>
+            <a href="#nodejs" class="nav-item block py-2 px-3 pl-8 rounded text-sm text-gray-400 hover:text-white">
+              Node.js
+            </a>
+            <a href="#mobile" class="nav-item block py-2 px-3 pl-8 rounded text-sm text-gray-400 hover:text-white">
+              Mobile (React Native/Flutter)
+            </a>
+            <a href="#rbac" class="nav-item block py-2 px-3 rounded text-sm text-gray-300 hover:text-white">
+              <i class="fas fa-shield-alt mr-2"></i> RBAC & Permissions
+            </a>
+            <a href="#rate-limiting" class="nav-item block py-2 px-3 rounded text-sm text-gray-300 hover:text-white">
+              <i class="fas fa-tachometer-alt mr-2"></i> Rate Limiting
+            </a>
+            <a href="#security" class="nav-item block py-2 px-3 rounded text-sm text-gray-300 hover:text-white">
+              <i class="fas fa-lock-open mr-2"></i> Security Best Practices
+            </a>
+            <a href="#examples" class="nav-item block py-2 px-3 rounded text-sm text-gray-300 hover:text-white">
+              <i class="fas fa-code mr-2"></i> Code Examples
+            </a>
+          </nav>
+          
+          <hr class="my-6 border-gray-700">
+          
+          <div class="space-y-2">
+            <a href="#" class="block text-sm text-gray-400 hover:text-green-400">
+              <i class="fas fa-download mr-2"></i> Download SDK
+            </a>
+            <a href="#" class="block text-sm text-gray-400 hover:text-green-400">
+              <i class="fab fa-github mr-2"></i> GitHub
+            </a>
+            <a href="#" class="block text-sm text-gray-400 hover:text-green-400">
+              <i class="fab fa-discord mr-2"></i> Discord Support
+            </a>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Documentation Content -->
+      <main class="md:col-span-3">
+        <div class="doc-content bg-gray-800 rounded-lg p-8">
+          
+          <!-- Getting Started -->
+          <section id="getting-started" class="doc-section mb-12">
+            <h1><i class="fas fa-rocket mr-3"></i>Getting Started</h1>
+            <p class="text-xl text-gray-400 mb-6">
+              Welcome to AetherMind documentation. Learn how to integrate continuous learning AGI into your application.
+            </p>
+            
+            <div class="bg-gray-900 border border-green-500 rounded-lg p-6 mb-6">
+              <h3 class="text-green-400 mb-2"><i class="fas fa-info-circle mr-2"></i> What is AetherMind?</h3>
+              <p>
+                AetherMind is a continuous learning AGI that adapts to your domain through experience, not prompt engineering. 
+                Built with axiom-based learning, infinite episodic memory, and self-modification capabilities.
+              </p>
+            </div>
+            
+            <h2>Quick Start</h2>
+            <p>Get started in 3 steps:</p>
+            
+            <div class="space-y-4">
+              <div class="bg-gray-900 rounded-lg p-4 border-l-4 border-green-500">
+                <h4 class="font-bold text-lg mb-2">1. Get Your API Key</h4>
+                <p class="text-gray-400">Sign up and generate your API key from the dashboard.</p>
+              </div>
+              
+              <div class="bg-gray-900 rounded-lg p-4 border-l-4 border-blue-500">
+                <h4 class="font-bold text-lg mb-2">2. Install SDK</h4>
+                <pre><code class="language-bash">pip install aethermind-sdk
+# or
+npm install @aethermind/sdk</code></pre>
+              </div>
+              
+              <div class="bg-gray-900 rounded-lg p-4 border-l-4 border-purple-500">
+                <h4 class="font-bold text-lg mb-2">3. Make Your First Request</h4>
+                <pre><code class="language-python">from aethermind import Client
+
+client = Client(api_key="am_live_YOUR_KEY")
+response = client.chat("Hello AetherMind!")
+print(response)</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <!-- Authentication -->
+          <section id="authentication" class="doc-section mb-12">
+            <h1><i class="fas fa-key mr-3"></i>Authentication</h1>
+            <p>
+              AetherMind supports <strong>three authentication methods</strong> to fit any use case:
+            </p>
+            
+            <div class="grid md:grid-cols-3 gap-4 my-6">
+              <div class="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <h4 class="font-bold text-green-400 mb-2">API Keys</h4>
+                <p class="text-sm text-gray-400">Long-lived credentials for server-to-server authentication</p>
+                <span class="badge badge-success mt-2">Recommended</span>
+              </div>
+              <div class="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <h4 class="font-bold text-blue-400 mb-2">JWT Tokens</h4>
+                <p class="text-sm text-gray-400">Short-lived, stateless authentication for web/mobile apps</p>
+                <span class="badge badge-info mt-2">Best for Web</span>
+              </div>
+              <div class="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <h4 class="font-bold text-purple-400 mb-2">Sessions</h4>
+                <p class="text-sm text-gray-400">Cookie-based authentication for traditional web applications</p>
+                <span class="badge badge-warning mt-2">Legacy</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- API Keys -->
+          <section id="api-keys" class="doc-section mb-12">
+            <h2><i class="fas fa-lock mr-2"></i>API Key Authentication</h2>
+            
+            <h3>Generate API Key</h3>
+            <p>Create a new API key from your dashboard or via API:</p>
+            <pre><code class="language-python">from orchestrator.auth_manager import AuthManager, UserRole
+
+auth = AuthManager()
+api_key = auth.generate_api_key(
+    user_id="your_github_username",
+    role=UserRole.PRO,
+    metadata={"email": "you@example.com"}
+)
+
+print(f"Your API key: {api_key}")
+# Output: am_live_XXXXXXXXXXXXX</code></pre>
+
+            <h3>Use API Key</h3>
+            <p>Include your API key in the Authorization header:</p>
+            <pre><code class="language-bash">curl -X POST https://api.aethermind.ai/v1/chat \
+  -H "Authorization: ApiKey am_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Hello AetherMind"}'</code></pre>
+
+            <div class="bg-yellow-900 bg-opacity-20 border border-yellow-600 rounded-lg p-4 my-4">
+              <h4 class="text-yellow-400 font-bold mb-2"><i class="fas fa-exclamation-triangle mr-2"></i> Security Warning</h4>
+              <p class="text-sm">Never expose API keys in client-side code (frontend JavaScript, mobile apps). Always call AetherMind from your backend.</p>
+            </div>
+          </section>
+
+          <!-- JWT Tokens -->
+          <section id="jwt-tokens" class="doc-section mb-12">
+            <h2><i class="fas fa-id-card mr-2"></i>JWT Token Authentication</h2>
+            
+            <p>JWT tokens are ideal for web and mobile applications. They expire after a set duration (default 1 hour).</p>
+            
+            <h3>Generate JWT Token</h3>
+            <pre><code class="language-python">jwt_token = auth.generate_jwt_token(
+    user_id="user123",
+    role=UserRole.PRO,
+    expires_in=3600  # 1 hour
+)
+
+# Return to client
+return {"token": jwt_token}</code></pre>
+
+            <h3>Use JWT Token</h3>
+            <pre><code class="language-bash">curl -X POST https://api.aethermind.ai/v1/chat \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Hello"}'</code></pre>
+          </section>
+
+          <!-- Integrations -->
+          <section id="integrations" class="doc-section mb-12">
+            <h1><i class="fas fa-plug mr-3"></i>Platform Integrations</h1>
+            
+            <!-- Python -->
+            <div id="python" class="mb-8">
+              <h2><i class="fab fa-python mr-2"></i>Python</h2>
+              <pre><code class="language-python">import requests
+
+class AetherMindClient:
+    def __init__(self, api_key):
+        self.api_key = api_key
+        self.base_url = "https://api.aethermind.ai/v1"
+    
+    def chat(self, message):
+        response = requests.post(
+            f"{self.base_url}/chat",
+            headers={"Authorization": f"ApiKey {self.api_key}"},
+            json={"message": message}
+        )
+        return response.json()
+
+# Usage
+client = AetherMindClient("am_live_YOUR_KEY")
+result = client.chat("Explain quantum computing")
+print(result)</code></pre>
+            </div>
+
+            <!-- Next.js -->
+            <div id="nextjs" class="mb-8">
+              <h2><i class="fab fa-js mr-2"></i>Next.js (TypeScript)</h2>
+              <pre><code class="language-typescript">// lib/aethermind.ts
+export class AetherMindClient {
+  private apiKey: string;
+  private baseUrl = 'https://api.aethermind.ai/v1';
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
+  async chat(message: string): Promise&lt;any&gt; {
+    const response = await fetch(`${this.baseUrl}/chat`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `ApiKey ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ message })
+    });
+    return response.json();
+  }
+}
+
+// app/api/chat/route.ts
+import { AetherMindClient } from '@/lib/aethermind';
+
+export async function POST(request: Request) {
+  const client = new AetherMindClient(process.env.AETHERMIND_API_KEY!);
+  const { message } = await request.json();
+  const result = await client.chat(message);
+  return Response.json(result);
+}</code></pre>
+            </div>
+
+            <!-- React -->
+            <div id="react" class="mb-8">
+              <h2><i class="fab fa-react mr-2"></i>React</h2>
+              <pre><code class="language-javascript">// src/components/Chat.jsx
+import { useState } from 'react';
+
+export default function Chat() {
+  const [message, setMessage] = useState('');
+  const [response, setResponse] = useState('');
+  
+  const sendMessage = async () => {
+    // Call your backend API (never expose API key in frontend)
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+    
+    const data = await res.json();
+    setResponse(data.response);
+  };
+  
+  return (
+    &lt;div&gt;
+      &lt;input value={message} onChange={(e) => setMessage(e.target.value)} /&gt;
+      &lt;button onClick={sendMessage}&gt;Send&lt;/button&gt;
+      &lt;div&gt;{response}&lt;/div&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+            </div>
+
+            <!-- Node.js -->
+            <div id="nodejs" class="mb-8">
+              <h2><i class="fab fa-node-js mr-2"></i>Node.js / Express</h2>
+              <pre><code class="language-javascript">const express = require('express');
+const axios = require('axios');
+
+const app = express();
+app.use(express.json());
+
+app.post('/api/chat', async (req, res) => {
+  try {
+    const response = await axios.post(
+      'https://api.aethermind.ai/v1/chat',
+      { message: req.body.message },
+      {
+        headers: {
+          'Authorization': `ApiKey ${process.env.AETHERMIND_API_KEY}`
+        }
+      }
+    );
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.listen(3000);</code></pre>
+            </div>
+
+            <!-- Mobile -->
+            <div id="mobile" class="mb-8">
+              <h2><i class="fas fa-mobile-alt mr-2"></i>React Native / Flutter</h2>
+              <p class="mb-4">Mobile integration examples:</p>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h4 class="font-bold mb-2">React Native</h4>
+                  <pre><code class="language-javascript">// services/aethermind.js
+export class AetherMindClient {
+  constructor(apiKey) {
+    this.apiKey = apiKey;
+    this.baseUrl = 'https://api.aethermind.ai/v1';
+  }
+
+  async chat(message) {
+    const response = await fetch(`${this.baseUrl}/chat`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `ApiKey ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ message })
+    });
+    return response.json();
+  }
+}</code></pre>
+                </div>
+                <div>
+                  <h4 class="font-bold mb-2">Flutter</h4>
+                  <pre><code class="language-dart">// lib/services/aethermind.dart
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+class AetherMindClient {
+  final String apiKey;
+  
+  AetherMindClient(this.apiKey);
+  
+  Future&lt;Map&gt; chat(String message) async {
+    final response = await http.post(
+      Uri.parse('https://api.aethermind.ai/v1/chat'),
+      headers: {
+        'Authorization': 'ApiKey $apiKey',
+        'Content-Type': 'application/json'
+      },
+      body: jsonEncode({'message': message})
+    );
+    return jsonDecode(response.body);
+  }
+}</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- RBAC -->
+          <section id="rbac" class="doc-section mb-12">
+            <h1><i class="fas fa-shield-alt mr-3"></i>Roles & Permissions</h1>
+            
+            <h2>Available Roles</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Role</th>
+                  <th>Description</th>
+                  <th>Use Case</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge badge-info">FREE</span></td>
+                  <td>Basic features</td>
+                  <td>Individual developers, testing</td>
+                </tr>
+                <tr>
+                  <td><span class="badge badge-success">PRO</span></td>
+                  <td>Advanced features + unlimited usage</td>
+                  <td>Professional developers, small teams</td>
+                </tr>
+                <tr>
+                  <td><span class="badge badge-warning">ENTERPRISE</span></td>
+                  <td>All features + SSO + compliance</td>
+                  <td>Large organizations</td>
+                </tr>
+                <tr>
+                  <td><span class="badge badge-danger">ADMIN</span></td>
+                  <td>Full system access</td>
+                  <td>System administrators</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h2>Permissions Matrix</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Permission</th>
+                  <th>FREE</th>
+                  <th>PRO</th>
+                  <th>ENTERPRISE</th>
+                  <th>ADMIN</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>READ, WRITE</td>
+                  <td>✅</td>
+                  <td>✅</td>
+                  <td>✅</td>
+                  <td>✅</td>
+                </tr>
+                <tr>
+                  <td>DELETE</td>
+                  <td>❌</td>
+                  <td>✅</td>
+                  <td>✅</td>
+                  <td>✅</td>
+                </tr>
+                <tr>
+                  <td>META_CONTROLLER</td>
+                  <td>❌</td>
+                  <td>✅</td>
+                  <td>✅</td>
+                  <td>✅</td>
+                </tr>
+                <tr>
+                  <td>SELF_MODIFY</td>
+                  <td>❌</td>
+                  <td>✅</td>
+                  <td>✅</td>
+                  <td>✅</td>
+                </tr>
+                <tr>
+                  <td>TOOL_FORGE</td>
+                  <td>❌</td>
+                  <td>✅</td>
+                  <td>✅</td>
+                  <td>✅</td>
+                </tr>
+                <tr>
+                  <td>VIEW_AUDIT</td>
+                  <td>❌</td>
+                  <td>❌</td>
+                  <td>✅</td>
+                  <td>✅</td>
+                </tr>
+                <tr>
+                  <td>MANAGE_USERS</td>
+                  <td>❌</td>
+                  <td>❌</td>
+                  <td>❌</td>
+                  <td>✅</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <!-- Rate Limiting -->
+          <section id="rate-limiting" class="doc-section mb-12">
+            <h2><i class="fas fa-tachometer-alt mr-2"></i>Rate Limiting</h2>
+            <p>Rate limits are enforced based on your role:</p>
+            
+            <table>
+              <thead>
+                <tr>
+                  <th>Role</th>
+                  <th>Requests per Minute</th>
+                  <th>Daily Limit</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge badge-info">FREE</span></td>
+                  <td>100</td>
+                  <td>10,000</td>
+                </tr>
+                <tr>
+                  <td><span class="badge badge-success">PRO</span></td>
+                  <td>1,000</td>
+                  <td>Unlimited</td>
+                </tr>
+                <tr>
+                  <td><span class="badge badge-warning">ENTERPRISE</span></td>
+                  <td>10,000</td>
+                  <td>Unlimited</td>
+                </tr>
+                <tr>
+                  <td><span class="badge badge-danger">ADMIN</span></td>
+                  <td>Unlimited</td>
+                  <td>Unlimited</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <!-- Security -->
+          <section id="security" class="doc-section mb-12">
+            <h1><i class="fas fa-lock-open mr-3"></i>Security Best Practices</h1>
+            
+            <div class="space-y-4">
+              <div class="bg-red-900 bg-opacity-20 border border-red-600 rounded-lg p-4">
+                <h4 class="text-red-400 font-bold mb-2"><i class="fas fa-times-circle mr-2"></i> DON'T</h4>
+                <ul class="space-y-2 text-sm">
+                  <li>❌ Hardcode API keys in client-side code</li>
+                  <li>❌ Commit API keys to version control</li>
+                  <li>❌ Share API keys publicly</li>
+                  <li>❌ Use production keys in development</li>
+                </ul>
+              </div>
+              
+              <div class="bg-green-900 bg-opacity-20 border border-green-600 rounded-lg p-4">
+                <h4 class="text-green-400 font-bold mb-2"><i class="fas fa-check-circle mr-2"></i> DO</h4>
+                <ul class="space-y-2 text-sm">
+                  <li>✅ Store keys in environment variables</li>
+                  <li>✅ Use different keys for dev/staging/prod</li>
+                  <li>✅ Call AetherMind from your backend</li>
+                  <li>✅ Rotate keys regularly</li>
+                  <li>✅ Use JWT tokens for client apps</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <!-- Code Examples -->
+          <section id="examples" class="doc-section mb-12">
+            <h1><i class="fas fa-code mr-3"></i>More Examples</h1>
+            
+            <p class="mb-6">Comprehensive examples for common use cases:</p>
+            
+            <div class="grid md:grid-cols-2 gap-4">
+              <a href="#" class="block bg-gray-900 rounded-lg p-4 border border-gray-700 hover:border-green-500 transition">
+                <h4 class="font-bold mb-2"><i class="fas fa-comments mr-2 text-green-400"></i> Chatbot Integration</h4>
+                <p class="text-sm text-gray-400">Build a chatbot with memory and learning</p>
+              </a>
+              <a href="#" class="block bg-gray-900 rounded-lg p-4 border border-gray-700 hover:border-blue-500 transition">
+                <h4 class="font-bold mb-2"><i class="fas fa-search mr-2 text-blue-400"></i> Semantic Search</h4>
+                <p class="text-sm text-gray-400">Search your knowledge base</p>
+              </a>
+              <a href="#" class="block bg-gray-900 rounded-lg p-4 border border-gray-700 hover:border-purple-500 transition">
+                <h4 class="font-bold mb-2"><i class="fas fa-tools mr-2 text-purple-400"></i> ToolForge</h4>
+                <p class="text-sm text-gray-400">Generate custom tools dynamically</p>
+              </a>
+              <a href="#" class="block bg-gray-900 rounded-lg p-4 border border-gray-700 hover:border-yellow-500 transition">
+                <h4 class="font-bold mb-2"><i class="fab fa-github mr-2 text-yellow-400"></i> GitHub Integration</h4>
+                <p class="text-sm text-gray-400">Autonomous code review and PRs</p>
+              </a>
+            </div>
+          </section>
+
+          <!-- Support -->
+          <section class="doc-section">
+            <div class="bg-gradient-to-r from-green-900 to-blue-900 rounded-lg p-8 text-center">
+              <h2 class="text-3xl font-bold mb-4">Need Help?</h2>
+              <p class="text-gray-300 mb-6">Our team is here to support you</p>
+              <div class="flex justify-center space-x-4">
+                <a href="#" class="bg-white text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
+                  <i class="fab fa-discord mr-2"></i> Join Discord
+                </a>
+                <a href="mailto:support@aethermind.ai" class="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition">
+                  <i class="fas fa-envelope mr-2"></i> Email Support
+                </a>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // Syntax highlighting
+    document.addEventListener('DOMContentLoaded', (event) => {
+      document.querySelectorAll('pre code').forEach((block) => {
+        hljs.highlightElement(block);
+      });
+    });
+
+    // Active nav item on scroll
+    const sections = document.querySelectorAll('.doc-section');
+    const navItems = document.querySelectorAll('.nav-item');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        const sectionHeight = section.clientHeight;
+        if (window.scrollY >= (sectionTop - 100)) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      navItems.forEach(item => {
+        item.classList.remove('active');
+        if (item.getAttribute('href') === `#${current}`) {
+          item.classList.add('active');
+        }
+      });
+    });
+
+    // Smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
