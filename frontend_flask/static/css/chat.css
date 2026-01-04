@@ -81,8 +81,6 @@
 /* Emoji / Status Indicators */
 .message-status {
     position: absolute;
-    top: -10px;
-    right: -10px;
     font-size: 1.2rem;
     cursor: pointer;
     background: var(--container-bg);
@@ -93,6 +91,16 @@
     z-index: 5;
 }
 
+.status-top-right {
+    top: -10px;
+    right: -10px;
+}
+
+.status-top-left {
+    top: -10px;
+    left: -16px; /* Moved further left to avoid text overlap */
+}
+
 .message-status:hover {
     transform: scale(1.2);
 }
@@ -101,7 +109,6 @@
     display: none;
     position: absolute;
     bottom: 100%;
-    right: 0;
     width: 200px;
     background-color: #2d333b;
     border: 1px solid var(--border-color);
@@ -114,9 +121,19 @@
     margin-bottom: 5px;
 }
 
-.message-status:hover .status-tooltip {
-    display: block;
+/* Tooltip positioning correction for left side */
+.status-top-right .status-tooltip {
+    right: 0;
 }
+
+.status-top-left .status-tooltip {
+    left: 0;
+}
+
+/* Removed hover effect for tooltip display, now handled by JS click */
+/* .message-status:hover .status-tooltip {
+    display: block;
+} */
 
 /* File attachments in chat stream */
 .chat-attachment {
