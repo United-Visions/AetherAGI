@@ -9,6 +9,7 @@ firecrawl-py
 pydantic
 anthropic
 openai
+PyJWT
 Flask
 gunicorn
 torch
