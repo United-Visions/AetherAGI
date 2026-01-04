@@ -1,0 +1,69 @@
+.app-layout {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#sidebar {
+    width: 260px;
+    background-color: #0d1117; /* Darker than container-bg usually */
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+#sidebar h3 {
+    margin-top: 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.add-repo-btn {
+    background: var(--accent-blue);
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.add-repo-btn:hover {
+    background: var(--accent-blue-hover);
+}
+
+.repo-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.repo-item.empty-state {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-style: italic;
+    padding: 0.5rem 0;
+}
+
+/* Ensure chat wrapper takes remaining space */
+#chat-wrapper {
+    flex-grow: 1;
+    max-width: none !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+}

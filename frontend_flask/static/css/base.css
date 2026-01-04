@@ -5,21 +5,18 @@ body {
     background-color: var(--bg-color);
     color: var(--text-primary);
     margin: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 10px;
+    /* Full screen layout */
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
     box-sizing: border-box;
 }
 
 #chat-wrapper {
+    /* Full size, layout handled by sidebar/flex container */
     width: 100%;
-    max-width: 900px;
-    height: 95vh;
+    height: 100%;
     background-color: var(--container-bg);
-    border-radius: 12px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
     overflow: hidden;
