@@ -1,0 +1,14 @@
+[
+  {
+    "name": "mcp-shell",
+    "description": "Sandboxed shell commands MCP server",
+    "schema_url": "https://mcp.example.com/shell/openapi.json",
+    "language": "python"
+  },
+  {
+    "name": "mcp-arxiv",
+    "description": "ArXiv search & PDF download",
+    "schema_url": "https://mcp.example.com/arxiv/openapi.json",
+    "language": "python"
+  }
+]

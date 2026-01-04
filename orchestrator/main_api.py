@@ -19,6 +19,7 @@ from loguru import logger
 from .active_inference import ActiveInferenceLoop
 from .auth_manager import AuthManager
 from .router import Router
+import json
 from brain.logic_engine import LogicEngine
 from heart.heart_orchestrator import Heart # New Heart import
 from mind.vector_store import AetherVectorStore
@@ -119,6 +120,14 @@ async def get_user_id(api_key: str = Security(api_key_header)):
     return user_id
 
 # --- Endpoints ---
+
+@app.post("/v1/admin/forge_tool")
+async def forge_tool(request: dict, user_id: str = Depends(get_user_id)):
+    if not settings.toolforge_adapter:
+        raise HTTPException(403, "ToolForge disabled")
+    adapter = ROUTER.adapters.get("toolforge")
+    result = adapter.execute(json.dumps(request))
+    return {"result": result}
 
 @app.post("/v1/ingest/multimodal")
 async def ingest_multimodal(
