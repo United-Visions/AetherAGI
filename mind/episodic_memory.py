@@ -27,5 +27,12 @@ class EpisodicMemory:
         Retrieves relevant past interactions to provide context for the Brain.
         """
         namespace = f"user_{user_id}_episodic"
-        contexts, _ = self.store.query_context(current_query, namespace, top_k=3)
-        return contexts
+        matches, _ = self.store.query_context(current_query, namespace, top_k=3, include_metadata=True)
+
+        formatted_contexts = []
+        for m in matches:
+            ts = m.get('timestamp', 'Unknown Time')
+            text = m.get('text', '')
+            formatted_contexts.append(f"[{ts}] {text}")
+
+        return formatted_contexts

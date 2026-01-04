@@ -45,7 +45,7 @@ class AetherVectorStore:
         except Exception as e:
             logger.error(f"Failed to upsert to Pinecone: {e}")
 
-    def query_context(self, query_text: str, namespace: str, top_k: int = 5):
+    def query_context(self, query_text: str, namespace: str, top_k: int = 5, include_metadata: bool = False):
         """
         Queries the mind using OpenAI embeddings.
         """
@@ -66,7 +66,10 @@ class AetherVectorStore:
                 include_metadata=True
             )
             
-            contexts = [m['metadata']['text'] for m in results['matches']]
+            if include_metadata:
+                contexts = [m['metadata'] for m in results['matches']]
+            else:
+                contexts = [m['metadata']['text'] for m in results['matches']]
             
             if not results['matches']:
                 logger.warning("No matches found in vector store — returning zero vector.")

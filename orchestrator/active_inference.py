@@ -4,6 +4,7 @@ Role: The Production Active Inference Loop.
 """
 
 import numpy as np
+import datetime
 from brain.logic_engine import LogicEngine
 from mind.episodic_memory import EpisodicMemory
 from mind.vector_store import AetherVectorStore
@@ -31,7 +32,9 @@ class ActiveInferenceLoop:
         # 1. SENSE: Retrieve logical context
         k12_context, state_vec = self.store.query_context(user_input, namespace="core_k12")
         logger.debug(f"State vector shape: {len(state_vec)}")
-        episodic_context, _ = self.store.query_context(user_input, namespace=f"user_{user_id}_episodic")
+
+        # Use EpisodicMemory wrapper to get timestamped context
+        episodic_context = self.memory.get_recent_context(user_id, user_input)
         
         # 2. FEEL: Compute emotional and moral context from the Heart
         emotion_vector = self.heart.compute_emotion(user_input, user_id)
@@ -54,7 +57,8 @@ class ActiveInferenceLoop:
             "reason": "High novelty detected in context." if is_researching else "Routine interaction."
         }
 
-        combined_context = "\n".join(k12_context + episodic_context)
+        current_time_str = f"Current System Time: {datetime.datetime.now()}"
+        combined_context = f"{current_time_str}\n" + "\n".join(k12_context + episodic_context)
 
         # 3. REASON: Brain processes input with all available context
         brain_response = await self.brain.generate_thought(
