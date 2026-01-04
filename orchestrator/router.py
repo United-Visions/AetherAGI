@@ -5,6 +5,8 @@ Role: Routes brain intents to the correct body adapter.
 """
 
 from body.adapters.chat_ui import ChatAdapter
+from body.adapters.practice_adapter import PracticeAdapter
+from config.settings import settings
 from loguru import logger
 
 class Router:
@@ -16,6 +18,8 @@ class Router:
         self.adapters = {
             "chat": ChatAdapter()
         }
+        if settings.practice_adapter:
+            self.adapters["practice"] = PracticeAdapter()
         logger.info("Router initialized with ChatAdapter.")
 
     def forward_intent(self, intent: str, adapter_type: str = "chat"):

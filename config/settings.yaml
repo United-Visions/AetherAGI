@@ -1,2 +1,9 @@
+
+features:
 promoter_gate: false
 meta_controller: false
+agent_state_machine: false   # keep OFF in prod for now
+pilot_users: ["demo_user"]     # add your own test id
+diff_retrieval: false
+imagination: false
+practice_adapter: false

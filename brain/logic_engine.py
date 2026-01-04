@@ -10,7 +10,11 @@ from pinecone import Pinecone
 from .safety_inhibitor import SafetyInhibitor
 from .core_knowledge_priors import CoreKnowledgePriors
 from .jepa_aligner import JEPAAligner
+from brain.imagination_engine import ImaginationEngine
+from config.settings import settings
 from loguru import logger
+from config.settings import settings
+import torch
 
 class LogicEngine:
     def __init__(self, runpod_key: str, endpoint_id: str, pinecone_key: str):
@@ -54,6 +58,14 @@ class LogicEngine:
         logger.info("Initiating Reasoning Cycle...")
 
         # 1. GROUNDING
+        if settings.diff_retrieval and torch is not None:
+            from mind.differentiable_store import DifferentiableStore
+            namespace = "core_universal"
+            store = DifferentiableStore(self.pc.Index("aethermind-genesis"), namespace, top_k=5)
+            context_vec_torch = torch.FloatTensor(context_vec)
+            context_vec, _ = store(context_vec_torch)  # now differentiable
+            contexts = ["[diff retrieved]"]  # placeholder for logging
+
         system_dna = self.priors.get_foundation_prompt()
         
         emotional_prompt = (
@@ -96,6 +108,11 @@ class LogicEngine:
                     # Trigger online learning update in the JEPA predictor
                     self.jepa.update_world_model(np.array(context_vec), thought_vec)
                     raw_output = f"[Internal Update] {raw_output}"
+
+            if settings.imagination and context_vec:
+                im = ImaginationEngine(self.jepa, horizon=3)
+                hyp = im.imagine(np.array(context_vec), ["action_A", "action_B"])
+                context_text += "\nImagined:\n" + "\n".join(hyp)
 
             # 4. SAFETY INHIBITION
             final_output = self.inhibitor.scan(raw_output)

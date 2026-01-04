@@ -1,3 +1,4 @@
+
 """
 Path: orchestrator/agent_state_machine.py
 Drop-in replacement for ActiveInferenceLoop.run_cycle
@@ -21,18 +22,27 @@ class AgentStateMachine:
     Persists after every transition to Redis JSON.
     Key = agent:{user_id}  value = serialized state
     """
-    def __init__(self, redis_url: str, aether_loop, store, jepa):
+    def __init__(self, redis_url: str, aether_loop, meta_ctrl):
         self.redis = redis.from_url(redis_url, decode_responses=True)
         self.aether = aether_loop
-        self.meta = MetaController(store, jepa)
+        self.meta   = meta_ctrl
 
     async def run(self, user_id: str) -> None:
         """Main coroutine – runs forever for one user."""
+        asyncio.create_task(self._listen_kill())
         while True:
             state = await self._load(user_id) or State.WAITING
             next_state = await self._tick(state, user_id)
             await self._save(user_id, next_state)
             await asyncio.sleep(0.1)   # event-loop yield
+
+    async def _listen_kill(self):
+        pub = self.redis.pubsub()
+        await pub.subscribe("kill")
+        async for msg in pub.listen():
+            if msg["type"] == "message":
+                logger.critical("KILL SWITCH ACTIVATED – shutting down")
+                os._exit(42)
 
     # ------------------------------------------------------------------
     async def _tick(self, state: State, user_id: str) -> State:
