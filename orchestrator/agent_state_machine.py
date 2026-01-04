@@ -1,3 +1,4 @@
+
 """
 Path: orchestrator/agent_state_machine.py
 Drop-in replacement for ActiveInferenceLoop.run_cycle
@@ -20,19 +21,27 @@ class AgentStateMachine:
     Persists after every transition to Redis JSON.
     Key = agent:{user_id}  value = serialized state
     """
-    def __init__(self, redis_url: str, aether_loop, meta_ctrl, router):
+    def __init__(self, redis_url: str, aether_loop, meta_ctrl):
         self.redis = redis.from_url(redis_url, decode_responses=True)
         self.aether = aether_loop
         self.meta   = meta_ctrl
-        self.router = router
 
     async def run(self, user_id: str) -> None:
         """Main coroutine – runs forever for one user."""
+        asyncio.create_task(self._listen_kill())
         while True:
             state = await self._load(user_id) or State.WAITING
             next_state = await self._tick(state, user_id)
             await self._save(user_id, next_state)
             await asyncio.sleep(0.1)   # event-loop yield
+
+    async def _listen_kill(self):
+        pub = self.redis.pubsub()
+        await pub.subscribe("kill")
+        async for msg in pub.listen():
+            if msg["type"] == "message":
+                logger.critical("KILL SWITCH ACTIVATED – shutting down")
+                os._exit(42)
 
     # ------------------------------------------------------------------
     async def _tick(self, state: State, user_id: str) -> State:
@@ -55,9 +64,12 @@ class AgentStateMachine:
             return State.LEARNING
 
         if state == State.LEARNING:
-            # await self.aether.close_feedback_loop(...)   # existing code
-            # TODO: Implement proper feedback loop integration.
-            # Currently we don't have the message_id or reaction here.
+            # We assume aether loop has a way to pick up the last trace.
+            # In the snippet it was just '...', so we simulate a call or skip if not implemented.
+            # Since close_feedback_loop takes (message_id, score), and we don't have them here easily without more state,
+            # we will assume this step is handled asynchronously or skipped for now in this state machine logic
+            # until fully implemented.
+            # await self.aether.close_feedback_loop(...)
             return State.WAITING
 
         return state
