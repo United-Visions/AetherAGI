@@ -4,10 +4,14 @@ Role: Production API Gateway. Handles authentication and routing.
 """
 
 import os
+from dotenv import load_dotenv
+
+# CRITICAL: Load environment variables BEFORE any imports that depend on them
+load_dotenv()
+
 from fastapi import FastAPI, Header, HTTPException, Depends, Security, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
-from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timedelta
@@ -17,7 +21,7 @@ import httpx
 from loguru import logger
 
 from .active_inference import ActiveInferenceLoop
-from .auth_manager import AuthManager
+from .auth_manager_supabase import AuthManagerSupabase
 from .router import Router
 import json
 from brain.logic_engine import LogicEngine
@@ -31,8 +35,6 @@ from orchestrator.agent_state_machine import AgentStateMachine
 from orchestrator.session_manager import SessionManager
 from config.settings import settings
 import asyncio
-
-load_dotenv()
 
 app = FastAPI(title="AetherMind AGI API", version="1.0.0")
 
@@ -64,7 +66,7 @@ MEMORY = EpisodicMemory(STORE)
 BRAIN = LogicEngine(runpod_key=os.getenv("RUNPOD_API_KEY"), endpoint_id=os.getenv("RUNPOD_ENDPOINT_ID"), pinecone_key=os.getenv("PINECONE_API_KEY"))
 ROUTER = Router()
 HEART = Heart(pinecone_key=os.getenv("PINECONE_API_KEY")) # Initialize the new Heart
-AUTH = AuthManager()
+AUTH = AuthManagerSupabase()
 SESSION_MANAGER = SessionManager()  # Domain-aware session management
 
 # Initialize Sensory & Curiosity Components
@@ -214,6 +216,12 @@ async def chat_completions(
     # Now unpacks updated return values
     response_text, message_id, emotion_vector, agent_state = await AETHER.run_cycle(user_id, last_message)
     
+    # Get activity events (tool creation, file changes, code execution)
+    activity_events = AETHER.get_activity_events()
+    
+    # Extract thinking steps for frontend display
+    thinking_steps = agent_state.get("thinking_steps", []) if agent_state else []
+    
     # Return in a standardized format, now including the message_id and metadata
     return {
         "id": message_id, # Return the actual message_id for the feedback loop
@@ -229,7 +237,9 @@ async def chat_completions(
         "usage": {"total_tokens": len(response_text) // 4}, # Simple estimate
         "metadata": {
             "user_emotion": emotion_vector,
-            "agent_state": agent_state
+            "agent_state": agent_state,
+            "activity_events": activity_events,  # Tool creation, file changes, code execution
+            "reasoning_steps": thinking_steps  # <think> tag content for visualization
         }
     }
 
@@ -297,13 +307,13 @@ async def set_user_domain(
         raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
     
     api_key = authorization.replace("ApiKey ", "").replace("Bearer ", "")
-    auth_user_id = AUTH.verify_key(api_key)
+    user_data = AUTH.verify_api_key(api_key)
     
-    if not auth_user_id:
+    if not user_data:
         raise HTTPException(status_code=401, detail="Invalid API key")
     
     # Verify user_id matches or is admin
-    if auth_user_id != request.user_id:
+    if user_data["user_id"] != request.user_id:
         raise HTTPException(status_code=403, detail="Cannot set domain for another user")
     
     # Validate domain
@@ -354,6 +364,33 @@ async def get_user_domain(authorization: str = Header(None)):
         "domain_display_name": profile["domain_display_name"],
         "interaction_count": profile["interaction_count"],
         "learning_context": profile["learning_context"]
+    }
+
+
+@app.get("/v1/user/permissions")
+async def get_user_permissions(user_id: str = Depends(get_user_id)):
+    """
+    Get user's role and permissions based on their API key
+    Returns: role (free/pro/enterprise/admin) and list of permissions
+    """
+    # Get API key from header to check role
+    from fastapi import Request
+    request = Request(scope={"type": "http"})
+    api_key = request.headers.get("x-aether-key")
+    
+    if not api_key:
+        raise HTTPException(status_code=401, detail="Missing API key")
+    
+    user_data = AUTH.verify_api_key(api_key)
+    
+    if not user_data:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    return {
+        "user_id": user_data["user_id"],
+        "role": user_data["role"],
+        "permissions": user_data["permissions"],
+        "rate_limit": AUTH.RATE_LIMITS.get(user_data["role"], 100)
     }
 
 

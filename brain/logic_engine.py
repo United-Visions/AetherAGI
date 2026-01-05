@@ -11,9 +11,15 @@ from .safety_inhibitor import SafetyInhibitor
 from .core_knowledge_priors import CoreKnowledgePriors
 from .jepa_aligner import JEPAAligner
 from brain.imagination_engine import ImaginationEngine
-import torch
 from config.settings import settings
 from loguru import logger
+from brain.system_prompts import get_aether_system_prompt
+
+try:
+    import torch
+except ImportError:
+    torch = None
+    logger.warning("torch not available - differentiable retrieval disabled")
 
 class LogicEngine:
     def __init__(self, runpod_key: str, endpoint_id: str, pinecone_key: str):
@@ -73,7 +79,13 @@ class LogicEngine:
         # Add domain-specific personality and behavior instructions
         if domain_prompt:
             logger.debug("Applying domain-specific reasoning framework")
+            # Domain prompt is now the structured action-tag prompt
             system_dna = f"{domain_prompt}\n\n{system_dna}"
+        else:
+            # Use default structured prompt
+            from brain.system_prompts import get_aether_system_prompt
+            structured_prompt = get_aether_system_prompt("general")
+            system_dna = f"{structured_prompt}\n\n{system_dna}"
         
         emotional_prompt = (
             "EMOTIONAL_CONTEXT: "

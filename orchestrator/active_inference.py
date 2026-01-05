@@ -15,6 +15,7 @@ from loguru import logger
 from mind.promoter import Promoter
 from heart.uncertainty_gate import UncertaintyGate
 from config.settings import settings
+from orchestrator.action_parser import ActionParser, ActionExecutor
 import asyncio
 import re
 
@@ -29,6 +30,9 @@ class ActiveInferenceLoop:
         self.session_manager = session_manager or SessionManager()
         self.last_trace_data = {} # Simple cache for the trace
         self.promoter = Promoter(store, UncertaintyGate(self.heart.reward_model))
+        self.activity_events = []  # Track activities for frontend display
+        self.action_parser = ActionParser()  # Parse action tags from Brain
+        self.action_executor = ActionExecutor(router, store, memory)  # Execute actions
 
     async def run_cycle(self, user_id: str, user_input: str, namespace: str = "universal"):
         """
@@ -98,32 +102,84 @@ class ActiveInferenceLoop:
 
         # 5. EMBELLISH: Heart adapts the response based on emotion and morals
         embellished_response = self.heart.embellish_response(brain_response, emotion_vector, predicted_flourishing)
+        
+        # 6. EXTRACT THINKING: Parse <think> tags to show agent's reasoning process
+        thinking_steps, response_without_thinking = self.action_parser.parse_thinking(embellished_response)
+        
+        # 7. PARSE ACTION TAGS: Extract structured actions from Brain response
+        action_tags, cleaned_response = self.action_parser.parse(response_without_thinking)
+        
+        # 8. EXECUTE ACTIONS: Run parsed action tags
+        for action_tag in action_tags:
+            # Convert to activity event
+            activity_event = action_tag.to_activity_event(user_id)
+            self.activity_events.append(activity_event)
+            
+            # Execute the action
+            result = await self.action_executor.execute(action_tag, user_id)
+            
+            # Update activity status
+            for event in self.activity_events:
+                if event["id"] == activity_event["id"]:
+                    event["status"] = "completed" if result["success"] else "error"
+                    event["details"] = result["result"] if result["success"] else result["error"]
+                    break
+        
+        # 9. EXTRACT CODE BLOCKS: Find markdown code blocks for display
+        code_blocks = self.action_parser.extract_code_blocks(embellished_response)
+        if code_blocks and not action_tags:
+            # If code blocks exist but no action tags, create file_change activity
+            for block in code_blocks:
+                self.activity_events.append({
+                    "id": f"code_{datetime.datetime.now().timestamp()}",
+                    "type": "file_change",
+                    "status": "completed",
+                    "title": f"Generated {block['language']} code",
+                    "details": "Code snippet provided in response",
+                    "timestamp": datetime.datetime.now().isoformat(),
+                    "data": {
+                        "code": block["code"],
+                        "language": block["language"],
+                        "files": []
+                    }
+                })
+        
+        # Track traditional activity patterns (fallback for non-tagged responses)
+        self._track_agent_activities(brain_response, user_id)
 
-        # 6. ACT: Route the final, embellished response to the body
-        final_output = self.router.forward_intent(embellished_response)
+        # 10. ACT: Route the final, cleaned response to the body
+        final_output = self.router.forward_intent(cleaned_response)
 
-        # 7. PREPARE FOR LEARNING: Cache the data needed for the feedback loop
+        # 11. PREPARE FOR LEARNING: Cache the data needed for the feedback loop
         self.last_trace_data[emotion_vector["message_id"]] = {
             "state_vector": state_vec,
             "action_text": final_output,
             "predicted_flourishing": predicted_flourishing,
-            "user_id": user_id  # Store for promoter
+            "user_id": user_id,  # Store for promoter
+            "thinking_steps": thinking_steps  # Store reasoning process
         }
+
         
-        # 8. LEARN (Episodic): Save the interaction to memory
+        # 11. LEARN (Episodic): Save the interaction to memory
         self.memory.record_interaction(user_id, "user", user_input)
         self.memory.record_interaction(user_id, "assistant", final_output)
         logger.info(f"Successful interaction saved to user_{user_id}_episodic")
         
-        # 9. UPDATE USER LEARNING CONTEXT
+        # 12. UPDATE USER LEARNING CONTEXT
         self.session_manager.update_learning_context(user_id, {
             "topic": user_input[:100],  # First 100 chars as topic
             "domain_relevant": True,
-            "tools_used": [],  # TODO: Track actual tools used
+            "tools_used": [tag.tag_type for tag in action_tags],  # Track tools used
             "cross_domain": False  # TODO: Detect cross-domain queries
         })
 
         logger.info(f"Cycle complete for User {user_id} ({domain_profile.display_name})")
+        
+        # 13. UPDATE AGENT STATE WITH THINKING
+        agent_state["thinking_steps"] = thinking_steps
+        agent_state["action_count"] = len(action_tags)
+        agent_state["activity_events"] = self.activity_events
+        
         return final_output, emotion_vector["message_id"], emotion_vector, agent_state
     
     async def _domain_aware_context_retrieval(self, user_input: str, user_id: str, namespace_weights: dict):
@@ -202,3 +258,101 @@ class ActiveInferenceLoop:
                 )
         else:
             logger.warning(f"Could not find trace data for message {message_id} to close feedback loop.")
+
+    def _track_agent_activities(self, brain_response: str, user_id: str):
+        """
+        Parse brain response for activities like tool creation, file changes, 
+        code execution, sandbox spinup, etc. and track them for frontend display.
+        """
+        import datetime
+        timestamp = datetime.datetime.now().isoformat()
+        
+        # Clear previous activities
+        self.activity_events = []
+        
+        # Detect tool creation patterns
+        if "create tool" in brain_response.lower() or "forge" in brain_response.lower():
+            self.activity_events.append({
+                "id": f"tool_{timestamp}",
+                "type": "tool_creation",
+                "status": "in_progress",
+                "title": "Creating custom tool",
+                "details": "ToolForge generating new capability",
+                "timestamp": timestamp,
+                "data": {
+                    "tool_name": self._extract_tool_name(brain_response),
+                    "code": self._extract_code_block(brain_response)
+                }
+            })
+        
+        # Detect file creation/modification
+        if "create file" in brain_response.lower() or "write to" in brain_response.lower():
+            self.activity_events.append({
+                "id": f"file_{timestamp}",
+                "type": "file_change",
+                "status": "in_progress",
+                "title": "Creating/modifying files",
+                "details": "Writing code to filesystem",
+                "timestamp": timestamp,
+                "data": {
+                    "files": self._extract_file_paths(brain_response),
+                    "code": self._extract_code_block(brain_response),
+                    "language": self._detect_language(brain_response)
+                }
+            })
+        
+        # Detect code execution
+        if "execute" in brain_response.lower() or "run" in brain_response.lower() or "sandbox" in brain_response.lower():
+            self.activity_events.append({
+                "id": f"exec_{timestamp}",
+                "type": "code_execution",
+                "status": "in_progress",
+                "title": "Executing code in sandbox",
+                "details": "Running generated code safely",
+                "timestamp": timestamp,
+                "data": {
+                    "code": self._extract_code_block(brain_response),
+                    "language": self._detect_language(brain_response),
+                    "sandbox_id": f"sandbox_{user_id}_{timestamp}"
+                }
+            })
+        
+        logger.debug(f"Tracked {len(self.activity_events)} agent activities")
+    
+    def get_activity_events(self):
+        """Return current activity events for API response"""
+        return self.activity_events
+    
+    def _extract_tool_name(self, text: str) -> str:
+        """Extract tool name from response"""
+        import re
+        match = re.search(r'tool[:\s]+([a-zA-Z_][a-zA-Z0-9_]*)', text, re.IGNORECASE)
+        return match.group(1) if match else "custom_tool"
+    
+    def _extract_file_paths(self, text: str) -> list:
+        """Extract file paths from response"""
+        import re
+        # Match common file path patterns
+        paths = re.findall(r'(?:^|\s)([a-zA-Z0-9_/\\.-]+\.py|[a-zA-Z0-9_/\\.-]+\.js|[a-zA-Z0-9_/\\.-]+\.json)', text)
+        return paths if paths else ["generated_file.py"]
+    
+    def _extract_code_block(self, text: str) -> str:
+        """Extract code block from markdown-style code fences"""
+        import re
+        # Match ```language ... ``` blocks
+        match = re.search(r'```(?:\w+)?\n(.*?)```', text, re.DOTALL)
+        return match.group(1).strip() if match else ""
+    
+    def _detect_language(self, text: str) -> str:
+        """Detect programming language from context"""
+        text_lower = text.lower()
+        if 'python' in text_lower or 'def ' in text or 'import ' in text:
+            return 'python'
+        elif 'javascript' in text_lower or 'const ' in text or 'function ' in text:
+            return 'javascript'
+        elif 'typescript' in text_lower:
+            return 'typescript'
+        elif 'java' in text_lower:
+            return 'java'
+        else:
+            return 'python'  # Default

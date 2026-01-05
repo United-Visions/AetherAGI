@@ -1,0 +1,17 @@
+{"timestamp": "2026-01-05T02:22:44.843620", "event": "api_key_generated", "user_id": "United-Visions", "success": true, "details": {"role": "free"}}
+{"timestamp": "2026-01-05T04:19:49.270649", "event": "api_key_verify", "user_id": "unknown", "success": false, "details": {}}
+{"timestamp": "2026-01-05T04:20:28.685246", "event": "api_key_verify", "user_id": "unknown", "success": false, "details": {}}
+{"timestamp": "2026-01-05T04:25:52.606788", "event": "api_key_verify", "user_id": "unknown", "success": false, "details": {}}
+{"timestamp": "2026-01-05T04:26:46.050032", "event": "api_key_verify", "user_id": "unknown", "success": false, "details": {}}
+{"timestamp": "2026-01-05T04:28:44.166149", "event": "api_key_verify", "user_id": "unknown", "success": false, "details": {}}
+{"timestamp": "2026-01-05T04:29:56.881202", "event": "api_key_generated", "user_id": "United-Visions", "success": true, "details": {"role": "free"}}
+{"timestamp": "2026-01-05T04:30:01.999478", "event": "api_key_verify", "user_id": "unknown", "success": false, "details": {}}
+{"timestamp": "2026-01-05T05:05:39.894889", "event": "api_key_verify", "user_id": "unknown", "success": false, "details": {}}
+{"timestamp": "2026-01-05T05:06:14.657858", "event": "api_key_verify", "user_id": "unknown", "success": false, "details": {}}
+{"timestamp": "2026-01-05T05:08:45.642449", "event": "api_key_verify", "user_id": "unknown", "success": false, "details": {}}
+{"timestamp": "2026-01-05T05:09:26.439526", "event": "api_key_verify", "user_id": "unknown", "success": false, "details": {}}
+{"timestamp": "2026-01-05T05:09:48.724214", "event": "api_key_verify", "user_id": "unknown", "success": false, "details": {}}
+{"timestamp": "2026-01-05T05:41:35.043795", "event": "api_key_verify", "user_id": "unknown", "success": false, "details": {}}
+{"timestamp": "2026-01-05T05:41:57.367724", "event": "api_key_verify", "user_id": "unknown", "success": false, "details": {}}
+{"timestamp": "2026-01-05T05:50:51.590645", "event": "api_key_verify", "user_id": "unknown", "success": false, "details": {}}
+{"timestamp": "2026-01-05T05:51:05.682512", "event": "api_key_verify", "user_id": "unknown", "success": false, "details": {}}

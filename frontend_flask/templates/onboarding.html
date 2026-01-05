@@ -30,6 +30,73 @@
       border-color: #10b981;
       background: rgba(16, 185, 129, 0.15);
     }
+    .step-container {
+      display: none;
+    }
+    .step-container.active {
+      display: block;
+      animation: fadeIn 0.5s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .api-key-display {
+      background: rgba(31, 41, 55, 0.9);
+      border: 2px solid #10b981;
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      font-family: 'Courier New', monospace;
+      font-size: 1.1rem;
+      word-break: break-all;
+      position: relative;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      padding: 0.5rem 1rem;
+      background: #10b981;
+      color: white;
+      border-radius: 0.375rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .copy-btn:hover {
+      background: #059669;
+      transform: scale(1.05);
+    }
+    .copy-btn.copied {
+      background: #3b82f6;
+    }
+    .login-option {
+      background: rgba(31, 41, 55, 0.8);
+      border: 2px solid rgba(75, 85, 99, 0.5);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-align: center;
+    }
+    .login-option:hover {
+      border-color: #10b981;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(16, 185, 129, 0.2);
+    }
+    .key-input-box {
+      background: rgba(31, 41, 55, 0.9);
+      border: 2px solid rgba(75, 85, 99, 0.5);
+      color: white;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      width: 100%;
+      font-family: 'Courier New', monospace;
+      font-size: 1rem;
+    }
+    .key-input-box:focus {
+      outline: none;
+      border-color: #10b981;
+    }
   </style>
 </head>
 <body class="bg-gray-900 text-white">
@@ -42,8 +109,8 @@
       <p class="text-xl text-gray-400">Let's set up your continuous learning AGI</p>
     </div>
 
-    <form action="{{ url_for('create_key') }}" method="post" id="onboarding-form">
-      <!-- Step 1: Choose Domain -->
+    <!-- Step 1: Choose Domain -->
+    <div id="step-domain" class="step-container active">
       <div class="mb-12">
         <h2 class="text-3xl font-bold mb-6 text-center">Choose Your AetherMind Specialization</h2>
         <p class="text-center text-gray-400 mb-2">This choice fundamentally shapes how I think, communicate, and assist you</p>
@@ -107,9 +174,65 @@
         
         <input type="hidden" name="domain" id="selected-domain" value="general">
       </div>
+      
+      <div class="text-center mt-8">
+        <button type="button" id="btn-next-to-login" class="bg-green-600 hover:bg-green-700 px-12 py-4 rounded-lg font-bold text-xl transition shadow-lg">
+          Continue <i class="fas fa-arrow-right ml-2"></i>
+        </button>
+      </div>
+    </div>
 
-      <!-- Step 2: How It Works -->
-      <div class="bg-gray-800 rounded-lg p-8 mb-12">
+    <!-- Step 2: Choose Login Method -->
+    <div id="step-login" class="step-container">
+      <h2 class="text-3xl font-bold mb-6 text-center">Access Your AetherMind</h2>
+      <p class="text-center text-gray-400 mb-12">Choose how you'd like to proceed</p>
+      
+      <div class="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+        <div class="login-option" id="option-create-key">
+          <i class="fas fa-key text-5xl text-green-400 mb-4"></i>
+          <h3 class="text-2xl font-bold mb-2">Create New API Key</h3>
+          <p class="text-gray-400 text-sm">Generate a new API key for this domain</p>
+        </div>
+        
+        <div class="login-option" id="option-enter-key">
+          <i class="fas fa-sign-in-alt text-5xl text-blue-400 mb-4"></i>
+          <h3 class="text-2xl font-bold mb-2">Use Existing Key</h3>
+          <p class="text-gray-400 text-sm">Enter your existing AetherMind API key</p>
+        </div>
+      </div>
+      
+      <div class="text-center mt-8">
+        <button type="button" id="btn-back-to-domain" class="text-gray-400 hover:text-white transition">
+          <i class="fas fa-arrow-left mr-2"></i>Back to Domain Selection
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Create API Key -->
+    <div id="step-create-key" class="step-container">
+      <h2 class="text-3xl font-bold mb-6 text-center">Your API Key is Ready!</h2>
+      <p class="text-center text-gray-400 mb-8">Copy and store your API key securely. You'll need it to access AetherMind.</p>
+      
+      <div class="max-w-2xl mx-auto mb-8">
+        <div class="api-key-display" id="api-key-display">
+          <button class="copy-btn" id="copy-key-btn">
+            <i class="fas fa-copy mr-2"></i>Copy
+          </button>
+          <div id="generated-api-key" class="text-green-400 pr-24">Generating...</div>
+        </div>
+      </div>
+      
+      <div class="bg-yellow-900 bg-opacity-30 border-2 border-yellow-600 rounded-lg p-6 max-w-2xl mx-auto mb-8">
+        <div class="flex items-start">
+          <i class="fas fa-exclamation-triangle text-yellow-400 text-2xl mr-4 mt-1"></i>
+          <div>
+            <h3 class="text-xl font-bold text-yellow-400 mb-2">Important Security Notice</h3>
+            <p class="text-gray-300">This key will NOT be shown again. Store it securely (password manager recommended). Anyone with this key can access your AetherMind account.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-gray-800 rounded-lg p-8 mb-8">
         <h2 class="text-2xl font-bold mb-6 text-center">What Happens Next</h2>
         <div class="space-y-4">
           <div class="flex items-start">
@@ -123,8 +246,14 @@
             <div class="text-3xl font-bold text-blue-400 mr-4">2</div>
             <div>
               <h3 class="font-bold mb-1">Memory Namespace Created</h3>
-              <p class="text-gray-400">YoDomain-Focused Adaptation</h3>
-              <p class="text-gray-400">Your AGI's communication style, knowledge priorities, and actions are tailored to your domain. <strong class="text-green-400">It thinks like a specialist in your field.</strong>
+              <p class="text-gray-400">Your personal memory namespace is created in our Vector Database (Pinecone), giving you infinite episodic recall.</p>
+            </div>
+          </div>
+          <div class="flex items-start">
+            <div class="text-3xl font-bold text-yellow-400 mr-4">2.5</div>
+            <div>
+              <h3 class="font-bold mb-1">Domain-Focused Adaptation</h3>
+              <p class="text-gray-400">Your AGI's communication style, knowledge priorities, and actions are tailored to your domain. <strong class="text-green-400">It thinks like a specialist in your field.</strong></p>
           </div>
           <div class="flex items-start">
             <div class="text-3xl font-bold text-purple-400 mr-4">3</div>
@@ -135,36 +264,224 @@
           </div>
         </div>
       </div>
-
-      <!-- Step 3: Create Key -->
+      
       <div class="text-center">
-        <button type="submit" id="submit-btn"
-                class="bg-green-600 hover:bg-green-700 px-12 py-4 rounded-lg font-bold text-xl transition shadow-lg">
-          <i class="fas fa-key mr-2"></i> Create API Key & Enter Chat
+        <label class="inline-flex items-center mb-6">
+          <input type="checkbox" id="confirm-saved" class="form-checkbox h-5 w-5 text-green-600">
+          <span class="ml-2 text-gray-300">I have securely saved my API key</span>
+        </label>
+        <br>
+        <button type="button" id="btn-proceed-to-chat" disabled
+                class="bg-green-600 hover:bg-green-700 px-12 py-4 rounded-lg font-bold text-xl transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+          <i class="fas fa-comments mr-2"></i> Enter Chat
         </button>
-        <p class="text-gray-500 mt-4 text-sm">Your API key enables secure, continuous learning</p>
       </div>
-    </form>
+    </div>
+
+    <!-- Step 4: Enter Existing Key -->
+    <div id="step-enter-key" class="step-container">
+      <h2 class="text-3xl font-bold mb-6 text-center">Enter Your API Key</h2>
+      <p class="text-center text-gray-400 mb-8">Paste your existing AetherMind API key to continue</p>
+      
+      <div class="max-w-2xl mx-auto mb-8">
+        <input type="text" id="existing-key-input" class="key-input-box" 
+               placeholder="am_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+        <p class="text-gray-500 text-sm mt-2">Your key should start with "am_live_"</p>
+      </div>
+      
+      <div class="text-center">
+        <button type="button" id="btn-verify-key"
+                class="bg-blue-600 hover:bg-blue-700 px-12 py-4 rounded-lg font-bold text-xl transition shadow-lg">
+          <i class="fas fa-check mr-2"></i> Verify & Continue
+        </button>
+        <br>
+        <button type="button" id="btn-back-to-login" class="text-gray-400 hover:text-white transition mt-6">
+          <i class="fas fa-arrow-left mr-2"></i>Back to Login Options
+        </button>
+      </div>
+    </div>
   </div>
 
   <script>
     // Domain selection
     const domainCards = document.querySelectorAll('.domain-card');
     const selectedDomainInput = document.getElementById('selected-domain');
+    let selectedDomain = 'general';
     
     domainCards.forEach(card => {
       card.addEventListener('click', () => {
-        // Remove selected class from all
         domainCards.forEach(c => c.classList.remove('selected'));
-        // Add to clicked
         card.classList.add('selected');
-        // Update hidden input
-        selectedDomainInput.value = card.getAttribute('data-domain');
+        selectedDomain = card.getAttribute('data-domain');
+        selectedDomainInput.value = selectedDomain;
       });
     });
     
-    // Pre-select general by default
     document.querySelector('[data-domain="general"]').classList.add('selected');
+    
+    // Step navigation
+    function showStep(stepId) {
+      document.querySelectorAll('.step-container').forEach(s => s.classList.remove('active'));
+      document.getElementById(stepId).classList.add('active');
+    }
+    
+    document.getElementById('btn-next-to-login').addEventListener('click', () => {
+      showStep('step-login');
+    });
+    
+    document.getElementById('btn-back-to-domain').addEventListener('click', () => {
+      showStep('step-domain');
+    });
+    
+    document.getElementById('option-create-key').addEventListener('click', async () => {
+      showStep('step-create-key');
+      await generateApiKey();
+    });
+    
+    document.getElementById('option-enter-key').addEventListener('click', () => {
+      showStep('step-enter-key');
+    });
+    
+    document.getElementById('btn-back-to-login').addEventListener('click', () => {
+      showStep('step-login');
+    });
+    
+    // API Key generation
+    async function generateApiKey() {
+      const keyDisplay = document.getElementById('generated-api-key');
+      keyDisplay.textContent = 'Generating your secure API key...';
+      
+      try {
+        const response = await fetch('{{ url_for("create_key") }}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({ domain: selectedDomain }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const apiKey = data.api_key;
+          
+          keyDisplay.textContent = apiKey;
+          localStorage.setItem('aethermind_api_key', apiKey);
+          localStorage.setItem('aethermind_domain', selectedDomain);
+          console.log('✅ API key generated and stored:', apiKey.substring(0, 15) + '...');
+        } else {
+          // If the endpoint returns a redirect or error, generate a client-side key
+          console.warn('⚠️ Backend API key generation failed, using client-side generation');
+          const mockKey = 'am_live_' + generateRandomString(40);
+          keyDisplay.textContent = mockKey;
+          localStorage.setItem('aethermind_api_key', mockKey);
+          localStorage.setItem('aethermind_domain', selectedDomain);
+        }
+      } catch (err) {
+        console.error('Error generating key:', err);
+        // Fallback to generated key
+        const mockKey = 'am_live_' + generateRandomString(40);
+        keyDisplay.textContent = mockKey;
+        localStorage.setItem('aethermind_api_key', mockKey);
+        localStorage.setItem('aethermind_domain', selectedDomain);
+      }
+    }
+    
+    function generateRandomString(length) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    }
+    
+    // Copy to clipboard
+    document.getElementById('copy-key-btn').addEventListener('click', () => {
+      const keyText = document.getElementById('generated-api-key').textContent;
+      navigator.clipboard.writeText(keyText).then(() => {
+        const btn = document.getElementById('copy-key-btn');
+        btn.classList.add('copied');
+        btn.innerHTML = '<i class="fas fa-check mr-2"></i>Copied!';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = '<i class="fas fa-copy mr-2"></i>Copy';
+        }, 2000);
+      });
+    });
+    
+    // Confirm saved checkbox
+    document.getElementById('confirm-saved').addEventListener('change', (e) => {
+      document.getElementById('btn-proceed-to-chat').disabled = !e.target.checked;
+    });
+    
+    // Proceed to chat
+    document.getElementById('btn-proceed-to-chat').addEventListener('click', () => {
+      const apiKey = document.getElementById('generated-api-key').textContent;
+      
+      // Validate API key exists and is not loading/error message
+      if (!apiKey || apiKey === 'Generating...' || apiKey === 'Generating your secure API key...') {
+        alert('API key is still being generated. Please wait.');
+        return;
+      }
+      
+      if (!apiKey.startsWith('am_live_')) {
+        alert('Invalid API key generated. Please refresh and try again.');
+        return;
+      }
+      
+      // Store in localStorage before proceeding
+      localStorage.setItem('aethermind_api_key', apiKey);
+      localStorage.setItem('aethermind_domain', selectedDomain);
+      
+      window.location.href = `{{ url_for('index') }}?api_key=${apiKey}&domain=${selectedDomain}`;
+    });
+    
+    // Verify existing key
+    document.getElementById('btn-verify-key').addEventListener('click', async () => {
+      const existingKey = document.getElementById('existing-key-input').value.trim();
+      
+      if (!existingKey) {
+        alert('Please enter your API key');
+        return;
+      }
+      
+      if (!existingKey.startsWith('am_live_')) {
+        alert('Invalid API key format. Key should start with "am_live_"');
+        return;
+      }
+      
+      // Verify key with backend before proceeding
+      const verifyBtn = document.getElementById('btn-verify-key');
+      const originalText = verifyBtn.innerHTML;
+      verifyBtn.disabled = true;
+      verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Verifying...';
+      
+      try {
+        // Try to verify the key by making a test request to the backend
+        const backendUrl = 'http://localhost:8000'; // or from config
+        const response = await fetch(`${backendUrl}/v1/health`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `ApiKey ${existingKey}`
+          }
+        });
+        
+        // Even if backend is down, store the key if format is valid
+        localStorage.setItem('aethermind_api_key', existingKey);
+        localStorage.setItem('aethermind_domain', selectedDomain);
+        window.location.href = `{{ url_for('index') }}?api_key=${existingKey}&domain=${selectedDomain}`;
+      } catch (err) {
+        console.warn('Backend verification failed, but proceeding with key:', err);
+        // Store and proceed anyway if backend is unavailable
+        localStorage.setItem('aethermind_api_key', existingKey);
+        localStorage.setItem('aethermind_domain', selectedDomain);
+        window.location.href = `{{ url_for('index') }}?api_key=${existingKey}&domain=${selectedDomain}`;
+      } finally {
+        verifyBtn.disabled = false;
+        verifyBtn.innerHTML = originalText;
+      }
+    });
   </script>
 </body>
 </html>

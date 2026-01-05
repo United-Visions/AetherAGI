@@ -1,13 +1,22 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-import logging
-import os, httpx, uuid
+import os
 import sys
-from urllib.parse import quote_plus
-from cryptography.fernet import Fernet
+from dotenv import load_dotenv
+
+# CRITICAL: Load environment variables BEFORE any imports that depend on them
+# Load environment variables from parent directory's .env file
+dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+load_dotenv(dotenv_path)
 
 # Ensure we can import orchestrator
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from orchestrator.auth_manager import AuthManager
+
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+import logging
+import httpx
+import uuid
+from urllib.parse import quote_plus
+from cryptography.fernet import Fernet
+from orchestrator.auth_manager_supabase import AuthManagerSupabase, UserRole
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET", "dev-change-me")
@@ -15,7 +24,7 @@ app.secret_key = os.getenv("FLASK_SECRET", "dev-change-me")
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-auth_mgr = AuthManager()
+auth_mgr = AuthManagerSupabase()
 
 # --- GitHub OAuth ---
 GITHUB_CLIENT_ID     = os.getenv("GITHUB_CLIENT_ID")
@@ -132,9 +141,16 @@ def callback():
             return "Failed to fetch user", 400
 
         github_user = user_r.json()["login"]
+        github_url = user_r.json()["html_url"]
+        github_avatar = user_r.json().get("avatar_url")
+        github_email = user_r.json().get("email")
+        
         # encrypt & store token
         encrypted = cipher.encrypt(token.encode()).decode()
         session["github_user"] = github_user
+        session["github_url"] = github_url
+        session["github_avatar"] = github_avatar
+        session["github_email"] = github_email
         session["github_token"]  = encrypted          # stored only in session cookie
         return redirect(url_for("onboarding"))
     except Exception as e:
@@ -149,16 +165,53 @@ def onboarding():
 
 @app.route("/create_key", methods=["POST"])
 def create_key():
+    """
+    Generate a personal API key for authenticated user.
+    
+    Architecture:
+    - Backend service keys (PINECONE_API_KEY, RUNPOD_API_KEY) are in .env
+    - User personal keys (am_live_XXX) are generated here and hashed in keys.json
+    - Each user gets their own key with role-based permissions (FREE/PRO/ENTERPRISE)
+    """
     if "github_user" not in session:
-        return redirect(url_for("home"))
+        return jsonify({"error": "Not authenticated"}), 401
+    
     user_id = session["github_user"]
     
-    # Get domain selection from form
-    domain = request.form.get("domain", "general")
+    # Get domain and subscription tier from form or JSON
+    if request.is_json:
+        data = request.get_json()
+        domain = data.get("domain", "general")
+        tier = data.get("tier", "pro")  # Default to pro for now
+    else:
+        domain = request.form.get("domain", "general")
+        tier = request.form.get("tier", "pro")
+    
     session["user_domain"] = domain  # Store in session
     
-    # Generate API key
-    key = auth_mgr.generate_api_key(user_id)
+    # Always generate a unique API key for each user
+    # Keys are hashed and stored in Supabase with GitHub info
+    from orchestrator.auth_manager_supabase import UserRole
+    
+    # Get GitHub user info from session
+    github_username = user_id  # user_id is the GitHub username
+    github_url = session.get("github_url", f"https://github.com/{github_username}")
+    
+    # Map tier to role
+    role_mapping = {
+        "free": UserRole.FREE,
+        "pro": UserRole.PRO,
+        "enterprise": UserRole.ENTERPRISE
+    }
+    role = role_mapping.get(tier.lower(), UserRole.PRO)
+    
+    key = auth_mgr.generate_api_key(
+        user_id=user_id,
+        github_username=github_username,
+        github_url=github_url,
+        role=role
+    )
+    app.logger.info(f"Generated new API key for user {user_id} with role {role.value}")
     
     # Register domain preference with backend API (if available)
     try:
@@ -177,8 +230,16 @@ def create_key():
         app.logger.error(f"Could not reach backend to register domain: {e}")
         # Continue anyway - domain will default to general
     
-    # Pass key to chat page via query-param (client stores in localStorage)
-    return redirect(url_for("index", api_key=key, domain=domain))
+    # Return JSON if requested, otherwise redirect
+    if request.is_json or request.headers.get('Accept') == 'application/json':
+        return jsonify({
+            "api_key": key,
+            "domain": domain,
+            "user_id": user_id
+        })
+    else:
+        # Pass key to chat page via query-param (client stores in localStorage)
+        return redirect(url_for("index", api_key=key, domain=domain))
 
 # --- existing chat page ---
 @app.route("/chat")

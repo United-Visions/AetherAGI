@@ -178,21 +178,33 @@ class SessionManager:
         """
         Generate the domain-specific mega-prompt prefix for the Brain.
         This shapes how the Brain thinks and communicates.
+        Includes structured action-tag system.
         """
+        from brain.system_prompts import get_aether_system_prompt
+        
         profile = self.get_domain_profile(user_id)
         learning = self.user_learning_context.get(user_id, {})
+        
+        # Get structured action-tag prompt for this domain
+        domain = self.user_domains.get(user_id, "general")
+        structured_prompt = get_aether_system_prompt(domain, include_thinking=True)
         
         # Add learned context to the prompt
         learned_context = ""
         if learning.get("interaction_count", 0) > 0:
-            learned_context = f"\nYou've had {learning['interaction_count']} interactions with this user."
+            learned_context = f"\n\n## Your Learning Context\nYou've had {learning['interaction_count']} interactions with this user."
             
             if learning.get("common_topics"):
                 topics = ", ".join(learning["common_topics"][-5:])
                 learned_context += f"\nRecent topics: {topics}"
+            
+            if learning.get("tools_used"):
+                tools = ", ".join(set(learning.get("tools_used", [])))
+                learned_context += f"\nTools you've used: {tools}"
         
-        full_context = additional_context + learned_context
-        return profile.get_mega_prompt_prefix(full_context)
+        # Combine: Structured prompt + Domain-specific + Learned context
+        full_prompt = f"{structured_prompt}\n\n{profile.get_mega_prompt_prefix(additional_context)}{learned_context}"
+        return full_prompt
     
     def get_response_format_preferences(self, user_id: str) -> Dict:
         """Get domain-specific response formatting preferences"""

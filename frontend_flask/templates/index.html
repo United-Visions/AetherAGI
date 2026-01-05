@@ -11,6 +11,40 @@
 
     <!-- Modular CSS Imports handled via main.css -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    
+    <style>
+        /* Quick layout adjustment for new components */
+        .app-layout {
+            position: relative;
+        }
+        
+        #chat-wrapper {
+            margin-right: 0;
+            transition: margin-right 0.3s ease;
+        }
+        
+        #chat-wrapper.feed-open {
+            margin-right: 350px;
+        }
+        
+        /* Domain indicator styling */
+        .domain-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #10b981;
+            font-weight: 500;
+        }
+        
+        .domain-indicator i {
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
     <div class="app-layout">
@@ -20,6 +54,7 @@
                 <li class="repo-item empty-state">No repositories linked</li>
             </ul>
         </aside>
+        
         <div id="chat-wrapper">
             <header>
                 <div id="header-title" style="display: flex; align-items: center; justify-content: space-between;">
@@ -33,70 +68,88 @@
                             <i class="fas fa-book"></i>
                             <span>API Docs</span>
                         </a>
-                        <div style="font-size: 0.75em; color: #6b7280;">
-                            <i class="fas fa-brain" style="color: #10b981; margin-right: 5px;"></i>
-                            <span id="namespace-indicator">Universal Mode</span>
+                        <div class="domain-indicator" id="domain-indicator">
+                            <i class="fas fa-star"></i>
+                            <span id="domain-text">Multi-Domain Master</span>
                         </div>
                     </div>
                 </div>
             </header>
 
-        <main id="messages">
-            <!-- Messages injected by JS -->
-            <div class="message-row assistant">
-                <div style="display:flex; align-items:flex-start;">
-                    <div class="agent-avatar-icon"><i class="fas fa-robot"></i></div>
-                    <div class="assistant-text">
-                        <strong>Hello. I am AetherMind</strong>—a continuous learning AGI seeded with axioms in logic, physics, and meta-cognition.<br><br>
-                        I don't use prompt engineering or fine-tuning. I learn from every interaction and store it in infinite memory. The more we work together, the better I become at <em>your</em> specific tasks.<br><br>
-                        My architecture:<br>
-                        🧠 <strong>Brain</strong>: Logic & reasoning priors<br>
-                        🗄️ <strong>Mind</strong>: Infinite episodic memory<br>
-                        🎯 <strong>Orchestrator</strong>: Active inference loop<br>
-                        🤖 <strong>Body</strong>: Adaptive tools & interfaces<br><br>
-                        How can I assist you today?
+            <main id="messages">
+                <!-- Messages injected by JS -->
+                <div class="message-row assistant">
+                    <div style="display:flex; align-items:flex-start;">
+                        <div class="agent-avatar-icon"><i class="fas fa-robot"></i></div>
+                        <div class="assistant-text">
+                            <strong>Hello. I am AetherMind</strong>—a continuous learning AGI seeded with axioms in logic, physics, and meta-cognition.<br><br>
+                            I don't use prompt engineering or fine-tuning. I learn from every interaction and store it in infinite memory. The more we work together, the better I become at <em>your</em> specific tasks.<br><br>
+                            My architecture:<br>
+                            🧠 <strong>Brain</strong>: Logic & reasoning priors<br>
+                            🗄️ <strong>Mind</strong>: Infinite episodic memory<br>
+                            🎯 <strong>Orchestrator</strong>: Active inference loop<br>
+                            🤖 <strong>Body</strong>: Adaptive tools & interfaces<br><br>
+                            <span id="welcome-message">{{ welcome_message or 'How can I assist you today?' }}</span>
+                        </div>
                     </div>
                 </div>
+            </main>
+
+            <div id="visualizer-container">
+                <!-- Thinking Cards injected by JS -->
             </div>
-        </main>
 
-        <div id="visualizer-container">
-            <!-- Thinking Cards injected by JS -->
-        </div>
+            <div id="input-area-wrapper">
+                <div id="file-previews"></div>
 
-        <div id="input-area-wrapper">
-            <div id="file-previews"></div>
+                <form id="chat-form">
+                    <div class="input-actions">
+                        <button type="button" id="camera-btn" class="icon-btn" aria-label="Camera">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                        <button type="button" id="mic-btn" class="icon-btn" aria-label="Microphone">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        <button type="button" id="file-btn" class="icon-btn" aria-label="Attach File">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <input type="file" id="file-input" class="hidden" accept="image/*,video/*,audio/*,.pdf,.txt,.py" multiple style="display:none;"/>
+                    </div>
 
-            <form id="chat-form">
-                <div class="input-actions">
-                    <button type="button" id="camera-btn" class="icon-btn" aria-label="Camera">
-                        <i class="fas fa-camera"></i>
+                    <input
+                        id="chat-input"
+                        type="text"
+                        placeholder="Ask AetherMind anything..."
+                        autocomplete="off"
+                    />
+
+                    <button type="submit" id="send-btn" aria-label="Send">
+                        <i class="fas fa-paper-plane"></i>
                     </button>
-                    <button type="button" id="mic-btn" class="icon-btn" aria-label="Microphone">
-                        <i class="fas fa-microphone"></i>
-                    </button>
-                    <button type="button" id="file-btn" class="icon-btn" aria-label="Attach File">
-                        <i class="fas fa-paperclip"></i>
-                    </button>
-                    <input type="file" id="file-input" class="hidden" accept="image/*,video/*,audio/*,.pdf,.txt,.py" multiple style="display:none;"/>
-                </div>
-
-                <input
-                    id="chat-input"
-                    type="text"
-                    placeholder="Ask AetherMind anything..."
-                    autocomplete="off"
-                />
-
-                <button type="submit" id="send-btn" aria-label="Send">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
-            </form>
+                </form>
+            </div>
         </div>
-        </div>
+        
+        <!-- Activity Feed Container -->
+        <div id="activity-feed-container"></div>
+        
+        <!-- Split View Panel Container -->
+        <div id="split-view-container"></div>
+        
+        <!-- Brain Visualizer Container -->
+        <div id="brain-visualizer-container"></div>
+        
+        <!-- Toggle Buttons -->
+        <button class="activity-feed-toggle" id="activity-feed-toggle" title="Activity Stream">
+            <i class="fas fa-stream"></i>
+        </button>
+        
+        <button class="brain-visualizer-toggle" id="brain-visualizer-toggle" title="Agent Brain">
+            <i class="fas fa-brain"></i>
+        </button>
     </div>
 
     <!-- Modular JS -->
-    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/router.js') }}"></script>
 </body>
 </html>
