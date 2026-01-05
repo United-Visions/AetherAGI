@@ -50,11 +50,14 @@ class LogicEngine:
             logger.error(f"Failed to fetch JEPA embedding: {e}")
             return np.zeros(1024)
 
-    async def generate_thought(self, user_input: str, context_text: str, context_vec: list, emotion_vector: dict, predicted_flourishing: float) -> str:
+    async def generate_thought(self, user_input: str, context_text: str, context_vec: list, emotion_vector: dict, predicted_flourishing: float, domain_prompt: str = None) -> str:
         """
-        The Full DCLA Logic Cycle, now with full Heart integration.
+        The Full DCLA Logic Cycle, now with full Heart integration + Domain-Aware Reasoning.
+        
+        Args:
+            domain_prompt: Optional domain-specific mega-prompt that shapes reasoning style
         """
-        logger.info("Initiating Reasoning Cycle...")
+        logger.info("Initiating Domain-Aware Reasoning Cycle...")
 
         # 1. GROUNDING
         if settings.diff_retrieval and torch is not None:
@@ -66,6 +69,11 @@ class LogicEngine:
             contexts = ["[diff retrieved]"]  # placeholder for logging
 
         system_dna = self.priors.get_foundation_prompt()
+        
+        # Add domain-specific personality and behavior instructions
+        if domain_prompt:
+            logger.debug("Applying domain-specific reasoning framework")
+            system_dna = f"{domain_prompt}\n\n{system_dna}"
         
         emotional_prompt = (
             "EMOTIONAL_CONTEXT: "

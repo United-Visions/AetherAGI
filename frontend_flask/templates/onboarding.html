@@ -45,15 +45,17 @@
     <form action="{{ url_for('create_key') }}" method="post" id="onboarding-form">
       <!-- Step 1: Choose Domain -->
       <div class="mb-12">
-        <h2 class="text-3xl font-bold mb-6 text-center">What will you use AetherMind for?</h2>
-        <p class="text-center text-gray-400 mb-8">Choose your primary domain (you can add more later)</p>
+        <h2 class="text-3xl font-bold mb-6 text-center">Choose Your AetherMind Specialization</h2>
+        <p class="text-center text-gray-400 mb-2">This choice fundamentally shapes how I think, communicate, and assist you</p>
+        <p class="text-center text-yellow-400 mb-8 text-sm"><i class="fas fa-lightbulb mr-2"></i>Your agent will focus heavily on your selected domain</p>
         
         <div class="grid md:grid-cols-3 gap-6">
           <div class="domain-card" data-domain="code">
             <div class="text-center">
               <i class="fas fa-code text-5xl text-purple-400 mb-4"></i>
               <h3 class="text-xl font-bold mb-2">Software Development</h3>
-              <p class="text-gray-400 text-sm">Code generation, debugging, testing, architecture</p>
+              <p class="text-gray-400 text-sm mb-2">Code generation, debugging, testing, architecture</p>
+              <p class="text-green-300 text-xs font-semibold"><i class="fas fa-check-circle mr-1"></i>Production-ready code, technical depth, best practices</p>
             </div>
           </div>
           
@@ -61,7 +63,8 @@
             <div class="text-center">
               <i class="fas fa-microscope text-5xl text-yellow-400 mb-4"></i>
               <h3 class="text-xl font-bold mb-2">Research & Analysis</h3>
-              <p class="text-gray-400 text-sm">Papers, literature review, data analysis</p>
+              <p class="text-gray-400 text-sm mb-2">Papers, literature review, data analysis</p>
+              <p class="text-green-300 text-xs font-semibold"><i class="fas fa-check-circle mr-1"></i>Academic rigor, citations, methodological depth</p>
             </div>
           </div>
           
@@ -69,7 +72,8 @@
             <div class="text-center">
               <i class="fas fa-briefcase text-5xl text-blue-400 mb-4"></i>
               <h3 class="text-xl font-bold mb-2">Business & Strategy</h3>
-              <p class="text-gray-400 text-sm">Analysis, reports, presentations, planning</p>
+              <p class="text-gray-400 text-sm mb-2">Analysis, reports, presentations, planning</p>
+              <p class="text-green-300 text-xs font-semibold"><i class="fas fa-check-circle mr-1"></i>Strategic frameworks, executive communication, ROI focus</p>
             </div>
           </div>
           
@@ -77,7 +81,8 @@
             <div class="text-center">
               <i class="fas fa-balance-scale text-5xl text-blue-400 mb-4"></i>
               <h3 class="text-xl font-bold mb-2">Legal</h3>
-              <p class="text-gray-400 text-sm">Case research, contracts, legal writing</p>
+              <p class="text-gray-400 text-sm mb-2">Case research, contracts, legal writing</p>
+              <p class="text-green-300 text-xs font-semibold"><i class="fas fa-check-circle mr-1"></i>Precise language, case citations, statutory analysis</p>
             </div>
           </div>
           
@@ -85,15 +90,17 @@
             <div class="text-center">
               <i class="fas fa-chart-line text-5xl text-green-400 mb-4"></i>
               <h3 class="text-xl font-bold mb-2">Finance</h3>
-              <p class="text-gray-400 text-sm">Modeling, analysis, reports, forecasting</p>
+              <p class="text-gray-400 text-sm mb-2">Modeling, analysis, reports, forecasting</p>
+              <p class="text-green-300 text-xs font-semibold"><i class="fas fa-check-circle mr-1"></i>Quantitative models, risk analysis, financial metrics</p>
             </div>
           </div>
           
           <div class="domain-card" data-domain="general">
             <div class="text-center">
               <i class="fas fa-star text-5xl text-gray-400 mb-4"></i>
-              <h3 class="text-xl font-bold mb-2">General Purpose</h3>
-              <p class="text-gray-400 text-sm">I'll explore multiple domains</p>
+              <h3 class="text-xl font-bold mb-2">Multi-Domain Master</h3>
+              <p class="text-gray-400 text-sm mb-2">Full knowledge across all domains</p>
+              <p class="text-green-300 text-xs font-semibold"><i class="fas fa-check-circle mr-1"></i>Cross-disciplinary synthesis, adaptive communication</p>
             </div>
           </div>
         </div>
@@ -116,8 +123,8 @@
             <div class="text-3xl font-bold text-blue-400 mr-4">2</div>
             <div>
               <h3 class="font-bold mb-1">Memory Namespace Created</h3>
-              <p class="text-gray-400">Your personal namespace <code class="bg-gray-900 px-2 py-1 rounded text-sm">user_{{ github_user }}_knowledge</code> is created for infinite episodic memory</p>
-            </div>
+              <p class="text-gray-400">YoDomain-Focused Adaptation</h3>
+              <p class="text-gray-400">Your AGI's communication style, knowledge priorities, and actions are tailored to your domain. <strong class="text-green-400">It thinks like a specialist in your field.</strong>
           </div>
           <div class="flex items-start">
             <div class="text-3xl font-bold text-purple-400 mr-4">3</div>

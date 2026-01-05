@@ -79,3 +79,26 @@ This document outlines the phased approach to integrating a YOLO (You Only Look 
     1.  **Connect to `automotive.py`:** The `AutomotiveAdapter` will now be able to query the `VisionAdapter` to get real-time descriptions of the road ahead.
     2.  **Context for the Brain:** The descriptive text from the `VisionAdapter` will be fed into the `brain/logic_engine.py` as part of its context, allowing it to make informed driving decisions.
     3.  **Connect to `smart_home.py`:** The `SmartHomeAdapter` could use the `VisionAdapter` to monitor security cameras, identify residents, or check if a garage door is open.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+now is our github integration, #file:toolforge_adapter.py works in a sandbox we can do eveything in the i need to know this when the agent is creating or making changes or doing any activity we want an activity bar stripe above the chat showing a animated croll tabs where it can run ruliple tasks inperall similar to google jules showing the statuses of the completion failed success indicatiors when clicked it show the curent envirenment so shows the files its changed ,creating, created actively in a file tree and if it has a way to view the app if running then we most definilty would like to view it as a lovable type look and feel only if possible not mandatory at all showing the stripp tasks and task views showing what was done etc the view diffs thats all that really matter creating issue,  tasks that the agent is doing 

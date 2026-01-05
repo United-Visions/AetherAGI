@@ -128,24 +128,59 @@ def create_key():
         return redirect(url_for("home"))
     user_id = session["github_user"]
     
-    # Get domain selection from form (optional)
+    # Get domain selection from form
     domain = request.form.get("domain", "general")
-    session["user_domain"] = domain  # Store for later use
+    session["user_domain"] = domain  # Store in session
     
-    key = auth_mgr.generate_api_key(user_id)   # persistent key
-    # pass key to chat page via query-param (client stores in localStorage)
-    return redirect(url_for("index", api_key=key))
+    # Generate API key
+    key = auth_mgr.generate_api_key(user_id)
+    
+    # Register domain preference with backend API (if available)
+    try:
+        backend_url = os.getenv("BACKEND_API_URL", "http://localhost:8000")
+        response = httpx.post(
+            f"{backend_url}/v1/user/domain",
+            json={"user_id": user_id, "domain": domain},
+            headers={"Authorization": f"ApiKey {key}"},
+            timeout=5.0
+        )
+        if response.status_code == 200:
+            app.logger.info(f"Domain {domain} registered for user {user_id}")
+        else:
+            app.logger.warning(f"Failed to register domain: {response.text}")
+    except Exception as e:
+        app.logger.error(f"Could not reach backend to register domain: {e}")
+        # Continue anyway - domain will default to general
+    
+    # Pass key to chat page via query-param (client stores in localStorage)
+    return redirect(url_for("index", api_key=key, domain=domain))
 
 # --- existing chat page ---
 @app.route("/chat")
 def index():
     # if api_key in query string, preload it into the page
     api_key = request.args.get("api_key", "")
-    resp = render_template("index.html")
-    # inject a tiny script that puts the key into localStorage
+    domain = request.args.get("domain", session.get("user_domain", "general"))
+    
+    # Domain-specific welcome messages
+    domain_messages = {
+        "code": "Ready to build. I'm your Software Development Specialist.",
+        "research": "Ready to analyze. I'm your Research & Analysis Specialist.",
+        "business": "Ready to strategize. I'm your Business & Strategy Specialist.",
+        "legal": "Ready to research. I'm your Legal Research Specialist.",
+        "finance": "Ready to model. I'm your Finance & Investment Specialist.",
+        "general": "Ready to assist. I'm your Multi-Domain Master."
+    }
+    
+    welcome_msg = domain_messages.get(domain, domain_messages["general"])
+    
+    resp = render_template("index.html", domain=domain, welcome_message=welcome_msg)
+    
+    # inject a tiny script that puts the key and domain into localStorage
     if api_key:
         resp = resp.replace("</head>",
-           f'<script>localStorage.setItem("aethermind_api_key","{api_key}");</script></head>')
+           f'<script>localStorage.setItem("aethermind_api_key","{api_key}");'
+           f'localStorage.setItem("aethermind_domain","{domain}");</script></head>')
     return resp
 
 if __name__ == '__main__':

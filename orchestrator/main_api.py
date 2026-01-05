@@ -28,6 +28,7 @@ from brain.jepa_aligner import JEPAAligner
 from curiosity.surprise_detector import SurpriseDetector
 from curiosity.research_scheduler import ResearchScheduler
 from orchestrator.agent_state_machine import AgentStateMachine
+from orchestrator.session_manager import SessionManager
 from config.settings import settings
 import asyncio
 
@@ -64,13 +65,14 @@ BRAIN = LogicEngine(runpod_key=os.getenv("RUNPOD_API_KEY"), endpoint_id=os.geten
 ROUTER = Router()
 HEART = Heart(pinecone_key=os.getenv("PINECONE_API_KEY")) # Initialize the new Heart
 AUTH = AuthManager()
+SESSION_MANAGER = SessionManager()  # Domain-aware session management
 
 # Initialize Sensory & Curiosity Components
 JEPA = JEPAAligner()
 SURPRISE_DETECTOR = SurpriseDetector(jepa=JEPA, store=STORE)
 
-# AETHER now takes SURPRISE_DETECTOR
-AETHER = ActiveInferenceLoop(BRAIN, MEMORY, STORE, ROUTER, HEART, surprise_detector=SURPRISE_DETECTOR)
+# AETHER now takes SURPRISE_DETECTOR + SESSION_MANAGER
+AETHER = ActiveInferenceLoop(BRAIN, MEMORY, STORE, ROUTER, HEART, surprise_detector=SURPRISE_DETECTOR, session_manager=SESSION_MANAGER)
 RESEARCH_SCHEDULER = ResearchScheduler(redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"))
 
 # --- HTTP Client for External Services ---
@@ -114,10 +116,10 @@ class ChatCompletionRequest(BaseModel):
 
 # --- Middleware-like Auth ---
 async def get_user_id(api_key: str = Security(api_key_header)):
-    user_id = AUTH.verify_key(api_key)
-    if not user_id:
+    user_data = AUTH.verify_api_key(api_key)
+    if not user_data:
         raise HTTPException(status_code=403, detail="Invalid or missing Aether-Secret-Key")
-    return user_id
+    return user_data["user_id"]
 
 # --- Endpoints ---
 
@@ -263,6 +265,101 @@ class SDKKnowledgeCartridgeRequest(BaseModel):
     documents: list[str]
     metadata: Optional[dict] = None
 
+class UserDomainRequest(BaseModel):
+    user_id: str
+    domain: str  # code, research, business, legal, finance, general
+    metadata: Optional[dict] = None
+
+
+# ============================================================================
+# USER DOMAIN CONFIGURATION ENDPOINT
+# ============================================================================
+
+@app.post("/v1/user/domain")
+async def set_user_domain(
+    request: UserDomainRequest,
+    authorization: str = Header(None)
+):
+    """
+    Set user's domain specialization.
+    This is called during onboarding to configure the agent's behavior.
+    
+    Available domains:
+    - code: Software Development Specialist
+    - research: Research & Analysis Specialist
+    - business: Business & Strategy Specialist
+    - legal: Legal Research Specialist
+    - finance: Finance & Investment Specialist
+    - general: Multi-Domain Master
+    """
+    # Verify API key
+    if not authorization or not authorization.startswith("ApiKey "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    
+    api_key = authorization.replace("ApiKey ", "").replace("Bearer ", "")
+    auth_user_id = AUTH.verify_key(api_key)
+    
+    if not auth_user_id:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    # Verify user_id matches or is admin
+    if auth_user_id != request.user_id:
+        raise HTTPException(status_code=403, detail="Cannot set domain for another user")
+    
+    # Validate domain
+    valid_domains = ["code", "research", "business", "legal", "finance", "general"]
+    if request.domain not in valid_domains:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid domain. Must be one of: {', '.join(valid_domains)}"
+        )
+    
+    # Set domain in session manager
+    SESSION_MANAGER.set_user_domain(request.user_id, request.domain)
+    
+    # Get profile info to return
+    profile = SESSION_MANAGER.get_user_profile(request.user_id)
+    
+    logger.info(f"Domain set for user {request.user_id}: {profile['domain_display_name']}")
+    
+    return {
+        "status": "success",
+        "user_id": request.user_id,
+        "domain": request.domain,
+        "domain_display_name": profile["domain_display_name"],
+        "message": f"AetherMind configured as {profile['domain_display_name']}"
+    }
+
+
+@app.get("/v1/user/domain")
+async def get_user_domain(authorization: str = Header(None)):
+    """
+    Get user's current domain configuration
+    """
+    # Verify API key
+    if not authorization or not authorization.startswith("ApiKey "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    
+    api_key = authorization.replace("ApiKey ", "").replace("Bearer ", "")
+    user_id = AUTH.verify_key(api_key)
+    
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    profile = SESSION_MANAGER.get_user_profile(user_id)
+    
+    return {
+        "user_id": user_id,
+        "domain": profile["domain"],
+        "domain_display_name": profile["domain_display_name"],
+        "interaction_count": profile["interaction_count"],
+        "learning_context": profile["learning_context"]
+    }
+
+
+# ============================================================================
+# SDK ENDPOINTS - For developers using AetherMind SDK
+# ============================================================================
 
 @app.post("/v1/chat")
 async def sdk_chat(
@@ -282,6 +379,12 @@ async def sdk_chat(
     user_id = AUTH.verify_key(api_key)
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    # Get user's domain profile for personalized behavior
+    user_profile = SESSION_MANAGER.get_user_profile(user_id)
+    domain_profile = user_profile["domain_profile"]
+    
+    logger.info(f"Chat request from user {user_id} with domain: {domain_profile.display_name}")
     
     # Check rate limits
     usage = AUTH.get_usage(api_key)
