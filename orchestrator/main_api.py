@@ -116,10 +116,10 @@ class ChatCompletionRequest(BaseModel):
 
 # --- Middleware-like Auth ---
 async def get_user_id(api_key: str = Security(api_key_header)):
-    user_id = AUTH.verify_key(api_key)
-    if not user_id:
+    user_data = AUTH.verify_api_key(api_key)
+    if not user_data:
         raise HTTPException(status_code=403, detail="Invalid or missing Aether-Secret-Key")
-    return user_id
+    return user_data["user_id"]
 
 # --- Endpoints ---
 
