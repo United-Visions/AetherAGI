@@ -20,7 +20,26 @@ auth_mgr = AuthManager()
 # --- GitHub OAuth ---
 GITHUB_CLIENT_ID     = os.getenv("GITHUB_CLIENT_ID")
 GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
-GITHUB_REDIRECT_URI  = os.getenv("GITHUB_REDIRECT_URI", "http://127.0.0.1:5000/callback")
+
+# Dynamically select redirect URI based on environment
+# Check if running on localhost/development vs production
+def is_development():
+    """Detect if running in development environment"""
+    # Check for common development indicators
+    return (
+        os.getenv("FLASK_ENV") == "development" or
+        os.getenv("FLASK_DEBUG") == "1" or
+        app.debug or
+        "127.0.0.1" in request.host if request else True
+    )
+
+# Select appropriate redirect URI
+GITHUB_REDIRECT_URI_PROD = os.getenv("GITHUB_REDIRECT_URI", "https://aethermind-frontend.onrender.com/callback")
+GITHUB_REDIRECT_URI_DEV  = os.getenv("GITHUB_REDIRECT_URI_DEV", "http://127.0.0.1:5000/callback")
+
+# This will be set dynamically per request
+GITHUB_REDIRECT_URI = GITHUB_REDIRECT_URI_DEV  # Default for initialization
+
 FERNET_KEY           = os.getenv("FERNET_KEY")
 if not FERNET_KEY:
     FERNET_KEY = Fernet.generate_key()
@@ -76,9 +95,15 @@ def domain_research():
 
 @app.route("/github_login")
 def github_login():
+    # Dynamically select redirect URI based on request host
+    is_local = "127.0.0.1" in request.host or "localhost" in request.host
+    redirect_uri = GITHUB_REDIRECT_URI_DEV if is_local else GITHUB_REDIRECT_URI_PROD
+    
+    app.logger.info(f"GitHub OAuth: Using redirect URI: {redirect_uri} (local={is_local})")
+    
     scope = "read:user repo invite"   # repo scope needed for ToolForge
     url = (f"https://github.com/login/oauth/authorize"
-           f"?client_id={GITHUB_CLIENT_ID}&redirect_uri={quote_plus(GITHUB_REDIRECT_URI)}"
+           f"?client_id={GITHUB_CLIENT_ID}&redirect_uri={quote_plus(redirect_uri)}"
            f"&scope={quote_plus(scope)}")
     return redirect(url)
 
