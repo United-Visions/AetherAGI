@@ -1,0 +1,492 @@
+"""
+AetherMind Adaptive Benchmark Runner
+
+Main CLI for running benchmarks with test-time learning.
+
+Usage:
+    # Run a single benchmark
+    python -m benchmarks.runner --benchmark gsm8k --rounds 3
+    
+    # Run with Aether API instead of direct LLM
+    python -m benchmarks.runner --benchmark gsm8k --mode api --api-key YOUR_KEY
+    
+    # Run all benchmarks
+    python -m benchmarks.runner --benchmark all --rounds 1
+    
+    # Show leaderboard
+    python -m benchmarks.runner --leaderboard
+    
+    # Show progress for a benchmark
+    python -m benchmarks.runner --progress gsm8k
+"""
+import argparse
+import asyncio
+import json
+import sys
+from pathlib import Path
+from typing import Dict, List, Optional, Type
+from datetime import datetime, timezone
+
+from .config import BenchmarkConfig, AVAILABLE_BENCHMARKS, get_benchmark
+from .base import BaseBenchmark, Question, Answer, RoundResult
+from .aether_client import AetherBenchmarkClient, PlainLLMClient
+from .score_tracker import ScoreTracker, LeaderboardTracker
+from .mistake_analyzer import MistakeAnalyzer
+from .question_generator import QuestionGenerator, AdaptiveDifficultyGenerator
+from .implementations import GSM8KBenchmark, MMLUBenchmark, HumanEvalBenchmark
+
+
+# Registry mapping benchmark names to implementation classes
+BENCHMARK_IMPLEMENTATIONS: Dict[str, Type[BaseBenchmark]] = {
+    "gsm8k": GSM8KBenchmark,
+    "mmlu": MMLUBenchmark,
+    "humaneval": HumanEvalBenchmark,
+    # Add more as implemented
+}
+
+
+class BenchmarkRunner:
+    """
+    Main runner for adaptive benchmarks.
+    
+    Implements the 3-round adaptive testing loop:
+    1. Round 1: Original benchmark questions
+    2. Round 2: LLM-generated new questions targeting weak areas
+    3. Round 3: Hardest variants focusing on persistent mistakes
+    
+    After each round:
+    - Scores are saved to disk
+    - Mistakes are analyzed
+    - Learnings are stored in memory for future rounds
+    """
+    
+    def __init__(
+        self,
+        mode: str = "litellm",
+        api_base: str = "http://localhost:8000",
+        api_key: Optional[str] = None,
+        results_dir: Optional[Path] = None,
+        verbose: bool = True,
+    ):
+        self.verbose = verbose
+        
+        # Initialize Aether client
+        self.aether = AetherBenchmarkClient(
+            mode=mode,
+            api_base=api_base,
+            api_key=api_key,
+        )
+        
+        # Initialize components
+        self.score_tracker = ScoreTracker(results_dir)
+        self.leaderboard = LeaderboardTracker(self.score_tracker)
+        self.mistake_analyzer = MistakeAnalyzer()
+        self.question_generator = QuestionGenerator()
+        self.adaptive_generator = AdaptiveDifficultyGenerator(self.question_generator)
+    
+    async def run_benchmark(
+        self,
+        benchmark_name: str,
+        num_rounds: int = 3,
+        questions_per_round: int = 20,
+        use_all: bool = False,
+        split: str = "test",
+    ) -> Dict:
+        """
+        Run a complete adaptive benchmark session.
+        
+        SCORING INTEGRITY:
+        - Round 1: OFFICIAL SCORE - Uses real benchmark questions, no memory help
+        - Rounds 2+: PRACTICE - Uses LLM-generated questions for learning
+        
+        The static LLM (not Aether) generates practice questions. Aether is
+        ONLY the test-taker, never the question maker.
+        
+        Args:
+            benchmark_name: Name of benchmark to run (e.g., "gsm8k")
+            num_rounds: Number of adaptive rounds (default 3)
+            questions_per_round: Questions per round
+            use_all: If True, use ALL available questions from the dataset
+            split: Dataset split to use ("train", "test", or "all")
+            
+        Returns:
+            Dict with all results and analysis
+        """
+        # Get benchmark implementation
+        benchmark = self._get_benchmark_instance(benchmark_name)
+        config = benchmark.config
+        
+        # Determine actual question count
+        if use_all:
+            display_count = "ALL"
+        else:
+            display_count = str(questions_per_round)
+        
+        self._log(f"\n{'='*60}")
+        self._log(f"🚀 Starting {config.name} Benchmark")
+        self._log(f"   Dataset split: {split}")
+        self._log(f"   Round 1: OFFICIAL TEST (real benchmark questions)")
+        if num_rounds > 1:
+            self._log(f"   Rounds 2-{num_rounds}: PRACTICE (LLM-generated questions)")
+        self._log(f"   Questions/round: {display_count}")
+        self._log(f"{'='*60}\n")
+        
+        all_results = []
+        current_difficulty = "medium"
+        
+        for round_num in range(1, num_rounds + 1):
+            if round_num == 1:
+                self._log(f"\n📝 Round {round_num}/{num_rounds} [OFFICIAL TEST]")
+            else:
+                self._log(f"\n📝 Round {round_num}/{num_rounds} [PRACTICE - generated by static LLM]")
+            self._log("-" * 40)
+            
+            # Get questions for this round
+            if round_num == 1:
+                # Round 1: Original benchmark questions (OFFICIAL SCORE)
+                # NO memory assistance - this is the fair test
+                # Support new load_questions signature for benchmarks that have it
+                if hasattr(benchmark, 'load_questions'):
+                    import inspect
+                    sig = inspect.signature(benchmark.load_questions)
+                    if 'use_all' in sig.parameters:
+                        questions = benchmark.load_questions(
+                            num_samples=questions_per_round,
+                            use_all=use_all,
+                            split=split
+                        )
+                    else:
+                        questions = benchmark.load_questions(questions_per_round)
+                else:
+                    questions = benchmark.load_questions(questions_per_round)
+            else:
+                # Rounds 2+: Generate NEW questions using a STATIC LLM (not Aether)
+                # These are practice questions targeting weak areas
+                prev_result = all_results[-1]
+                questions, current_difficulty = await self.adaptive_generator.generate_next_round(
+                    config=config,
+                    previous_score=prev_result.score,
+                    previous_mistakes=prev_result.mistakes,
+                    current_difficulty=current_difficulty,
+                    num_questions=questions_per_round,
+                )
+                
+                # If generation failed, fall back to original questions
+                if not questions:
+                    self._log("⚠️  Question generation failed, using original questions")
+                    questions = benchmark.load_questions(questions_per_round)
+            
+            # Run questions through Aether
+            result = await self._run_round(benchmark, questions, round_num)
+            
+            # Mark whether this is official or practice
+            result.metadata["is_official"] = (round_num == 1)
+            result.metadata["round_type"] = "official" if round_num == 1 else "practice"
+            
+            all_results.append(result)
+            
+            # Save results
+            self.score_tracker.save_round(result)
+            
+            # Only update leaderboard with OFFICIAL (Round 1) scores
+            if round_num == 1:
+                self.leaderboard.update(benchmark_name, result.score, round_num)
+            
+            # Analyze mistakes (patterns only, not Q&A content)
+            analysis = self.mistake_analyzer.analyze_mistakes(
+                result.mistakes,
+                benchmark_type=config.benchmark_type.value,
+            )
+            
+            # Log results
+            round_label = "[OFFICIAL]" if round_num == 1 else "[PRACTICE]"
+            self._log(f"\n📊 Round {round_num} Results {round_label}:")
+            self._log(f"   Score: {result.score * 100:.1f}% ({result.total_correct}/{result.total_questions})")
+            self._log(f"   Difficulty: {current_difficulty}")
+            
+            if result.mistakes:
+                self._log(f"   Mistakes: {len(result.mistakes)}")
+                weak_areas = analysis.get("weak_areas", [])[:3]
+                if weak_areas:
+                    self._log(f"   Weak areas: {', '.join(weak_areas)}")
+        
+        # Generate final report
+        summary = self._generate_summary(benchmark_name, all_results)
+        
+        self._log(f"\n{'='*60}")
+        self._log(f"✅ {config.name} Benchmark Complete!")
+        self._log(f"{'='*60}")
+        self._log(f"\n📋 OFFICIAL SCORE (Round 1): {all_results[0].score * 100:.1f}%")
+        if len(all_results) > 1:
+            self._log(f"📈 Practice improvement: {(all_results[-1].score - all_results[0].score) * 100:+.1f}%")
+        
+        return summary
+    
+    async def _run_round(
+        self,
+        benchmark: BaseBenchmark,
+        questions: List[Question],
+        round_number: int,
+    ) -> RoundResult:
+        """Run a single round of questions."""
+        answers = []
+        
+        for i, question in enumerate(questions):
+            # Format question for Aether
+            formatted_q = benchmark.format_question_for_aether(question)
+            
+            # Get Aether's response
+            result = await self.aether.ask(
+                question=formatted_q,
+                answer_format=benchmark.config.answer_format,
+            )
+            
+            # Check answer
+            is_correct, extracted = benchmark.check_answer(question, result["response"])
+            
+            answer = Answer(
+                question_id=question.id,
+                raw_response=result["raw_response"],
+                extracted_answer=extracted,
+                is_correct=is_correct,
+                latency_ms=result["latency_ms"],
+                tokens_used=result["tokens_used"],
+            )
+            answers.append(answer)
+            
+            # Progress indicator
+            status = "✓" if is_correct else "✗"
+            self._log(f"   [{i+1}/{len(questions)}] {status}", end="\r")
+        
+        print()  # New line after progress
+        
+        # Score the round
+        result = benchmark.score_round(questions, answers)
+        result.round_number = round_number
+        
+        return result
+    
+    def _get_benchmark_instance(self, name: str) -> BaseBenchmark:
+        """Get benchmark implementation instance."""
+        name_lower = name.lower().replace("-", "_")
+        
+        if name_lower not in BENCHMARK_IMPLEMENTATIONS:
+            # Check if config exists but no implementation
+            if name_lower in AVAILABLE_BENCHMARKS:
+                raise NotImplementedError(
+                    f"Benchmark '{name}' is registered but not yet implemented. "
+                    f"Implemented benchmarks: {list(BENCHMARK_IMPLEMENTATIONS.keys())}"
+                )
+            raise ValueError(f"Unknown benchmark: {name}")
+        
+        return BENCHMARK_IMPLEMENTATIONS[name_lower]()
+    
+    def _generate_summary(self, benchmark_name: str, results: List[RoundResult]) -> Dict:
+        """Generate a summary of the benchmark run."""
+        official_score = results[0].score  # Round 1 is always official
+        practice_scores = [r.score for r in results[1:]] if len(results) > 1 else []
+        
+        return {
+            "benchmark": benchmark_name,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "num_rounds": len(results),
+            # OFFICIAL SCORE - the only one that counts for leaderboards
+            "official_score": official_score,
+            "official_correct": results[0].total_correct,
+            "official_total": results[0].total_questions,
+            # Practice rounds (LLM-generated questions)
+            "practice_scores": practice_scores,
+            "practice_improvement": practice_scores[-1] - official_score if practice_scores else 0,
+            # Full breakdown
+            "rounds": [r.to_dict() for r in results],
+            "score_history": [r.score for r in results],
+            "total_questions_all_rounds": sum(r.total_questions for r in results),
+            "total_correct_all_rounds": sum(r.total_correct for r in results),
+        }
+    
+    def _log(self, msg: str, end: str = "\n"):
+        """Log message if verbose mode."""
+        if self.verbose:
+            print(msg, end=end, flush=True)
+    
+    def show_leaderboard(self):
+        """Print the leaderboard."""
+        print(self.leaderboard.print_leaderboard())
+    
+    def show_progress(self, benchmark_name: str):
+        """Print progress report for a benchmark."""
+        print(self.score_tracker.get_progress_report(benchmark_name))
+
+
+def main():
+    """CLI entry point."""
+    parser = argparse.ArgumentParser(
+        description="AetherMind Adaptive Benchmark System",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Run GSM8K with 5 questions per round (quick test)
+  python -m benchmarks.runner --benchmark gsm8k --rounds 1 --questions 5
+  
+  # Run ALL 1,319 GSM8K test questions (official benchmark)
+  python -m benchmarks.runner --benchmark gsm8k --rounds 1 --full
+  
+  # Run ALL 8,792 GSM8K questions (train + test)
+  python -m benchmarks.runner --benchmark gsm8k --rounds 1 --full --split all
+  
+  # Run with specific question count
+  python -m benchmarks.runner --benchmark gsm8k --questions 100
+  
+  # Show available benchmarks
+  python -m benchmarks.runner --list
+  
+  # Show leaderboard
+  python -m benchmarks.runner --leaderboard
+
+Dataset Sizes (from HuggingFace):
+  GSM8K:  train=7,473  test=1,319  total=8,792
+        """
+    )
+    
+    parser.add_argument(
+        "--benchmark", "-b",
+        type=str,
+        help="Benchmark to run (e.g., gsm8k, mmlu, humaneval, or 'all')",
+    )
+    
+    parser.add_argument(
+        "--rounds", "-r",
+        type=int,
+        default=3,
+        help="Number of adaptive rounds (default: 3)",
+    )
+    
+    parser.add_argument(
+        "--questions", "-q",
+        type=int,
+        default=20,
+        help="Questions per round (default: 20)",
+    )
+    
+    parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Run ALL available questions from the dataset (e.g., all 8,792 GSM8K questions)",
+    )
+    
+    parser.add_argument(
+        "--split",
+        type=str,
+        choices=["train", "test", "all"],
+        default="test",
+        help="Dataset split to use: train, test, or all (default: test for official benchmarking)",
+    )
+    
+    parser.add_argument(
+        "--mode", "-m",
+        type=str,
+        choices=["litellm", "api"],
+        default="litellm",
+        help="How to call Aether: litellm (direct) or api (HTTP)",
+    )
+    
+    parser.add_argument(
+        "--api-key",
+        type=str,
+        help="Aether API key (for api mode)",
+    )
+    
+    parser.add_argument(
+        "--api-base",
+        type=str,
+        default="http://localhost:8000",
+        help="Aether API base URL (for api mode)",
+    )
+    
+    parser.add_argument(
+        "--leaderboard", "-l",
+        action="store_true",
+        help="Show the leaderboard",
+    )
+    
+    parser.add_argument(
+        "--progress", "-p",
+        type=str,
+        help="Show progress for a specific benchmark",
+    )
+    
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="List all available benchmarks",
+    )
+    
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Suppress progress output",
+    )
+    
+    args = parser.parse_args()
+    
+    # Handle informational commands
+    if args.list:
+        print("\n📚 Available Benchmarks:")
+        print("-" * 50)
+        for name, config in AVAILABLE_BENCHMARKS.items():
+            implemented = "✓" if name in BENCHMARK_IMPLEMENTATIONS else "○"
+            print(f"  {implemented} {name:<20} {config.description[:40]}...")
+        print("\n✓ = Implemented, ○ = Config only")
+        return
+    
+    # Initialize runner
+    runner = BenchmarkRunner(
+        mode=args.mode,
+        api_base=args.api_base,
+        api_key=args.api_key,
+        verbose=not args.quiet,
+    )
+    
+    if args.leaderboard:
+        runner.show_leaderboard()
+        return
+    
+    if args.progress:
+        runner.show_progress(args.progress)
+        return
+    
+    if not args.benchmark:
+        parser.print_help()
+        return
+    
+    # Run benchmark(s)
+    if args.benchmark.lower() == "all":
+        benchmarks = list(BENCHMARK_IMPLEMENTATIONS.keys())
+    else:
+        benchmarks = [args.benchmark]
+    
+    for benchmark in benchmarks:
+        try:
+            results = asyncio.run(runner.run_benchmark(
+                benchmark_name=benchmark,
+                num_rounds=args.rounds,
+                questions_per_round=args.questions,
+                use_all=args.full,
+                split=args.split,
+            ))
+            
+            # Save final results
+            results_path = Path(__file__).parent / "results" / f"{benchmark}_final.json"
+            with open(results_path, "w") as f:
+                json.dump(results, f, indent=2)
+            print(f"\n📁 Results saved to: {results_path}")
+            
+        except NotImplementedError as e:
+            print(f"⚠️  {e}")
+        except Exception as e:
+            print(f"❌ Error running {benchmark}: {e}")
+            raise
+
+
+if __name__ == "__main__":
+    main()

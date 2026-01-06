@@ -1,0 +1,13 @@
+# AetherMind Benchmark Dependencies
+# These are optional - the system will fall back to built-in samples if not available
+
+# Core dependencies (likely already installed)
+litellm>=1.0.0
+httpx>=0.24.0
+
+# Optional: For loading official benchmark datasets
+datasets>=2.0.0
+huggingface-hub>=0.20.0
+
+# Optional: For MMLU-Pro and other advanced benchmarks
+# These may require additional authentication

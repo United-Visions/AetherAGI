@@ -13,7 +13,7 @@ import litellm
 from perception.transcriber import Transcriber
 
 class Eye:
-    def __init__(self, vision_model: str = "gemini/gemini-2.5-pro"):
+    def __init__(self, vision_model: str = "gemini/gemini-3-flash"):
         """
         Initializes the Eye with a Vision-Language Model (VLM) via LiteLLM
         and the Transcriber for audio.

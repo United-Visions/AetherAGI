@@ -1,6 +1,6 @@
 """
 Path: brain/logic_engine.py
-Target Model: gemini/gemini-2.5-pro (via LiteLLM)
+Target Model: gemini/gemini-3-flash (via LiteLLM)
 Role: The Cognitive Core. Manages Inference, JEPA alignment, and ethical safety.
 """
 
@@ -24,6 +24,7 @@ except ImportError:
 class LogicEngine:
     def __init__(self, pinecone_key: str, model_name: str = "gemini/gemini-2.5-pro"):
         # Configuration for LiteLLM
+        # Targeting Google's latest 2.5 Pro models
         self.model_name = model_name
         
         # Integration with Pinecone for JEPA Embeddings
@@ -123,8 +124,9 @@ class LogicEngine:
                 model=self.model_name,
                 messages=messages,
                 temperature=0.35,
-                max_tokens=4096,  # Increased for Gemini 2.5 Pro thinking tokens
-                fallbacks=["gemini/gemini-1.5-pro", "openai/gpt-4o"] # Fallback options
+                max_tokens=4096,  # Increased for thinking tokens
+                fallbacks=["gemini/gemini-2.5-flash", "gemini/gemini-1.5-pro"],
+                num_retries=3
             )
             
             # Extract response with null safety

@@ -1,0 +1,12 @@
+<frozen runpy>:128: RuntimeWarning: 'benchmarks.runner' found in sys.modules after import of package 'benchmarks', but prior to execution of 'benchmarks.runner'; this may result in unpredictable behaviour
+<frozen runpy>:128: RuntimeWarning: 'benchmarks.runner' found in sys.modules after import of package 'benchmarks', but prior to execution of 'benchmarks.runner'; this may result in unpredictable behaviour
+usage: runner.py [-h] [--benchmark BENCHMARK] [--rounds ROUNDS]
+                 [--questions QUESTIONS] [--mode {litellm,api}]
+                 [--api-key API_KEY] [--api-base API_BASE] [--leaderboard]
+                 [--progress PROGRESS] [--list] [--quiet]
+usage: runner.py [-h] [--benchmark BENCHMARK] [--rounds ROUNDS]
+                 [--questions QUESTIONS] [--mode {litellm,api}]
+                 [--api-key API_KEY] [--api-base API_BASE] [--leaderboard]
+                 [--progress PROGRESS] [--list] [--quiet]
+runner.py: error: unrecognized arguments: -E GEMINI|GOOGLE .env
+runner.py: error: unrecognized arguments: -E GEMINI|GOOGLE .env
