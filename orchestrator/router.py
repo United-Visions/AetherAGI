@@ -24,7 +24,10 @@ class Router:
             self.adapters["practice"] = PracticeAdapter()
         if settings.toolforge_adapter:
             self.adapters["toolforge"] = ToolForgeAdapter()
-        logger.info("Router initialized with ChatAdapter + ToolForge.")
+        
+        # Dynamic logging based on loaded adapters
+        adapter_names = ", ".join(self.adapters.keys())
+        logger.info(f"Router initialized with adapters: {adapter_names}")
 
     def forward_intent(self, intent: str, adapter_type: str = "chat"):
         """

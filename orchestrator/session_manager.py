@@ -20,6 +20,25 @@ class SessionManager:
         self.user_learning_context = {}  # user_id -> learned preferences
         logger.info("SessionManager initialized with domain-aware capabilities")
 
+    def get_session(self, user_id: str) -> Dict:
+        """
+        Get or create a session for a user.
+        Session stores temporary state like execution results for feedback loops.
+        
+        Args:
+            user_id: User identifier
+            
+        Returns:
+            Session dictionary with user state
+        """
+        if user_id not in self.user_sessions:
+            self.user_sessions[user_id] = {
+                "last_execution_results": [],
+                "conversation_turns": 0,
+                "session_start": None
+            }
+        return self.user_sessions[user_id]
+
     def get_user_persona(self, user_id: str) -> Dict:
         """
         Returns the personality settings for a user.

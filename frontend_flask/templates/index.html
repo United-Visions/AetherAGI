@@ -47,12 +47,119 @@
     </style>
 </head>
 <body>
+    <!-- Sidebar Toggle Button -->
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle Sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <!-- Sidebar Overlay -->
+    <div id="sidebar-overlay"></div>
+    
     <div class="app-layout">
+        <!-- Dynamic Sidebar -->
         <aside id="sidebar">
-            <h3>Repositories <button class="add-repo-btn" title="Add Repository">+</button></h3>
-            <ul class="repo-list">
-                <li class="repo-item empty-state">No repositories linked</li>
-            </ul>
+            <!-- Sidebar Header -->
+            <div class="sidebar-header">
+                <button class="sidebar-back-btn" id="sidebar-back-btn" aria-label="Back">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="sidebar-header-title">
+                    <i class="fas fa-cube" id="sidebar-icon"></i>
+                    <span id="sidebar-title">Menu</span>
+                </div>
+                <button class="sidebar-close-btn" id="sidebar-close-btn" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Sidebar Content -->
+            <div class="sidebar-content">
+                <!-- Main Menu View -->
+                <div id="view-main" class="sidebar-view active">
+                    <div class="sidebar-menu-item" data-view="repos">
+                        <i class="fab fa-github"></i>
+                        <div class="sidebar-menu-item-text">
+                            <span class="sidebar-menu-item-label">Repositories</span>
+                            <span class="sidebar-menu-item-desc">Connect GitHub repos</span>
+                        </div>
+                        <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
+                    </div>
+                    
+                    <div class="sidebar-menu-item" data-view="tools">
+                        <i class="fas fa-tools"></i>
+                        <div class="sidebar-menu-item-text">
+                            <span class="sidebar-menu-item-label">Tools</span>
+                            <span class="sidebar-menu-item-desc">MCP & PyPI tools</span>
+                        </div>
+                        <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
+                    </div>
+                    
+                    <div class="sidebar-menu-item" data-view="goals">
+                        <i class="fas fa-bullseye"></i>
+                        <div class="sidebar-menu-item-text">
+                            <span class="sidebar-menu-item-label">Autonomous Goals</span>
+                            <span class="sidebar-menu-item-desc">Background tasks</span>
+                        </div>
+                        <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
+                    </div>
+                </div>
+                
+                <!-- Repositories View -->
+                <div id="view-repos" class="sidebar-view">
+                    <ul class="repo-list" id="repo-list">
+                        <li class="repo-item empty-state">
+                            <i class="fas fa-inbox"></i>
+                            No repositories connected
+                        </li>
+                    </ul>
+                    <button class="sidebar-add-btn" id="add-repo-btn">
+                        <i class="fas fa-plus"></i>
+                        Connect Repository
+                    </button>
+                </div>
+                
+                <!-- Tools View -->
+                <div id="view-tools" class="sidebar-view">
+                    <div class="sidebar-search">
+                        <input type="text" id="tools-search" placeholder="Search tools...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    
+                    <div class="tools-section">
+                        <h4 class="tools-section-title">Core Tools</h4>
+                        <div id="core-tools-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                    
+                    <div class="tools-section">
+                        <h4 class="tools-section-title">My Tools</h4>
+                        <div id="user-tools-list">
+                            <div class="tool-item empty-state" style="border: 1px dashed var(--border-color); cursor: default;">
+                                <i class="fas fa-cube" style="color: var(--text-muted);"></i>
+                                <div class="tool-item-info">
+                                    <div class="tool-item-desc">No custom tools created yet</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Goals View -->
+                <div id="view-goals" class="sidebar-view">
+                    <div class="sidebar-search">
+                        <input type="text" id="goals-search" placeholder="Search goals...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div id="goals-list">
+                        <!-- Populated by JS -->
+                    </div>
+                    <button class="sidebar-add-btn" id="create-goal-btn">
+                        <i class="fas fa-plus"></i>
+                        Create Goal
+                    </button>
+                </div>
+            </div>
         </aside>
         
         <div id="chat-wrapper">
@@ -151,5 +258,6 @@
 
     <!-- Modular JS -->
     <script type="module" src="{{ url_for('static', filename='js/router.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/components/DynamicSidebar.js') }}"></script>
 </body>
 </html>

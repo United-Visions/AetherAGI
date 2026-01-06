@@ -33,6 +33,9 @@ from curiosity.surprise_detector import SurpriseDetector
 from curiosity.research_scheduler import ResearchScheduler
 from orchestrator.agent_state_machine import AgentStateMachine
 from orchestrator.session_manager import SessionManager
+from orchestrator.background_worker import BackgroundWorker, set_background_worker
+from orchestrator.action_parser import ActionParser
+from perception.eye import Eye
 from config.settings import settings
 import asyncio
 
@@ -63,11 +66,15 @@ api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 # Initialize Core Components
 STORE = AetherVectorStore(api_key=os.getenv("PINECONE_API_KEY"))
 MEMORY = EpisodicMemory(STORE)
-BRAIN = LogicEngine(runpod_key=os.getenv("RUNPOD_API_KEY"), endpoint_id=os.getenv("RUNPOD_ENDPOINT_ID"), pinecone_key=os.getenv("PINECONE_API_KEY"))
+BRAIN = LogicEngine(pinecone_key=os.getenv("PINECONE_API_KEY"))
 ROUTER = Router()
 HEART = Heart(pinecone_key=os.getenv("PINECONE_API_KEY")) # Initialize the new Heart
 AUTH = AuthManagerSupabase()
 SESSION_MANAGER = SessionManager()  # Domain-aware session management
+EYE = Eye() # Initialize Perception Eye directly
+
+# Initialize Action Parser
+ACTION_PARSER = ActionParser(ROUTER, STORE, MEMORY)
 
 # Initialize Sensory & Curiosity Components
 JEPA = JEPAAligner()
@@ -77,18 +84,30 @@ SURPRISE_DETECTOR = SurpriseDetector(jepa=JEPA, store=STORE)
 AETHER = ActiveInferenceLoop(BRAIN, MEMORY, STORE, ROUTER, HEART, surprise_detector=SURPRISE_DETECTOR, session_manager=SESSION_MANAGER)
 RESEARCH_SCHEDULER = ResearchScheduler(redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"))
 
-# --- HTTP Client for External Services ---
-# It's best practice to initialize one client and reuse it.
-perception_service_url = os.getenv("PERCEPTION_ENDPOINT_URL")
-if not perception_service_url:
-    print("WARNING: PERCEPTION_ENDPOINT_URL environment variable not set. Multimodal features will fail.")
+# Initialize Background Worker for autonomous task completion
+BACKGROUND_WORKER = BackgroundWorker(
+    brain=BRAIN,
+    heart=HEART,
+    store=STORE,
+    memory=MEMORY,
+    action_parser=ACTION_PARSER,
+    router=ROUTER,
+    poll_interval=30  # Poll every 30 seconds
+)
+set_background_worker(BACKGROUND_WORKER)
 
+# --- HTTP Client for External Services ---
 http_client = httpx.AsyncClient(timeout=60.0) # 60 second timeout for model processing
 
 # --- Startup ---
 
 @app.on_event("startup")
 async def startup_event():
+    """Initialize background worker and other services on startup."""
+    # Start background worker in separate task
+    asyncio.create_task(BACKGROUND_WORKER.start())
+    logger.info("🚀 Background worker started for autonomous task completion")
+    
     if settings.features.agent_state_machine:
         # Mock MetaController until fully implemented
         class MockMetaController:
@@ -123,6 +142,23 @@ async def get_user_id(api_key: str = Security(api_key_header)):
         raise HTTPException(status_code=403, detail="Invalid or missing Aether-Secret-Key")
     return user_data["user_id"]
 
+
+async def verify_api_key(api_key: str = Security(api_key_header)) -> dict:
+    """
+    Verify API key and return full user data dict.
+    
+    Returns:
+        dict with user_id, role, permissions, etc.
+    
+    Raises:
+        HTTPException 403 if key is invalid or missing
+    """
+    user_data = AUTH.verify_api_key(api_key)
+    if not user_data:
+        raise HTTPException(status_code=403, detail="Invalid or missing Aether-Secret-Key")
+    return user_data
+
+
 # --- Endpoints ---
 
 @app.post("/v1/admin/forge_tool")
@@ -140,56 +176,46 @@ async def ingest_multimodal(
 ):
     """
     New endpoint to handle multimodal file uploads.
-    This now forwards the request to the external Perception Service.
+    Uses the internal Eye module (LiteLLM/Gemini) directly.
     """
-    if not perception_service_url:
-        raise HTTPException(status_code=500, detail="Perception Service is not configured on the backend.")
-
-    contents = await file.read()
-    
     try:
-        # Forward the file to the Perception Service
-        files = {'file': (file.filename, contents, file.content_type)}
-        response = await http_client.post(f"{perception_service_url}/v1/ingest", files=files)
+        logger.info(f"Multimodal ingest started: filename={file.filename}, content_type={file.content_type}, user_id={user_id}")
         
-        # Handle non-200 responses from the perception service
-        response.raise_for_status()
+        contents = await file.read()
+        logger.info(f"File read successfully: size={len(contents)} bytes")
         
-        perception_data = response.json()
-        text_representation = perception_data.get("text_representation", "")
+        # Use the internal Eye module directly
+        text_representation = await EYE.ingest(contents, file.content_type)
+        logger.info(f"Eye ingest completed: {text_representation[:100]}...")
+        
+        # 2. Generate an embedding for the text representation
+        embedding_vector = np.random.rand(1024).astype(np.float32)
 
-    except httpx.RequestError as e:
-        # Handles network errors, timeouts, etc.
-        raise HTTPException(status_code=503, detail=f"Perception Service is unavailable or timed out: {e}")
-    except httpx.HTTPStatusError as e:
-        # Handles 4xx or 5xx errors from the perception service
-        detail = f"Perception Service returned an error: {e.response.text}"
-        if e.response.status_code == 500: # General model error
-             detail = "The perception model encountered an internal error."
-        raise HTTPException(status_code=e.response.status_code, detail=detail)
+        # 3. Score for surprise
+        surprise_score = await SURPRISE_DETECTOR.score(embedding_vector)
 
-    # 2. Generate an embedding for the text representation
-    embedding_vector = np.random.rand(1024).astype(np.float32)
+        # 4. If surprising, schedule research
+        if surprise_score > SURPRISE_DETECTOR.novelty_threshold:
+            # Generate research questions (a real implementation would call the Brain)
+            questions = [f"What is this? {text_representation[:100]}", f"Tell me more about {text_representation[:100]}"]
+            for q in questions:
+                job = {
+                    "query": q,
+                    "surprise": surprise_score,
+                    "tools": ["browser"],
+                    "deadline": (datetime.utcnow() + timedelta(hours=24)).isoformat(),
+                    "user_id": user_id
+                }
+                await RESEARCH_SCHEDULER.push(job)
 
-    # 3. Score for surprise
-    surprise_score = await SURPRISE_DETECTOR.score(embedding_vector)
-
-    # 4. If surprising, schedule research
-    if surprise_score > SURPRISE_DETECTOR.novelty_threshold:
-        # Generate research questions (a real implementation would call the Brain)
-        questions = [f"What is this? {text_representation[:100]}", f"Tell me more about {text_representation[:100]}"]
-        for q in questions:
-            job = {
-                "query": q,
-                "surprise": surprise_score,
-                "tools": ["browser"],
-                "deadline": (datetime.utcnow() + timedelta(hours=24)).isoformat(),
-                "user_id": user_id
-            }
-            await RESEARCH_SCHEDULER.push(job)
-
-    # 5. Return the initial analysis to the user
-    return {"status": "ingested", "analysis": text_representation, "surprise": surprise_score}
+        # 5. Return the initial analysis to the user
+        return {"status": "ingested", "analysis": text_representation, "surprise": surprise_score}
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
+    except Exception as e:
+        logger.error(f"Multimodal ingestion failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 
 @app.post("/v1/chat/completions")
@@ -668,3 +694,327 @@ async def create_key(user_id: str, admin_secret: str):
     if admin_secret != os.getenv("ADMIN_SECRET"):
         raise HTTPException(status_code=401)
     return {"api_key": AUTH.generate_api_key(user_id)}
+
+
+# ==========================================
+# AUTONOMOUS GOAL MANAGEMENT ENDPOINTS
+# ==========================================
+
+class CreateGoalRequest(BaseModel):
+    """Request model for creating autonomous goals."""
+    description: str
+    priority: int = 5  # 1-10
+    metadata: Optional[dict] = None
+
+
+class GoalStatusResponse(BaseModel):
+    """Response model for goal status."""
+    goal_id: str
+    status: str
+    description: str
+    progress: dict
+    subtasks: list
+    created_at: str
+    updated_at: str
+
+
+@app.post("/v1/goals/create")
+async def create_autonomous_goal(
+    request: CreateGoalRequest,
+    user_data: dict = Depends(verify_api_key)
+):
+    """
+    Create a new autonomous goal that will be completed in the background.
+    
+    The goal will:
+    - Be automatically decomposed into subtasks
+    - Execute independently without user interaction
+    - Continue working even if browser is closed
+    - Resume after server restarts
+    - Self-heal from errors and retry failed steps
+    
+    Example:
+        POST /v1/goals/create
+        {
+            "description": "Create a Flask todo app with SQLite database",
+            "priority": 8,
+            "metadata": {"domain": "code", "complexity": "medium"}
+        }
+    """
+    try:
+        user_id = user_data["user_id"]
+        
+        # Submit goal to background worker
+        goal_id = await BACKGROUND_WORKER.submit_goal(
+            user_id=user_id,
+            description=request.description,
+            priority=request.priority,
+            metadata=request.metadata or {}
+        )
+        
+        logger.info(f"Goal created: {goal_id} for user {user_id}")
+        
+        return {
+            "goal_id": goal_id,
+            "status": "pending",
+            "message": "Goal submitted. It will be processed autonomously in the background.",
+            "check_status_url": f"/v1/goals/{goal_id}/status"
+        }
+    
+    except Exception as e:
+        logger.error(f"Failed to create goal: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/v1/goals/{goal_id}/status")
+async def get_goal_status(
+    goal_id: str,
+    user_data: dict = Depends(verify_api_key)
+):
+    """
+    Get the current status of an autonomous goal.
+    
+    Returns:
+    - Current status (pending, in_progress, completed, failed)
+    - Progress percentage
+    - List of subtasks with their statuses
+    - Any error messages
+    """
+    try:
+        user_id = user_data["user_id"]
+        
+        # Get goal from tracker
+        goal = await BACKGROUND_WORKER.goal_tracker.get_goal(goal_id)
+        
+        # Verify user owns this goal
+        if goal.user_id != user_id:
+            raise HTTPException(status_code=403, detail="Not authorized to view this goal")
+        
+        progress = goal.get_progress()
+        
+        return {
+            "goal_id": goal.goal_id,
+            "status": goal.status.value,
+            "description": goal.description,
+            "progress": progress,
+            "subtasks": [
+                {
+                    "subtask_id": st.subtask_id,
+                    "description": st.description,
+                    "status": st.status.value,
+                    "attempt_count": st.attempt_count,
+                    "error_message": st.error_message,
+                    "execution_result": st.execution_result
+                }
+                for st in goal.subtasks
+            ],
+            "created_at": goal.created_at,
+            "updated_at": goal.updated_at
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get goal status: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/v1/goals/list")
+async def list_user_goals(
+    user_data: dict = Depends(verify_api_key),
+    status_filter: Optional[str] = None
+):
+    """
+    List all goals for the authenticated user.
+    
+    Query params:
+    - status_filter: Optional filter by status (pending, in_progress, completed, failed)
+    """
+    try:
+        user_id = user_data["user_id"]
+        
+        # Get all user goals
+        all_goals = await BACKGROUND_WORKER.goal_tracker.get_pending_goals(user_id)
+        
+        # Filter by status if requested
+        if status_filter:
+            all_goals = [g for g in all_goals if g.status.value == status_filter]
+        
+        return {
+            "goals": [
+                {
+                    "goal_id": goal.goal_id,
+                    "description": goal.description,
+                    "status": goal.status.value,
+                    "priority": goal.priority,
+                    "progress": goal.get_progress(),
+                    "created_at": goal.created_at,
+                    "updated_at": goal.updated_at
+                }
+                for goal in all_goals
+            ],
+            "total": len(all_goals)
+        }
+    
+    except Exception as e:
+        logger.error(f"Failed to list goals: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# User Repos API Endpoints
+# ============================================================================
+
+@app.get("/api/user/repos")
+async def get_user_repos(user_data: dict = Depends(verify_api_key)):
+    """
+    Get list of GitHub repositories the user has connected to AetherMind.
+    Returns repos from user metadata in Supabase.
+    """
+    try:
+        user_id = user_data["user_id"]
+        
+        # Get user profile from Supabase
+        response = AUTH_MANAGER.supabase.table("users").select("metadata").eq("user_id", user_id).execute()
+        
+        if not response.data:
+            return {"repos": []}
+        
+        user_metadata = response.data[0].get("metadata", {})
+        connected_repos = user_metadata.get("connected_repos", [])
+        
+        return {"repos": connected_repos}
+    
+    except Exception as e:
+        logger.error(f"Failed to fetch user repos: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/user/repos/connect")
+async def connect_repo(
+    repo_data: dict,
+    user_data: dict = Depends(verify_api_key)
+):
+    """
+    Connect a GitHub repository to user's account.
+    
+    Body:
+    {
+        "name": "repo-name",
+        "full_name": "owner/repo-name",
+        "description": "Repo description",
+        "private": false,
+        "html_url": "https://github.com/owner/repo"
+    }
+    """
+    try:
+        user_id = user_data["user_id"]
+        
+        # Get current repos
+        response = AUTH_MANAGER.supabase.table("users").select("metadata").eq("user_id", user_id).execute()
+        
+        user_metadata = response.data[0].get("metadata", {}) if response.data else {}
+        connected_repos = user_metadata.get("connected_repos", [])
+        
+        # Check if already connected
+        if any(r["full_name"] == repo_data["full_name"] for r in connected_repos):
+            return {"message": "Repository already connected", "repos": connected_repos}
+        
+        # Add new repo
+        new_repo = {
+            "name": repo_data["name"],
+            "full_name": repo_data["full_name"],
+            "description": repo_data.get("description", ""),
+            "private": repo_data.get("private", False),
+            "html_url": repo_data.get("html_url", f"https://github.com/{repo_data['full_name']}"),
+            "connected_at": datetime.utcnow().isoformat()
+        }
+        connected_repos.append(new_repo)
+        
+        # Update user metadata
+        user_metadata["connected_repos"] = connected_repos
+        AUTH_MANAGER.supabase.table("users").update({"metadata": user_metadata}).eq("user_id", user_id).execute()
+        
+        logger.info(f"Connected repo {repo_data['full_name']} for user {user_id}")
+        
+        return {
+            "message": "Repository connected successfully",
+            "repo": new_repo,
+            "repos": connected_repos
+        }
+    
+    except Exception as e:
+        logger.error(f"Failed to connect repo: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/user/repos/{repo_full_name}")
+async def disconnect_repo(
+    repo_full_name: str,
+    user_data: dict = Depends(verify_api_key)
+):
+    """
+    Disconnect a GitHub repository from user's account.
+    repo_full_name should be URL-encoded (e.g., owner%2Frepo)
+    """
+    try:
+        user_id = user_data["user_id"]
+        
+        # Decode the repo full name
+        from urllib.parse import unquote
+        repo_full_name = unquote(repo_full_name)
+        
+        # Get current repos
+        response = AUTH_MANAGER.supabase.table("users").select("metadata").eq("user_id", user_id).execute()
+        
+        user_metadata = response.data[0].get("metadata", {}) if response.data else {}
+        connected_repos = user_metadata.get("connected_repos", [])
+        
+        # Remove repo
+        connected_repos = [r for r in connected_repos if r["full_name"] != repo_full_name]
+        user_metadata["connected_repos"] = connected_repos
+        
+        # Update user metadata
+        AUTH_MANAGER.supabase.table("users").update({"metadata": user_metadata}).eq("user_id", user_id).execute()
+        
+        logger.info(f"Disconnected repo {repo_full_name} for user {user_id}")
+        
+        return {
+            "message": "Repository disconnected successfully",
+            "repos": connected_repos
+        }
+    
+    except Exception as e:
+        logger.error(f"Failed to disconnect repo: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# GitHub OAuth Endpoints (Stub Implementation)
+# ============================================================================
+
+@app.get("/auth/github")
+async def github_oauth_redirect():
+    """
+    Initiate GitHub OAuth flow.
+    TODO: Implement full OAuth flow with GitHub App credentials.
+    """
+    # For now, return a message that OAuth needs to be configured
+    # In production, this would redirect to:
+    # https://github.com/login/oauth/authorize?client_id={GITHUB_CLIENT_ID}&scope=repo,user
+    
+    return {
+        "message": "GitHub OAuth not yet configured",
+        "instructions": "To enable GitHub integration, create a GitHub OAuth App and add GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET to your .env file",
+        "redirect_url": "https://github.com/settings/developers"
+    }
+
+
+@app.get("/auth/github/callback")
+async def github_oauth_callback(code: str):
+    """
+    Handle GitHub OAuth callback.
+    TODO: Exchange code for access token and fetch user repos.
+    """
+    return {
+        "message": "GitHub OAuth callback - not yet implemented",
+        "code": code
+    }

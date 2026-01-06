@@ -1,52 +1,54 @@
 """
 Path: perception/eye.py
-Role: Unified ingestion of video, images, PDFs, and audio.
+Role: Unified ingestion of video, images, PDFs, and audio using LiteLLM (Google Gemini) and Whisper.
 """
 import av
 import io
+import base64
 from PIL import Image
-from transformers import BlipProcessor, BlipForConditionalGeneration
 from pdfminer.high_level import extract_text
 from loguru import logger
-import pytesseract
+import litellm
 
 from perception.transcriber import Transcriber
 
 class Eye:
-    def __init__(self, vlm_model_name: str = "Salesforce/blip-image-captioning-large"):
+    def __init__(self, vision_model: str = "gemini/gemini-2.5-pro"):
         """
-        Initializes the Eye with a Vision-Language Model (VLM) for image captioning/OCR
+        Initializes the Eye with a Vision-Language Model (VLM) via LiteLLM
         and the Transcriber for audio.
         """
-        logger.info(f"Loading Vision-Language Model: {vlm_model_name}")
+        self.vision_model = vision_model
+        logger.info(f"Eye initialized with Vision Model: {vision_model}")
+        
+        # Initialize Transcriber (uses local Whisper or API)
+        self.transcriber = Transcriber(model_name="whisper-1")
+
+    async def _analyze_image(self, image: Image.Image, prompt: str = "Describe this image in detail. Transcribe any text visible.") -> str:
+        """Helper to analyze a single PIL image using LiteLLM."""
         try:
-            self.vlm_processor = BlipProcessor.from_pretrained(vlm_model_name)
-            self.vlm_model = BlipForConditionalGeneration.from_pretrained(vlm_model_name)
-            logger.success("VLM loaded successfully.")
-        except Exception as e:
-            logger.error(f"Failed to load VLM: {e}")
-            self.vlm_processor = None
-            self.vlm_model = None
+            # Convert PIL Image to base64
+            buffered = io.BytesIO()
+            image.save(buffered, format="PNG")
+            img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
             
-        self.transcriber = Transcriber(model_name="base")
-
-    def _caption_image(self, image: Image.Image) -> str:
-        """Helper to caption a single PIL image."""
-        if not self.vlm_model or not self.vlm_processor:
-            return ""
-        inputs = self.vlm_processor(images=image, return_tensors="pt")
-        outputs = self.vlm_model.generate(**inputs, max_length=50)
-        caption = self.vlm_processor.decode(outputs[0], skip_special_tokens=True)
-        return caption.strip()
-
-    def _ocr_image(self, image: Image.Image) -> str:
-        """Helper to perform OCR on a single PIL image."""
-        try:
-            text = pytesseract.image_to_string(image)
-            return text.strip()
+            response = await litellm.acompletion(
+                model=self.vision_model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_str}"}}
+                        ]
+                    }
+                ],
+                max_tokens=2048  # Increased for detailed visual analysis
+            )
+            return response.choices[0].message.content.strip()
         except Exception as e:
-            logger.error(f"Pytesseract OCR failed: {e}")
-            return ""
+            logger.error(f"Vision analysis failed: {e}")
+            return "[Error analyzing image]"
 
     async def ingest(self, file_bytes: bytes, mime_type: str) -> str:
         """
@@ -57,30 +59,41 @@ class Eye:
         try:
             if mime_type.startswith("image"):
                 image = Image.open(io.BytesIO(file_bytes))
-                caption = self._caption_image(image)
-                ocr_text = self._ocr_image(image)
-                return f"[Image: {caption} || OCR text: {ocr_text}]"
+                analysis = await self._analyze_image(image)
+                return f"[Image Analysis: {analysis}]"
             
             elif mime_type.startswith("audio"):
-                transcript = self.transcriber.transcribe_audio_from_bytes(file_bytes)
+                transcript = await self.transcriber.transcribe_audio_from_bytes(file_bytes)
                 return f"[Audio Transcript: {transcript}]"
 
             elif mime_type.startswith("video"):
                 captions = []
                 container = av.open(io.BytesIO(file_bytes))
-                audio_stream = container.streams.audio[0]
                 
-                # Extract and transcribe audio
-                audio_frames = b''.join(p.to_bytes() for p in container.decode(audio_stream))
-                transcript = self.transcriber.transcribe_audio_from_bytes(audio_frames)
+                # 1. Extract and transcribe audio
+                try:
+                    audio_stream = container.streams.audio[0]
+                    audio_frames = b''.join(p.to_bytes() for p in container.decode(audio_stream))
+                    transcript = await self.transcriber.transcribe_audio_from_bytes(audio_frames)
+                except Exception as e:
+                    logger.warning(f"Could not extract audio from video: {e}")
+                    transcript = "[No audio track]"
 
-                # Sample frames for captioning
+                # 2. Sample frames for visual analysis (e.g., 1 frame every 2 seconds)
+                # For efficiency with API costs, we'll take fewer frames than local
+                frames = []
                 for i, frame in enumerate(container.decode(video=0)):
-                    if i % 24 == 0: # Roughly one frame per second
-                        captions.append(self._caption_image(frame.to_image()))
+                    if i % 48 == 0: # Approx every 2 seconds (assuming 24fps)
+                        frames.append(frame.to_image())
                 
-                summary = '; '.join(filter(None, captions))
-                return f"[Video Summary: {summary} || Audio: {transcript}]"
+                # Analyze key frames (limit to 5 to save tokens/latency)
+                selected_frames = frames[:5] 
+                for i, frame in enumerate(selected_frames):
+                    caption = await self._analyze_image(frame, prompt=f"Describe this frame from a video (Frame {i+1}).")
+                    captions.append(f"Frame {i+1}: {caption}")
+                
+                summary = '\n'.join(captions)
+                return f"[Video Analysis]\nVisuals:\n{summary}\n\nAudio:\n{transcript}"
 
             elif mime_type == "application/pdf":
                 text = extract_text(io.BytesIO(file_bytes))
@@ -92,5 +105,6 @@ class Eye:
                 
         except Exception as e:
             logger.error(f"Eye ingestion failed for {mime_type}: {e}")
-            return ""
+            return f"Error processing file: {str(e)}"
+
 

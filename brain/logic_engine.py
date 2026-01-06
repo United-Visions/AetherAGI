@@ -1,10 +1,10 @@
 """
 Path: brain/logic_engine.py
-Target Model: llama-3.2-3b-instruct
-Role: The Cognitive Core. Manages GPU inference, JEPA alignment, and ethical safety.
+Target Model: gemini/gemini-2.5-pro (via LiteLLM)
+Role: The Cognitive Core. Manages Inference, JEPA alignment, and ethical safety.
 """
 
-import httpx
+import litellm
 import numpy as np
 from pinecone import Pinecone
 from .safety_inhibitor import SafetyInhibitor
@@ -22,14 +22,9 @@ except ImportError:
     logger.warning("torch not available - differentiable retrieval disabled")
 
 class LogicEngine:
-    def __init__(self, runpod_key: str, endpoint_id: str, pinecone_key: str):
-        # Configuration for RunPod vLLM
-        self.endpoint_id = endpoint_id
-        self.url = f"https://api.runpod.ai/v2/{endpoint_id}/openai/v1/chat/completions"
-        self.headers = {
-            "Authorization": f"Bearer {runpod_key}",
-            "Content-Type": "application/json"
-        }
+    def __init__(self, pinecone_key: str, model_name: str = "gemini/gemini-2.5-pro"):
+        # Configuration for LiteLLM
+        self.model_name = model_name
         
         # Integration with Pinecone for JEPA Embeddings
         self.pc = Pinecone(api_key=pinecone_key)
@@ -40,8 +35,9 @@ class LogicEngine:
         self.priors = CoreKnowledgePriors()
         self.jepa = JEPAAligner(dimension=1024, energy_threshold=0.45)
         
-        # Async Client for production throughput
-        self.client = httpx.AsyncClient(timeout=120.0)
+        # LiteLLM handles its own client sessions, so no need for explicit httpx client here
+        # unless we want to configure specific timeouts globally for litellm
+        litellm.request_timeout = 120.0
 
     async def _get_thought_vector(self, text: str) -> np.ndarray:
         """Fetches NVIDIA-hosted embedding for JEPA verification."""
@@ -99,7 +95,7 @@ class LogicEngine:
             "Acknowledge sensitive topics and proceed with care if the score is low."
         )
 
-        # 2b. IMAGINE – roll out candidate plans if horizon > 1
+        # 2b. IMAGINE – roll oucandidate plans if horizon > 1
         if settings.imagination and context_vec and "plan" in user_input:
             im = ImaginationEngine(self.jepa, horizon=settings.imagination_horizon)
             candidates = [["plan_step_1", "plan_step_2"], ["alt_plan_A", "alt_plan_B"]]
@@ -114,22 +110,40 @@ class LogicEngine:
             context_vec, _ = store(context_vec_torch)  # now differentiable
             contexts = ["[diff retrieved]"]  # keep log simple
 
-        payload = {
-            "model": "meta-llama/llama-3.2-3b-instruct",
-            "messages": [
-                {"role": "system", "content": f"{system_dna}\n{emotional_prompt}\n{moral_prompt}"},
-                {"role": "user", "content": f"KNOWLEDGE_CONTEXT:\n{context_text}\n\nUSER_INPUT: {user_input}"}
-            ],
-            "temperature": 0.35, # Slightly increased for more expressive range
-            "max_tokens": 500
-        }
+        messages = [
+            {"role": "system", "content": f"{system_dna}\n{emotional_prompt}\n{moral_prompt}"},
+            {"role": "user", "content": f"KNOWLEDGE_CONTEXT:\n{context_text}\n\nUSER_INPUT: {user_input}"}
+        ]
 
         try:
-            # 2. INFERENCE
-            logger.info(f"Targeting RunPod Endpoint: {self.url}")
-            response = await self.client.post(self.url, json=payload, headers=self.headers)
-            response.raise_for_status()
-            raw_output = response.json()['choices'][0]['message']['content']
+            # 2. INFERENCE via LiteLLM
+            logger.info(f"Targeting Model: {self.model_name}")
+            
+            response = await litellm.acompletion(
+                model=self.model_name,
+                messages=messages,
+                temperature=0.35,
+                max_tokens=4096,  # Increased for Gemini 2.5 Pro thinking tokens
+                fallbacks=["gemini/gemini-1.5-pro", "openai/gpt-4o"] # Fallback options
+            )
+            
+            # Extract response with null safety
+            if not response or not response.choices or not response.choices[0].message:
+                logger.error("LLM API returned empty or malformed response")
+                logger.debug(f"Response object: {response}")
+                return "ERROR: Brain received no response from the language model. Please try again."
+            
+            raw_output = response.choices[0].message.content
+            
+            # Additional null check for content
+            if raw_output is None:
+                logger.error("LLM API returned None content")
+                logger.debug(f"Full response: {response}")
+                logger.debug(f"Message: {response.choices[0].message}")
+                # Check for safety filters or finish reason
+                finish_reason = getattr(response.choices[0], 'finish_reason', None)
+                logger.warning(f"Finish reason: {finish_reason}")
+                return f"ERROR: Brain received empty content (finish_reason: {finish_reason}). The model may have hit a safety filter or content policy. Please try rephrasing."
 
             # 3. JEPA VERIFICATION (World Model Alignment)
             # If a context vector exists, we check the energy of the transition
@@ -156,7 +170,8 @@ class LogicEngine:
 
         except Exception as e:
             logger.error(f"Critical Failure in Logic Engine: {str(e)}")
-            return "ERROR: Brain is reachable but model is still loading or URL path is incorrect."
+            return f"ERROR: Brain failed to reason. Details: {str(e)}"
 
     async def shutdown(self):
-        await self.client.aclose()
+        # LiteLLM doesn't require explicit shutdown of a client
+        pass

@@ -46,6 +46,10 @@ class ActiveInferenceLoop:
         
         logger.info(f"User {user_id} active inference started ({domain_profile.display_name})")
 
+        # Get session data to retrieve previous execution results (feedback loop)
+        session_data = self.session_manager.get_session(user_id)
+        last_execution_results = session_data.get("last_execution_results", [])
+        
         # 1. SENSE: Retrieve context with domain-weighted namespaces
         namespace_weights = domain_profile.namespace_weights
         k12_context, state_vec = await self._domain_aware_context_retrieval(
@@ -83,6 +87,19 @@ class ActiveInferenceLoop:
 
         current_time_str = f"Current System Time: {datetime.datetime.now()}"
         combined_context = f"{current_time_str}\n" + "\n".join(k12_context + episodic_context)
+        
+        # Add execution feedback from previous turn (if any)
+        if last_execution_results:
+            feedback_str = "\n\n## EXECUTION RESULTS FROM PREVIOUS TURN:\n"
+            for i, result in enumerate(last_execution_results, 1):
+                status = "✅ SUCCESS" if result["success"] else "❌ FAILED"
+                feedback_str += f"\n{i}. {result['action_type']}: {status}\n"
+                if result.get("output"):
+                    feedback_str += f"   Output: {result['output'][:200]}\n"
+                if result.get("error"):
+                    feedback_str += f"   Error: {result['error']}\n"
+            combined_context += feedback_str
+            logger.info(f"Including {len(last_execution_results)} execution results in context for self-healing")
 
         # 3. BUILD DOMAIN-SPECIFIC MEGA-PROMPT
         domain_mega_prompt = self.session_manager.get_mega_prompt_prefix(user_id)
@@ -97,19 +114,24 @@ class ActiveInferenceLoop:
             domain_prompt=domain_mega_prompt  # NEW: Domain-specific instruction
         )
 
-        if "500" in brain_response: 
+        # Check for actual error responses (not just the text "500" anywhere)
+        if brain_response.startswith("ERROR:") or brain_response.startswith("500"):
             return "The Brain is still waking up. Please wait 30 seconds and try again.", None, {}, {}
 
         # 5. EMBELLISH: Heart adapts the response based on emotion and morals
         embellished_response = self.heart.embellish_response(brain_response, emotion_vector, predicted_flourishing)
+        logger.debug(f"Embellished response (first 300 chars): {embellished_response[:300]}")
         
         # 6. EXTRACT THINKING: Parse <think> tags to show agent's reasoning process
         thinking_steps, response_without_thinking = self.action_parser.parse_thinking(embellished_response)
+        logger.debug(f"Found {len(thinking_steps)} thinking steps")
         
         # 7. PARSE ACTION TAGS: Extract structured actions from Brain response
         action_tags, cleaned_response = self.action_parser.parse(response_without_thinking)
+        logger.info(f"Parsed {len(action_tags)} action tags from response")
         
-        # 8. EXECUTE ACTIONS: Run parsed action tags
+        # 8. EXECUTE ACTIONS: Run parsed action tags and collect results for feedback
+        execution_results = []
         for action_tag in action_tags:
             # Convert to activity event
             activity_event = action_tag.to_activity_event(user_id)
@@ -117,13 +139,31 @@ class ActiveInferenceLoop:
             
             # Execute the action
             result = await self.action_executor.execute(action_tag, user_id)
+            execution_results.append({
+                "action_type": action_tag.tag_type,
+                "action_description": action_tag.attributes.get("description", ""),
+                "success": result["success"],
+                "output": result.get("output", ""),
+                "error": result.get("error"),
+                "metadata": result.get("metadata", {})
+            })
             
             # Update activity status
             for event in self.activity_events:
                 if event["id"] == activity_event["id"]:
                     event["status"] = "completed" if result["success"] else "error"
                     event["details"] = result["result"] if result["success"] else result["error"]
+                    # Add execution details for UI
+                    event["data"]["execution_output"] = result.get("output")
+                    event["data"]["execution_metadata"] = result.get("metadata", {})
                     break
+        
+        # 8.5. STORE EXECUTION RESULTS FOR NEXT CYCLE (Feedback Loop)
+        # These results will be included in context for the next user message
+        # This enables the Brain to see what actually happened and adjust accordingly
+        if execution_results:
+            session_data["last_execution_results"] = execution_results
+            logger.debug(f"Stored {len(execution_results)} execution results for feedback")
         
         # 9. EXTRACT CODE BLOCKS: Find markdown code blocks for display
         code_blocks = self.action_parser.extract_code_blocks(embellished_response)

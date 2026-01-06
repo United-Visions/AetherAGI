@@ -9,23 +9,33 @@ from loguru import logger
 class PracticeAdapter(BodyAdapter):
     async def execute(self, intent: str) -> str:
         """
-        Intent JSON: {"language": ""|"bash", "code": "...", "tests": ["assert f(3)==9"]}
+        Intent JSON: {"language": "python"|"bash", "code": "...", "tests": ["assert f(3)==9"]}
         """
+        logger.info(f"PracticeAdapter executing: {intent[:200]}...")
         try:
             spec = json.loads(intent)
             lang = spec["language"]
             code = spec["code"]
             tests = spec.get("tests", [])
-            if lang == "":
-                return await self._run_(code, tests)
+            
+            logger.debug(f"Language: {lang}, Code length: {len(code)} bytes")
+            
+            if lang == "python":
+                result = await self._run_python(code, tests)
+                logger.info(f"Python execution complete: {len(result)} bytes output")
+                return result
             if lang == "bash":
-                return await self._run_bash(code)
+                result = await self._run_bash(code)
+                logger.info(f"Bash execution complete: {len(result)} bytes output")
+                return result
+            
+            logger.warning(f"Unknown language: {lang}")
             return f"PracticeAdapter: unknown language {lang}"
         except Exception as e:
-            logger.exception("practice crash")
+            logger.exception("PracticeAdapter crashed during execution")
             return f"practice crash: {traceback.format_exc()}"
 
-    async def _run_(self, code: str, tests: list) -> str:
+    async def _run_python(self, code: str, tests: list) -> str:
         with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
             f.write(code + "\n\n# --- tests ---\n")
             for t in tests:

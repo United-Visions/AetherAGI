@@ -99,8 +99,12 @@ export class ActivityFeed {
             
             // Show code preview for file_change and code_execution types
             const hasCode = activity.data?.code && (activity.type === 'file_change' || activity.type === 'code_execution' || activity.type === 'tool_creation');
-            const codePreview = hasCode ? `<div class="activity-code-preview">${this.getCodePreview(activity.data.code, activity.data.language)}</div>` : '';
+            const codePreview = hasCode ? `<div class="activity-code-preview" onclick="this.classList.toggle('expanded')">${this.getCodePreview(activity.data.code, activity.data.language)}</div>` : '';
             const filesInfo = activity.data?.files?.length > 0 ? `<div class="activity-files">📁 ${activity.data.files.join(', ')}</div>` : '';
+            
+            // Show execution result if available
+            const hasDetails = activity.details && activity.details !== 'Processing...';
+            const detailsPreview = hasDetails ? `<div class="activity-details" onclick="this.classList.toggle('expanded')">${this.escapeHtml(activity.details)}</div>` : '';
 
             return `
                 <div class="activity-card ${statusClass}" data-activity-id="${activity.id}">
@@ -112,6 +116,7 @@ export class ActivityFeed {
                         <div class="activity-title">${activity.title}</div>
                         ${filesInfo}
                         ${codePreview}
+                        ${detailsPreview}
                         <div class="activity-time">${time}</div>
                     </div>
                     <div class="activity-badge">
@@ -135,11 +140,18 @@ export class ActivityFeed {
     
     getCodePreview(code, language = 'python') {
         if (!code) return '';
-        // Show first 2 lines as preview
-        const lines = code.split('\n').slice(0, 2);
-        const preview = lines.join('\n');
-        const truncated = code.split('\n').length > 2 ? '...' : '';
-        return `<pre class="code-mini"><code class="language-${language}">${this.escapeHtml(preview)}${truncated}</code></pre>`;
+        // Show first 3 lines as preview, full code on click
+        const lines = code.split('\n');
+        const preview = lines.slice(0, 3).join('\n');
+        const truncated = lines.length > 3 ? `\n... (${lines.length - 3} more lines - click to expand)` : '';
+        return `<pre class="code-mini"><code class="language-${language}">${this.escapeHtml(preview)}${truncated}</code></pre>
+<pre class="code-full" style="display:none;"><code class="language-${language}">${this.escapeHtml(code)}</code></pre>`;
+    }
+    
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     getIcon(type) {

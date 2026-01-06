@@ -4,10 +4,13 @@ import { api, setApiKeyModal } from './api.js';
 import { ChatInterface } from './components/ChatInterface.js';
 import { ThinkingVisualizer } from './components/ThinkingVisualizer.js';
 import { FileUploader } from './components/FileUploader.js';
+import { VoiceRecorder } from './components/VoiceRecorder.js';
+import { CameraCapture } from './components/CameraCapture.js';
 import { ActivityFeed } from './components/ActivityFeed.js';
 import { SplitViewPanel } from './components/SplitViewPanel.js';
 import { BrainVisualizer } from './components/BrainVisualizer.js';
 import { ApiKeyModal } from './components/ApiKeyModal.js';
+import { ResponseParser } from './components/ResponseParser.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 [ROUTER] DOMContentLoaded - Initializing AetherMind frontend...');
@@ -26,6 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
         apiKeyModal.show();
     }
     
+    // Initialize Response Parser
+    const responseParser = new ResponseParser();
+    
     // Initialize Core Components
     console.log('📦 [ROUTER] Creating core components...');
     const chat = new ChatInterface('messages');
@@ -38,6 +44,26 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('📎 [ROUTER] FileUploader callback - files selected:', files.length);
     });
     console.log('✅ [ROUTER] FileUploader initialized');
+
+    // Initialize Voice Recorder
+    const voiceRecorder = new VoiceRecorder('mic-btn', (audioFile) => {
+        console.log('🎤 [ROUTER] Voice recording complete:', audioFile.name);
+        // Add the audio file to the uploader
+        fileUploader.files.push(audioFile);
+        fileUploader.renderPreviews();
+        console.log('✅ [ROUTER] Audio file added to uploader');
+    });
+    console.log('✅ [ROUTER] VoiceRecorder initialized');
+
+    // Initialize Camera Capture
+    const cameraCapture = new CameraCapture('camera-btn', (mediaFile) => {
+        console.log('📹 [ROUTER] Camera capture complete:', mediaFile.name);
+        // Add the captured media to the uploader
+        fileUploader.files.push(mediaFile);
+        fileUploader.renderPreviews();
+        console.log('✅ [ROUTER] Media file added to uploader');
+    });
+    console.log('✅ [ROUTER] CameraCapture initialized');
 
     // Initialize NEW AGI Components
     console.log('🧠 [ROUTER] Creating AGI components...');
@@ -276,8 +302,41 @@ document.addEventListener('DOMContentLoaded', () => {
                     data: {}
                 });
 
-                chat.addMessage('assistant', assistantMsg.content, metadata);
-                messageHistory.push(assistantMsg);
+                // Parse response to extract thinking and actions
+                console.log('🔍 [ROUTER] Parsing response for thinking and action tags...');
+                const parsed = responseParser.parse(assistantMsg.content);
+                
+                // Display thinking blocks in ThinkingVisualizer
+                if (parsed.thinking.length > 0) {
+                    console.log('💭 [ROUTER] Found thinking blocks:', parsed.thinking);
+                    parsed.thinking.forEach(think => {
+                        thinkingViz.addThought(think.content);
+                    });
+                }
+                
+                // Display actions in ActivityFeed
+                if (parsed.actions.length > 0) {
+                    console.log('⚡ [ROUTER] Found action tags:', parsed.actions);
+                    parsed.actions.forEach(action => {
+                        activityFeed.addActivity({
+                            id: `action_${Date.now()}_${Math.random()}`,
+                            type: action.type,
+                            status: 'completed',
+                            title: action.displayName,
+                            details: action.attributes.description || `${action.type}: ${Object.keys(action.attributes).join(', ')}`,
+                            timestamp: new Date().toISOString(),
+                            data: {
+                                attributes: action.attributes,
+                                content_preview: action.content.substring(0, 100)
+                            }
+                        });
+                    });
+                }
+                
+                // Display only clean content (no tags) to user
+                console.log('📝 [ROUTER] Displaying clean response (tags removed)');
+                chat.addMessage('assistant', parsed.cleanContent, metadata);
+                messageHistory.push({...assistantMsg, content: parsed.cleanContent});
 
             } catch (err) {
                 console.error('❌ [ROUTER] Message processing failed:', err);
@@ -309,17 +368,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     console.log('✅ [ROUTER] File button listener attached');
 
-    cameraBtn.addEventListener('click', () => {
-        console.log('📷 [ROUTER] Camera button clicked (not implemented)');
-        alert("Camera feature integration pending backend update.");
-    });
-    console.log('✅ [ROUTER] Camera button listener attached');
-
-    micBtn.addEventListener('click', () => {
-        console.log('🎤 [ROUTER] Microphone button clicked (not implemented)');
-        alert("Microphone feature integration pending backend update.");
-    });
-    console.log('✅ [ROUTER] Microphone button listener attached');
+    // Camera and Mic buttons are handled by CameraCapture and VoiceRecorder components
+    console.log('✅ [ROUTER] Camera and microphone handlers managed by their respective components');
 
     // Activity Feed Toggle
     if (activityFeedToggle) {

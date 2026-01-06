@@ -87,6 +87,11 @@ class SafetyInhibitor:
         Analyzes the Brain's proposed response. 
         Returns the original text if safe, or the inhibition_response if dangerous.
         """
+        # Handle None or empty input
+        if proposed_output is None:
+            self.logger.error("[ALERT] Safety scan received None input")
+            return "ERROR: Unable to process response - received empty output from reasoning engine."
+        
         clean_text = proposed_output.lower().strip()
 
         for category, patterns in self.blocked_categories.items():

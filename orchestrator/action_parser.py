@@ -3,6 +3,7 @@ Path: orchestrator/action_parser.py
 Role: Parse and execute AetherMind action tags from Brain responses
 """
 
+import os
 import re
 import json
 from typing import List, Dict, Tuple, Optional
@@ -282,8 +283,28 @@ class ActionParser:
         "aether-chat-summary": r'<aether-chat-summary>(.*?)</aether-chat-summary>',
     }
     
-    def __init__(self):
-        logger.info("ActionParser initialized")
+    def __init__(self, router=None, store=None, memory=None):
+        """
+        Initialize ActionParser with optional dependencies.
+        
+        Args:
+            router: Router instance for forwarding intents (optional)
+            store: AetherVectorStore instance for knowledge retrieval (optional)
+            memory: EpisodicMemory instance for memory operations (optional)
+        
+        If all three are provided, an ActionExecutor is created for executing actions.
+        """
+        self.router = router
+        self.store = store
+        self.memory = memory
+        
+        # Create ActionExecutor if all dependencies are provided
+        if router is not None and store is not None and memory is not None:
+            self.action_executor = ActionExecutor(router, store, memory)
+            logger.info("ActionParser initialized with ActionExecutor")
+        else:
+            self.action_executor = None
+            logger.info("ActionParser initialized (parsing only, no executor)")
     
     def parse(self, brain_response: str) -> Tuple[List[ActionTag], str]:
         """
@@ -410,43 +431,57 @@ class ActionExecutor:
     
     async def execute(self, action_tag: ActionTag, user_id: str) -> Dict:
         """
-        Execute an action tag and return result.
+        Execute an action tag and return detailed result.
         
         Returns:
             {
                 "success": bool,
                 "result": str,
-                "error": Optional[str]
+                "error": Optional[str],
+                "output": Optional[str],  # Actual stdout/stderr
+                "metadata": Dict  # Additional execution info
             }
         """
+        execution_start = datetime.now()
+        
         try:
             if action_tag.tag_type == "aether-write":
-                return await self._execute_write(action_tag)
+                result = await self._execute_write(action_tag)
             
             elif action_tag.tag_type == "aether-sandbox":
-                return await self._execute_sandbox(action_tag)
+                result = await self._execute_sandbox(action_tag)
             
             elif action_tag.tag_type == "aether-forge":
-                return await self._execute_forge(action_tag)
+                result = await self._execute_forge(action_tag)
             
             elif action_tag.tag_type == "aether-install":
-                return await self._execute_install(action_tag)
+                result = await self._execute_install(action_tag)
             
             elif action_tag.tag_type == "aether-research":
-                return await self._execute_research(action_tag, user_id)
+                result = await self._execute_research(action_tag, user_id)
             
             elif action_tag.tag_type == "aether-command":
-                return await self._execute_command(action_tag)
+                result = await self._execute_command(action_tag)
             
             else:
-                return {
+                result = {
                     "success": False,
                     "result": "",
-                    "error": f"Unknown tag type: {action_tag.tag_type}"
+                    "error": f"Unknown tag type: {action_tag.tag_type}",
+                    "output": None,
+                    "metadata": {}
                 }
+            
+            # Add execution metadata
+            execution_duration = (datetime.now() - execution_start).total_seconds()
+            result["metadata"] = result.get("metadata", {})
+            result["metadata"]["execution_time"] = execution_duration
+            result["metadata"]["timestamp"] = datetime.now().isoformat()
+            
+            return result
         
         except Exception as e:
-            logger.error(f"Failed to execute {action_tag.tag_type}: {e}")
+            logger.error(f"Failed to execute {action_tag.tag_type}: {e}", exc_info=True)
             return {
                 "success": False,
                 "result": "",
@@ -458,21 +493,44 @@ class ActionExecutor:
         path = tag.attributes.get("path", "output.txt")
         content = tag.content
         
-        # Use PracticeAdapter for file operations
-        intent = json.dumps({
-            "operation": "write",
-            "path": path,
-            "content": content
-        })
+        # Create workspace directory if it doesn't exist
+        workspace_dir = os.path.expanduser("~/AetherMind_Workspace")
+        os.makedirs(workspace_dir, exist_ok=True)
         
-        # For now, just log it (actual file writing would go here)
-        logger.info(f"Would write to {path} ({len(content)} bytes)")
+        # Full path for the file
+        full_path = os.path.join(workspace_dir, path)
         
-        return {
-            "success": True,
-            "result": f"Written to {path}",
-            "error": None
-        }
+        # Create subdirectories if needed
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        
+        try:
+            # Actually write the file
+            with open(full_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            
+            file_size = os.path.getsize(full_path)
+            logger.info(f"✅ File written: {full_path} ({file_size} bytes)")
+            
+            return {
+                "success": True,
+                "result": f"Created {path} in ~/AetherMind_Workspace/",
+                "output": f"File: {path} ({file_size} bytes)",
+                "error": None,
+                "metadata": {
+                    "file_path": full_path,
+                    "file_size": file_size,
+                    "content_length": len(content)
+                }
+            }
+        except Exception as e:
+            logger.error(f"Failed to write {path}: {e}", exc_info=True)
+            return {
+                "success": False,
+                "result": "",
+                "output": None,
+                "error": str(e),
+                "metadata": {"attempted_path": full_path}
+            }
     
     async def _execute_sandbox(self, tag: ActionTag) -> Dict:
         """Execute code in sandbox."""
@@ -487,13 +545,29 @@ class ActionExecutor:
             "tests": [] if not is_test else ["# Test code"]
         })
         
-        result = await self.router.adapters["practice"].execute(intent)
-        
-        return {
-            "success": True,
-            "result": result,
-            "error": None
-        }
+        try:
+            result = await self.router.adapters["practice"].execute(intent)
+            
+            return {
+                "success": True,
+                "result": result,
+                "output": result,  # Actual execution output
+                "error": None,
+                "metadata": {
+                    "language": language,
+                    "code_length": len(code),
+                    "is_test": is_test
+                }
+            }
+        except Exception as e:
+            logger.error(f"Sandbox execution failed: {e}", exc_info=True)
+            return {
+                "success": False,
+                "result": "",
+                "output": None,
+                "error": str(e),
+                "metadata": {"language": language}
+            }
     
     async def _execute_forge(self, tag: ActionTag) -> Dict:
         """Execute ToolForge operation."""

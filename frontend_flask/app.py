@@ -11,6 +11,8 @@ load_dotenv(dotenv_path)
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask
+from quart import Quart, render_template, request, redirect, url_for, session, jsonify
 import logging
 import httpx
 import uuid
@@ -18,7 +20,7 @@ from urllib.parse import quote_plus
 from cryptography.fernet import Fernet
 from orchestrator.auth_manager_supabase import AuthManagerSupabase, UserRole
 
-app = Flask(__name__)
+app = Quart(__name__)
 app.secret_key = os.getenv("FLASK_SECRET", "dev-change-me")
 
 # Configure logging
@@ -67,43 +69,43 @@ def log_response_info(response):
     return response
 
 @app.route("/")
-def home():
-    return render_template("index_home.html")
+async def home():
+    return await render_template("index_home.html")
 
 @app.route("/pricing")
-def pricing():
-    return render_template("pricing.html")
+async def pricing():
+    return await render_template("pricing.html")
 
 @app.route("/documentation")
-def documentation():
-    return render_template("documentation.html")
+async def documentation():
+    return await render_template("documentation.html")
 
 @app.route("/domain/legal")
-def domain_legal():
-    return render_template("domain_legal.html")
+async def domain_legal():
+    return await render_template("domain_legal.html")
 
 @app.route("/domain/medical")
-def domain_medical():
+async def domain_medical():
     # TODO: Create domain_medical.html
-    return render_template("domain_legal.html")  # Placeholder
+    return await render_template("domain_legal.html")  # Placeholder
 
 @app.route("/domain/finance")
-def domain_finance():
+async def domain_finance():
     # TODO: Create domain_finance.html
-    return render_template("domain_legal.html")  # Placeholder
+    return await render_template("domain_legal.html")  # Placeholder
 
 @app.route("/domain/code")
-def domain_code():
+async def domain_code():
     # TODO: Create domain_code.html
-    return render_template("domain_legal.html")  # Placeholder
+    return await render_template("domain_legal.html")  # Placeholder
 
 @app.route("/domain/research")
-def domain_research():
+async def domain_research():
     # TODO: Create domain_research.html
-    return render_template("domain_legal.html")  # Placeholder
+    return await render_template("domain_legal.html")  # Placeholder
 
 @app.route("/github_login")
-def github_login():
+async def github_login():
     # Dynamically select redirect URI based on request host
     is_local = "127.0.0.1" in request.host or "localhost" in request.host
     redirect_uri = GITHUB_REDIRECT_URI_DEV if is_local else GITHUB_REDIRECT_URI_PROD
@@ -117,28 +119,29 @@ def github_login():
     return redirect(url)
 
 @app.route("/callback")
-def callback():
+async def callback():
     code = request.args.get("code")
     if not code:
         return "Missing code", 400
     # exchange code for token
     try:
-        r = httpx.post("https://github.com/login/oauth/access_token",
-                       data={"client_id": GITHUB_CLIENT_ID,
-                             "client_secret": GITHUB_CLIENT_SECRET,
-                             "code": code},
-                       headers={"Accept": "application/json"})
-        if r.status_code != 200:
-            return "OAuth failed", 400
-        token = r.json().get("access_token")
-        if not token:
-            return f"OAuth failed: {r.text}", 400
+        async with httpx.AsyncClient() as client:
+            r = await client.post("https://github.com/login/oauth/access_token",
+                           data={"client_id": GITHUB_CLIENT_ID,
+                                 "client_secret": GITHUB_CLIENT_SECRET,
+                                 "code": code},
+                           headers={"Accept": "application/json"})
+            if r.status_code != 200:
+                return "OAuth failed", 400
+            token = r.json().get("access_token")
+            if not token:
+                return f"OAuth failed: {r.text}", 400
 
-        # fetch user info
-        user_r = httpx.get("https://api.github.com/user",
-                           headers={"Authorization": f"token {token}"})
-        if user_r.status_code != 200:
-            return "Failed to fetch user", 400
+            # fetch user info
+            user_r = await client.get("https://api.github.com/user",
+                               headers={"Authorization": f"token {token}"})
+            if user_r.status_code != 200:
+                return "Failed to fetch user", 400
 
         github_user = user_r.json()["login"]
         github_url = user_r.json()["html_url"]
@@ -158,13 +161,13 @@ def callback():
         return f"OAuth Error: {e}", 500
 
 @app.route("/onboarding")
-def onboarding():
+async def onboarding():
     if "github_user" not in session:
         return redirect(url_for("home"))
-    return render_template("onboarding.html", github_user=session["github_user"])
+    return await render_template("onboarding.html", github_user=session["github_user"])
 
 @app.route("/create_key", methods=["POST"])
-def create_key():
+async def create_key():
     """
     Generate a personal API key for authenticated user.
     
@@ -243,7 +246,7 @@ def create_key():
 
 # --- existing chat page ---
 @app.route("/chat")
-def index():
+async def index():
     # if api_key in query string, preload it into the page
     api_key = request.args.get("api_key", "")
     domain = request.args.get("domain", session.get("user_domain", "general"))
@@ -260,7 +263,7 @@ def index():
     
     welcome_msg = domain_messages.get(domain, domain_messages["general"])
     
-    resp = render_template("index.html", domain=domain, welcome_message=welcome_msg)
+    resp = await render_template("index.html", domain=domain, welcome_message=welcome_msg)
     
     # inject a tiny script that puts the key and domain into localStorage
     if api_key:
@@ -268,6 +271,53 @@ def index():
            f'<script>localStorage.setItem("aethermind_api_key","{api_key}");'
            f'localStorage.setItem("aethermind_domain","{domain}");</script></head>')
     return resp
+
+@app.route("/v1/ingest/multimodal", methods=["POST"])
+async def upload_multimodal():
+    """
+    Proxy endpoint for multimodal file uploads.
+    Forwards requests to FastAPI backend at port 8000.
+    """
+    try:
+        # Get API key from header
+        api_key = request.headers.get('Aether-Secret-Key') or request.headers.get('X-Aether-Key')
+        
+        if not api_key:
+            return jsonify({"error": "Missing API key"}), 401
+        
+        # Get the uploaded file (await in Quart)
+        files = await request.files
+        if 'file' not in files:
+            return jsonify({"error": "No file provided"}), 400
+        
+        file = files['file']
+        
+        if file.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+        
+        # Forward to FastAPI backend
+        backend_url = "http://127.0.0.1:8000/v1/ingest/multimodal"
+        
+        # Read file content (synchronous in Quart)
+        file_content = file.read()
+        
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            # Prepare multipart form data
+            upload_files = {'file': (file.filename, file_content, file.content_type)}
+            headers = {'X-Aether-Key': api_key}
+            
+            logging.info(f"Forwarding upload to backend: {file.filename}")
+            response = await client.post(backend_url, files=upload_files, headers=headers)
+            
+            # Return the backend response
+            return jsonify(response.json()), response.status_code
+            
+    except httpx.RequestError as e:
+        logging.error(f"Backend connection error: {e}")
+        return jsonify({"error": "Backend service unavailable"}), 503
+    except Exception as e:
+        logging.error(f"Upload error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

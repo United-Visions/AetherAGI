@@ -80,3 +80,20 @@ class AetherVectorStore:
         except Exception as e:
             logger.error(f"Query failed: {e}")
             return [], [0]*1024
+    async def query(self, vector: list, namespace: str, top_k: int = 5, include_values: bool = False):
+        """
+        Direct vector query for surprise detection and other low-level operations.
+        Accepts a pre-computed vector and returns raw Pinecone results.
+        """
+        try:
+            results = self.index.query(
+                namespace=namespace,
+                top_k=top_k,
+                vector=vector,
+                include_values=include_values,
+                include_metadata=True
+            )
+            return results
+        except Exception as e:
+            logger.error(f"Direct vector query failed: {e}")
+            return {"matches": []}

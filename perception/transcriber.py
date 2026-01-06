@@ -1,52 +1,46 @@
 """
 Path: perception/transcriber.py
-Role: Handles audio transcription using the official OpenAI Whisper model.
+Role: Handles audio transcription using LiteLLM (supporting OpenAI Whisper, Groq, etc.).
 """
-import whisper
-from loguru import logger
-import numpy as np
 import io
+import os
+from loguru import logger
+import litellm
 
 class Transcriber:
-    def __init__(self, model_name: str = "base"):
+    def __init__(self, model_name: str = "whisper-1"):
         """
-        Initializes the Whisper model for audio transcription.
+        Initializes the Transcriber with an API-based model.
         Args:
-            model_name (str): The name of the Whisper model to use (e.g., "base", "small", "medium").
+            model_name (str): The name of the model to use (e.g., "whisper-1", "groq/whisper-large-v3").
         """
-        logger.info(f"Loading Whisper model: {model_name}")
-        try:
-            self.model = whisper.load_model(model_name)
-            logger.success("Whisper model loaded successfully.")
-        except Exception as e:
-            logger.error(f"Failed to load Whisper model: {e}")
-            self.model = None
+        self.model_name = model_name
+        logger.info(f"Initialized Transcriber with model: {self.model_name}")
 
-    def transcribe_audio_from_bytes(self, audio_bytes: bytes) -> str:
+    async def transcribe_audio_from_bytes(self, audio_bytes: bytes) -> str:
         """
-        Transcribes audio from raw bytes.
+        Transcribes audio from raw bytes using LiteLLM.
         Args:
             audio_bytes (bytes): The audio data in bytes.
         Returns:
             str: The transcribed text.
         """
-        if not self.model:
-            logger.error("Whisper model is not available.")
-            return ""
-            
         try:
-            # Convert bytes to a file-like object
+            # LiteLLM/OpenAI API expects a file-like object with a name
             audio_file = io.BytesIO(audio_bytes)
-            audio_file.name = "audio.wav" # Whisper needs a file extension hint
+            audio_file.name = "audio.mp3"  # Defaulting to mp3, but wav works too
 
-            # The official library can handle the conversion directly
-            audio_np = whisper.load_audio(audio_file)
+            logger.info(f"Sending audio to {self.model_name} for transcription...")
             
-            logger.info(f"Transcribing audio buffer...")
-            result = self.model.transcribe(audio_np, fp16=False) # fp16=False for CPU compatibility
+            # litellm.transcription is synchronous, so we wrap it if needed, 
+            # but for now we call it directly.
+            response = litellm.transcription(
+                model=self.model_name,
+                file=audio_file
+            )
             
-            text = result.get('text', '').strip()
-            logger.success("Transcription completed successfully.")
+            text = response.text.strip()
+            logger.success(f"Transcription completed: {text[:50]}...")
             return text
             
         except Exception as e:
