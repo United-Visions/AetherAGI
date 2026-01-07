@@ -440,13 +440,13 @@
 }
 
 .modal-content {
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
+    background: #0d1117;
+    border: 1px solid #30363d;
     border-radius: 12px;
     padding: 2rem;
     max-width: 500px;
     width: 90%;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
     animation: slideUp 0.3s ease;
 }
 
@@ -471,21 +471,21 @@
 .modal-title {
     font-size: 1.3rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #e6edf3;
 }
 
 .modal-close {
     background: none;
     border: none;
     font-size: 1.5rem;
-    color: var(--text-muted);
+    color: #8b949e;
     cursor: pointer;
     padding: 0.25rem 0.5rem;
     transition: color 0.2s;
 }
 
 .modal-close:hover {
-    color: var(--text-primary);
+    color: #e6edf3;
 }
 
 .modal-body {
@@ -495,56 +495,59 @@
 .modal-input {
     width: 100%;
     padding: 0.75rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
+    background: #161b22;
+    border: 1px solid #30363d;
     border-radius: 8px;
-    color: var(--text-primary);
+    color: #e6edf3;
     font-size: 0.95rem;
     margin-bottom: 1rem;
     transition: border-color 0.2s;
+    box-sizing: border-box;
 }
 
 .modal-input:focus {
     outline: none;
-    border-color: var(--accent-color);
+    border-color: #8b5cf6;
 }
 
 .modal-textarea {
     width: 100%;
     padding: 0.75rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
+    background: #161b22;
+    border: 1px solid #30363d;
     border-radius: 8px;
-    color: var(--text-primary);
+    color: #e6edf3;
     font-size: 0.95rem;
     margin-bottom: 1rem;
     min-height: 120px;
     resize: vertical;
     font-family: inherit;
     transition: border-color 0.2s;
+    box-sizing: border-box;
 }
 
 .modal-textarea:focus {
     outline: none;
-    border-color: var(--accent-color);
+    border-color: #8b5cf6;
 }
 
 .modal-select {
     width: 100%;
     padding: 0.75rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
+    background: #161b22;
+    border: 1px solid #30363d;
     border-radius: 8px;
-    color: var(--text-primary);
+    color: #e6edf3;
     font-size: 0.95rem;
     margin-bottom: 1rem;
     cursor: pointer;
     transition: border-color 0.2s;
+    box-sizing: border-box;
 }
 
 .modal-select:focus {
     outline: none;
-    border-color: var(--accent-color);
+    border-color: #8b5cf6;
 }
 
 .modal-footer {
@@ -564,35 +567,167 @@
 }
 
 .modal-btn-primary {
-    background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
     color: white;
 }
 
 .modal-btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
 }
 
 .modal-btn-secondary {
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
+    background: #21262d;
+    color: #e6edf3;
+    border: 1px solid #30363d;
 }
 
 .modal-btn-secondary:hover {
-    background: var(--bg-tertiary);
+    background: #30363d;
 }
 
 .modal-label {
     display: block;
     font-size: 0.9rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: #e6edf3;
     margin-bottom: 0.5rem;
 }
 
 .modal-hint {
     font-size: 0.85rem;
-    color: var(--text-muted);
+    color: #8b949e;
     margin-top: 0.25rem;
+}
+
+/* Apps & Repos View Tabs */
+.apps-repos-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 0.25rem;
+}
+
+.apps-repos-tab {
+    flex: 1;
+    padding: 0.625rem 0.75rem;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.apps-repos-tab:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.apps-repos-tab.active {
+    color: var(--text-primary);
+    background: rgba(139, 92, 246, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.apps-repos-tab i {
+    font-size: 1rem;
+}
+
+.apps-repos-content {
+    display: none;
+}
+
+.apps-repos-content.active {
+    display: block;
+    animation: fadeIn 0.2s ease;
+}
+
+/* App Item */
+.app-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    margin-bottom: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.app-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--accent-purple, #8b5cf6);
+    transform: translateX(4px);
+}
+
+.app-item i {
+    font-size: 1.25rem;
+    color: var(--accent-purple, #8b5cf6);
+    width: 24px;
+    flex-shrink: 0;
+}
+
+.app-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.app-item-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.app-item-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.app-item-hint {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 0.25rem;
+}
+
+.app-item-status {
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+}
+
+.app-item.empty-state {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-style: italic;
+    cursor: default;
+    background: transparent;
+}
+
+.app-item.empty-state:hover {
+    background: transparent;
+    border-color: var(--border-color);
+    transform: none;
 }

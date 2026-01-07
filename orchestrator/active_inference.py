@@ -34,7 +34,7 @@ class ActiveInferenceLoop:
         self.action_parser = ActionParser()  # Parse action tags from Brain
         self.action_executor = ActionExecutor(router, store, memory)  # Execute actions
 
-    async def run_cycle(self, user_id: str, user_input: str, namespace: str = "universal"):
+    async def run_cycle(self, user_id: str, user_input: str, namespace: str = "universal", override_prompt: str = None):
         """
         Production Loop with Full Heart Integration + Domain-Aware Reasoning:
         Sense -> Reason (Domain-Focused) -> Embellish -> Act -> Learn
@@ -102,7 +102,11 @@ class ActiveInferenceLoop:
             logger.info(f"Including {len(last_execution_results)} execution results in context for self-healing")
 
         # 3. BUILD DOMAIN-SPECIFIC MEGA-PROMPT
-        domain_mega_prompt = self.session_manager.get_mega_prompt_prefix(user_id)
+        if override_prompt:
+            domain_mega_prompt = override_prompt
+            logger.info("Using override system prompt for this cycle")
+        else:
+            domain_mega_prompt = self.session_manager.get_mega_prompt_prefix(user_id)
         
         # 4. REASON: Brain processes input with domain-aware context and personality
         brain_response = await self.brain.generate_thought(
@@ -204,6 +208,20 @@ class ActiveInferenceLoop:
         self.memory.record_interaction(user_id, "user", user_input)
         self.memory.record_interaction(user_id, "assistant", final_output)
         logger.info(f"Successful interaction saved to user_{user_id}_episodic")
+
+        # Add memory sync event for frontend visualization
+        self.activity_events.append({
+            "id": f"mem_{datetime.datetime.now().timestamp()}",
+            "type": "memory_sync",
+            "status": "completed",
+            "title": "Episodic Memory Sync",
+            "details": f"Interaction saved to user_{user_id}_episodic",
+            "timestamp": datetime.datetime.now().isoformat(),
+            "data": {
+                "namespace": f"user_{user_id}_episodic",
+                "content_preview": user_input[:50] + "..."
+            }
+        })
         
         # 12. UPDATE USER LEARNING CONTEXT
         self.session_manager.update_learning_context(user_id, {
@@ -363,6 +381,71 @@ class ActiveInferenceLoop:
         """Return current activity events for API response"""
         return self.activity_events
     
+    async def check_proactive_need(self, user_id: str):
+        """
+        Logic to determine if the agent should initiate contact.
+        Considers:
+        - Recent goal progress
+        - Surprise detection in background research
+        - Direct reasoning about the current "User State"
+        """
+        try:
+            # 1. Check for completed background goals via GoalTracker
+            from orchestrator.goal_tracker import GoalTracker
+            tracker = GoalTracker()
+            active_goals = await tracker.get_user_goals(user_id)
+            
+            for goal in active_goals:
+                # If a goal reached 100% but wasn't notified yet
+                if goal.get("status") == "completed" and goal.get("progress") >= 100:
+                    # Logic to prevent double notification would go here (e.g. metadata flag)
+                    return True, f"I have finished working on your goal: '{goal['description'][:60]}...'. Check the goals tab for details!", "high", {"type": "goal_complete", "goal_id": goal["goal_id"]}
+
+            # 2. Retrieve recent context for "First Contact" reasoning
+            # We look for "User Context" namespaces
+            context_list, _ = await self._domain_aware_context_retrieval(
+                "What is the current status of the user's world?",
+                user_id,
+                {"core_universal": 0.3, f"user_{user_id}_episodic": 0.7}
+            )
+            
+            # 3. Use Brain to decide if interaction is needed
+            proactive_prompt = f"""You are AetherMind, an AGI digital organism.
+You are running a background check to see if you should proactively reach out to User '{user_id}'.
+
+Context retrieved from memory:
+{" ".join(context_list)}
+
+DECISION RULES:
+- ONLY speak if there is a compelling reason (e.g. you found something helpful, a goal finished, or you want to follow up on a previous topic).
+- If it's just a routine check, return <no-action/>.
+- If you have something to say, wrap the message in <notify> tags.
+- Communicate according to the user's current domain profile.
+
+Respond with your reasoning in <think> tags followed by your message or <no-action/>.
+"""
+            
+            thought = await self.brain.generate_thought(
+                "Proactive check: Is there anything the user needs to know?",
+                "\n".join(context_list),
+                np.zeros(1024), 
+                {"valence": 0, "arousal": 0},
+                0.5,
+                domain_prompt=proactive_prompt
+            )
+            
+            if "<notify>" in thought:
+                import re
+                match = re.search(r'<notify>(.*?)</notify>', thought, re.DOTALL)
+                message = match.group(1).strip() if match else ""
+                if message:
+                    return True, message, "normal", {"type": "first_contact"}
+        
+        except Exception as e:
+            logger.error(f"Proactive check failed: {e}")
+            
+        return False, None, "low", {}
+
     def _extract_tool_name(self, text: str) -> str:
         """Extract tool name from response"""
         import re

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AetherMind</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shell.css') }}">
+</head>
+<body>
+    <!-- Minimal Shell - Agent Controls Everything -->
+    <div id="aether-shell" class="shell-container">
+        
+        <!-- Dynamic Header (Agent can modify) -->
+        <header id="shell-header" class="shell-header">
+            <div class="header-brand">
+                <span class="brand-name">AetherMind</span>
+                <span class="brand-tag">Your Personal AI</span>
+            </div>
+            <div class="header-actions">
+                <!-- Notification Bell - Core Feature -->
+                <button id="notification-btn" class="header-btn" title="Notifications">
+                    <i class="fas fa-bell"></i>
+                    <span id="notification-badge" class="notification-badge hidden">0</span>
+                </button>
+                <!-- Admin Panel (Only for pilot_users) -->
+                <button id="admin-panel-btn" class="header-btn hidden" title="Admin Panel">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Chat Area - The Core -->
+        <main id="chat-area" class="chat-area">
+            <div id="messages" class="messages-container">
+                <!-- Initial greeting injected by OnboardingAgent -->
+            </div>
+        </main>
+
+        <!-- Dynamic Component Slots (Agent injects components here) -->
+        <div id="dynamic-slots" class="dynamic-slots hidden">
+            <!-- Agent adds panels/views here as needed -->
+        </div>
+
+        <!-- Input Area - Always Present -->
+        <div id="input-area" class="input-area">
+            <!-- File previews (hidden until used) -->
+            <div id="file-previews" class="file-previews hidden"></div>
+            
+            <form id="chat-form" class="chat-form">
+                <!-- Quick action buttons (agent can show/hide) -->
+                <div id="quick-actions" class="quick-actions hidden">
+                    <button type="button" id="camera-btn" class="action-btn" title="Camera">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                    <button type="button" id="voice-btn" class="action-btn" title="Voice">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button type="button" id="file-btn" class="action-btn" title="Attach">
+                        <i class="fas fa-paperclip"></i>
+                    </button>
+                </div>
+                <input type="file" id="file-input" class="hidden" accept="image/*,video/*,audio/*,.pdf,.txt,.py" multiple />
+                
+                <div class="input-wrapper">
+                    <textarea 
+                        id="chat-input" 
+                        placeholder="Message AetherMind..."
+                        rows="1"
+                        autocomplete="off"
+                    ></textarea>
+                    <button type="submit" id="send-btn" class="send-btn" disabled>
+                        <i class="fas fa-arrow-up"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Background Tasks Indicator (minimal, bottom corner) -->
+        <div id="tasks-indicator" class="tasks-indicator hidden">
+            <div class="tasks-pulse"></div>
+            <span id="tasks-count">0</span> tasks running
+        </div>
+    </div>
+
+    <!-- Notification Panel (slides in) -->
+    <div id="notification-panel" class="notification-panel hidden">
+        <div class="panel-header">
+            <h3><i class="fas fa-bell"></i> Notifications</h3>
+            <button id="close-notifications" class="close-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="notification-list" class="notification-list">
+            <!-- Notifications injected here -->
+        </div>
+    </div>
+
+    <!-- Admin Panel (only for pilot_users) -->
+    <div id="admin-panel" class="admin-panel hidden">
+        <div class="panel-header">
+            <h3><i class="fas fa-shield-alt"></i> Admin Panel</h3>
+            <button id="close-admin" class="close-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="admin-content">
+            <div class="admin-section">
+                <h4>Benchmark Runner</h4>
+                <div id="benchmark-controls"></div>
+            </div>
+            <div class="admin-section">
+                <h4>Background Tasks</h4>
+                <div id="admin-tasks-list"></div>
+            </div>
+            <div class="admin-section">
+                <h4>User Profiles</h4>
+                <div id="admin-users-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Core Scripts -->
+    <script>
+        // Pass server-side config to client
+        window.AETHER_CONFIG = {
+            isPilotUser: {{ is_pilot_user | tojson }},
+            userId: {{ user_id | tojson if user_id else 'null' }},
+            welcomeMessage: {{ welcome_message | tojson if welcome_message else '"Hello! I\'m AetherMind."' }}
+        };
+    </script>
+    <script type="module" src="{{ url_for('static', filename='js/shell-router.js') }}?v={{ range(10000, 99999) | random }}"></script>
+</body>
+</html>

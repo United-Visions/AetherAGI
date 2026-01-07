@@ -300,6 +300,7 @@ class CodeExecutionMixin:
         """
         import subprocess
         import tempfile
+        import sys
         
         # Combine code and tests
         full_code = f"{code}\n\n# Test cases\n" + "\n".join(test_cases)
@@ -310,7 +311,7 @@ class CodeExecutionMixin:
                 f.flush()
                 
                 result = subprocess.run(
-                    ['python', f.name],
+                    [sys.executable, f.name],
                     capture_output=True,
                     text=True,
                     timeout=timeout

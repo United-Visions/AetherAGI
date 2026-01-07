@@ -11,9 +11,13 @@ export function setApiKeyModal(modal) {
 }
 
 export const api = {
-    baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://127.0.0.1:8000/v1/chat/completions'
-        : 'https://aetheragi.onrender.com/v1/chat/completions',
+    rootUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://127.0.0.1:8000'
+        : 'https://aetheragi.onrender.com',
+
+    get baseUrl() {
+        return `${this.rootUrl}/v1/chat/completions`;
+    },
 
     uploadUrl: '/v1/ingest/multimodal', // Relative path to Flask proxy
 

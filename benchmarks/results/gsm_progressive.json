@@ -7,169 +7,161 @@
     "GSM-8K": {
       "chunks_completed": 14,
       "scores": [
-        0.98,
-        0.98,
-        1.0,
-        0.98,
-        0.97,
-        0.96,
-        0.98,
-        0.97,
-        0.96,
-        0.97,
-        0.92,
-        0.98,
-        0.99,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
         0.9473684210526315
       ],
-      "average": 0.9705263157894736
+      "average": 0.06766917293233082
     },
     "GSM-Hard": {
-      "chunks_completed": 12,
+      "chunks_completed": 4,
       "scores": [
-        0.74,
-        0.7,
-        0.66,
-        0.68,
-        0.74,
-        0.63,
-        0.51,
-        0.71,
-        0.67,
-        0.59,
-        0.61,
-        0.59
+        0.0,
+        0.0,
+        0.0,
+        0.0
       ],
-      "average": 0.6525
+      "average": 0.0
     }
   },
-  "overall_average": 0.8237449392712551,
+  "overall_average": 0.05263157894736842,
   "last_chunk": {
     "variant": "GSM-Hard",
-    "chunk": 12,
+    "chunk": 4,
     "total_chunks": 14,
-    "score": 0.59,
-    "correct": 59,
+    "score": 0.0,
+    "correct": 0,
     "total": 100,
-    "timestamp": "2026-01-06T12:35:46.504212+00:00"
+    "timestamp": "2026-01-07T09:04:57.916338+00:00"
   },
   "all_chunk_results": [
     {
       "variant": "GSM-8K",
       "chunk": 1,
       "total_chunks": 14,
-      "score": 0.98,
-      "correct": 98,
+      "score": 0.0,
+      "correct": 0,
       "total": 100,
-      "timestamp": "2026-01-06T10:43:03.863355+00:00"
+      "timestamp": "2026-01-07T08:33:41.043752+00:00"
     },
     {
       "variant": "GSM-8K",
       "chunk": 2,
       "total_chunks": 14,
-      "score": 0.98,
-      "correct": 98,
+      "score": 0.0,
+      "correct": 0,
       "total": 100,
-      "timestamp": "2026-01-06T10:45:33.004974+00:00"
+      "timestamp": "2026-01-07T08:35:01.801864+00:00"
     },
     {
       "variant": "GSM-8K",
       "chunk": 3,
       "total_chunks": 14,
-      "score": 1.0,
-      "correct": 100,
+      "score": 0.0,
+      "correct": 0,
       "total": 100,
-      "timestamp": "2026-01-06T10:47:36.901065+00:00"
+      "timestamp": "2026-01-07T08:38:13.918616+00:00"
     },
     {
       "variant": "GSM-8K",
       "chunk": 4,
       "total_chunks": 14,
-      "score": 0.98,
-      "correct": 98,
+      "score": 0.0,
+      "correct": 0,
       "total": 100,
-      "timestamp": "2026-01-06T10:49:53.311296+00:00"
+      "timestamp": "2026-01-07T08:40:46.856888+00:00"
     },
     {
       "variant": "GSM-8K",
       "chunk": 5,
       "total_chunks": 14,
-      "score": 0.97,
-      "correct": 97,
+      "score": 0.0,
+      "correct": 0,
       "total": 100,
-      "timestamp": "2026-01-06T10:52:27.650488+00:00"
+      "timestamp": "2026-01-07T08:42:46.982391+00:00"
     },
     {
       "variant": "GSM-8K",
       "chunk": 6,
       "total_chunks": 14,
-      "score": 0.96,
-      "correct": 96,
+      "score": 0.0,
+      "correct": 0,
       "total": 100,
-      "timestamp": "2026-01-06T10:54:52.194192+00:00"
+      "timestamp": "2026-01-07T08:44:49.139708+00:00"
     },
     {
       "variant": "GSM-8K",
       "chunk": 7,
       "total_chunks": 14,
-      "score": 0.98,
-      "correct": 98,
+      "score": 0.0,
+      "correct": 0,
       "total": 100,
-      "timestamp": "2026-01-06T10:56:22.423471+00:00"
+      "timestamp": "2026-01-07T08:47:18.948319+00:00"
     },
     {
       "variant": "GSM-8K",
       "chunk": 8,
       "total_chunks": 14,
-      "score": 0.97,
-      "correct": 97,
+      "score": 0.0,
+      "correct": 0,
       "total": 100,
-      "timestamp": "2026-01-06T10:58:47.440633+00:00"
+      "timestamp": "2026-01-07T08:49:21.519793+00:00"
     },
     {
       "variant": "GSM-8K",
       "chunk": 9,
       "total_chunks": 14,
-      "score": 0.96,
-      "correct": 96,
+      "score": 0.0,
+      "correct": 0,
       "total": 100,
-      "timestamp": "2026-01-06T11:00:44.346278+00:00"
+      "timestamp": "2026-01-07T08:50:49.285134+00:00"
     },
     {
       "variant": "GSM-8K",
       "chunk": 10,
       "total_chunks": 14,
-      "score": 0.97,
-      "correct": 97,
+      "score": 0.0,
+      "correct": 0,
       "total": 100,
-      "timestamp": "2026-01-06T11:02:50.099240+00:00"
+      "timestamp": "2026-01-07T08:52:46.456618+00:00"
     },
     {
       "variant": "GSM-8K",
       "chunk": 11,
       "total_chunks": 14,
-      "score": 0.92,
-      "correct": 92,
+      "score": 0.0,
+      "correct": 0,
       "total": 100,
-      "timestamp": "2026-01-06T11:04:55.217829+00:00"
+      "timestamp": "2026-01-07T08:55:06.572659+00:00"
     },
     {
       "variant": "GSM-8K",
       "chunk": 12,
       "total_chunks": 14,
-      "score": 0.98,
-      "correct": 98,
+      "score": 0.0,
+      "correct": 0,
       "total": 100,
-      "timestamp": "2026-01-06T11:06:51.086690+00:00"
+      "timestamp": "2026-01-07T08:56:30.798004+00:00"
     },
     {
       "variant": "GSM-8K",
       "chunk": 13,
       "total_chunks": 14,
-      "score": 0.99,
-      "correct": 99,
+      "score": 0.0,
+      "correct": 0,
       "total": 100,
-      "timestamp": "2026-01-06T11:08:57.696032+00:00"
+      "timestamp": "2026-01-07T08:57:51.797233+00:00"
     },
     {
       "variant": "GSM-8K",
@@ -178,116 +170,44 @@
       "score": 0.9473684210526315,
       "correct": 18,
       "total": 19,
-      "timestamp": "2026-01-06T11:09:26.880509+00:00"
+      "timestamp": "2026-01-07T08:59:08.904827+00:00"
     },
     {
       "variant": "GSM-Hard",
       "chunk": 1,
       "total_chunks": 14,
-      "score": 0.74,
-      "correct": 74,
+      "score": 0.0,
+      "correct": 0,
       "total": 100,
-      "timestamp": "2026-01-06T11:27:03.588671+00:00"
+      "timestamp": "2026-01-07T09:00:32.878286+00:00"
     },
     {
       "variant": "GSM-Hard",
       "chunk": 2,
       "total_chunks": 14,
-      "score": 0.7,
-      "correct": 70,
+      "score": 0.0,
+      "correct": 0,
       "total": 100,
-      "timestamp": "2026-01-06T11:30:07.351565+00:00"
+      "timestamp": "2026-01-07T09:01:58.990762+00:00"
     },
     {
       "variant": "GSM-Hard",
       "chunk": 3,
       "total_chunks": 14,
-      "score": 0.66,
-      "correct": 66,
+      "score": 0.0,
+      "correct": 0,
       "total": 100,
-      "timestamp": "2026-01-06T11:47:35.044945+00:00"
+      "timestamp": "2026-01-07T09:03:26.653639+00:00"
     },
     {
       "variant": "GSM-Hard",
       "chunk": 4,
       "total_chunks": 14,
-      "score": 0.68,
-      "correct": 68,
+      "score": 0.0,
+      "correct": 0,
       "total": 100,
-      "timestamp": "2026-01-06T11:50:53.550171+00:00"
-    },
-    {
-      "variant": "GSM-Hard",
-      "chunk": 5,
-      "total_chunks": 14,
-      "score": 0.74,
-      "correct": 74,
-      "total": 100,
-      "timestamp": "2026-01-06T11:53:17.570424+00:00"
-    },
-    {
-      "variant": "GSM-Hard",
-      "chunk": 6,
-      "total_chunks": 14,
-      "score": 0.63,
-      "correct": 63,
-      "total": 100,
-      "timestamp": "2026-01-06T11:56:34.709763+00:00"
-    },
-    {
-      "variant": "GSM-Hard",
-      "chunk": 7,
-      "total_chunks": 14,
-      "score": 0.51,
-      "correct": 51,
-      "total": 100,
-      "timestamp": "2026-01-06T12:00:34.756165+00:00"
-    },
-    {
-      "variant": "GSM-Hard",
-      "chunk": 8,
-      "total_chunks": 14,
-      "score": 0.71,
-      "correct": 71,
-      "total": 100,
-      "timestamp": "2026-01-06T12:03:29.354484+00:00"
-    },
-    {
-      "variant": "GSM-Hard",
-      "chunk": 9,
-      "total_chunks": 14,
-      "score": 0.67,
-      "correct": 67,
-      "total": 100,
-      "timestamp": "2026-01-06T12:06:07.244737+00:00"
-    },
-    {
-      "variant": "GSM-Hard",
-      "chunk": 10,
-      "total_chunks": 14,
-      "score": 0.59,
-      "correct": 59,
-      "total": 100,
-      "timestamp": "2026-01-06T12:09:57.858136+00:00"
-    },
-    {
-      "variant": "GSM-Hard",
-      "chunk": 11,
-      "total_chunks": 14,
-      "score": 0.61,
-      "correct": 61,
-      "total": 100,
-      "timestamp": "2026-01-06T12:30:52.828601+00:00"
-    },
-    {
-      "variant": "GSM-Hard",
-      "chunk": 12,
-      "total_chunks": 14,
-      "score": 0.59,
-      "correct": 59,
-      "total": 100,
-      "timestamp": "2026-01-06T12:35:46.504212+00:00"
+      "timestamp": "2026-01-07T09:04:57.916338+00:00"
     }
   ],
-  "timestamp": "2026-01-06T12:35:46.504611+00:00"
+  "timestamp": "2026-01-07T09:04:57.916689+00:00"
 }

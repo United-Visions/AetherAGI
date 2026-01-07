@@ -108,6 +108,7 @@ class AuthManagerSupabase:
             
             if result.data:
                 logger.info(f"✅ API key generated and stored for user: {user_id} ({role.value})")
+                logger.info(f"   Key prefix: {full_key[:20]}..., hash: {key_hash[:16]}...")
                 return full_key
             else:
                 logger.error(f"Failed to store API key in Supabase")
@@ -142,7 +143,7 @@ class AuthManagerSupabase:
                 .execute()
             
             if not result.data or len(result.data) == 0:
-                logger.warning(f"Invalid API key attempt")
+                logger.warning(f"Invalid API key attempt - key prefix: {provided_key[:20]}..., hash: {key_hash[:16]}...")
                 return None
             
             key_data = result.data[0]
@@ -171,6 +172,11 @@ class AuthManagerSupabase:
         except Exception as e:
             logger.error(f"Error verifying API key: {e}")
             return None
+            
+    def verify_key(self, provided_key: str) -> Optional[str]:
+        """Convenience method that returns just the user_id or None"""
+        user_data = self.verify_api_key(provided_key)
+        return user_data["user_id"] if user_data else None
     
     def revoke_api_key(self, key_hash: str) -> bool:
         """Revoke an API key"""

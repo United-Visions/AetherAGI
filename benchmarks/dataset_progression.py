@@ -128,6 +128,7 @@ MMLU_VARIANTS = [
         question_field="question",
         answer_field="answer",
         answer_format="letter",
+        parser="mmlu_index_to_letter",  # Answer is index 0-3, convert to A-D
         estimated_size=14000,
     ),
     DatasetVariant(
@@ -139,6 +140,7 @@ MMLU_VARIANTS = [
         question_field="question",
         answer_field="answer",
         answer_format="letter",
+        parser="mmlu_index_to_letter",  # Answer is index, convert to letter
         estimated_size=12000,
     ),
     DatasetVariant(
@@ -150,6 +152,7 @@ MMLU_VARIANTS = [
         question_field="question",
         answer_field="answer",
         answer_format="letter",
+        parser="mmlu_index_to_letter",  # Answer is index, convert to letter
         estimated_size=3000,
     ),
 ]

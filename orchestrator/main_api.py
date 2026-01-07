@@ -35,6 +35,7 @@ from orchestrator.agent_state_machine import AgentStateMachine
 from orchestrator.session_manager import SessionManager
 from orchestrator.background_worker import BackgroundWorker, set_background_worker
 from orchestrator.action_parser import ActionParser
+from orchestrator.benchmark_service import BENCHMARK_SERVICE
 from perception.eye import Eye
 from config.settings import settings
 import asyncio
@@ -59,104 +60,134 @@ app.add_middleware(
 
 logger.info(f"CORS middleware configured with allowed origins: {origins}")
 
+# ============================================================================
+# Initialize Core Services (Global Singletons)
+# ============================================================================
+
+# Get required API keys from environment
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY", "")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+
+# Authentication Manager
+AUTH = AuthManagerSupabase()
+
+# Initialize the perception module (multimodal input)
+EYE = Eye()
+
+# Initialize vector store and memory systems
+VECTOR_STORE = AetherVectorStore(api_key=PINECONE_API_KEY)
+EPISODIC_MEMORY = EpisodicMemory(VECTOR_STORE)
+
+# Initialize brain components
+LOGIC_ENGINE = LogicEngine(pinecone_key=PINECONE_API_KEY)
+HEART = Heart(pinecone_key=PINECONE_API_KEY)
+JEPA_ALIGNER = JEPAAligner()
+
+# Initialize session management
+SESSION_MANAGER = SessionManager()
+ACTION_PARSER = ActionParser()
+
+# Initialize curiosity and research modules
+SURPRISE_DETECTOR = SurpriseDetector(jepa=JEPA_ALIGNER, store=VECTOR_STORE)
+RESEARCH_SCHEDULER = ResearchScheduler(redis_url=REDIS_URL)
+
+# Initialize the routing layer with available adapters
+ROUTER = Router()
+
+# Initialize the main active inference loop (the "nervous system")
+AETHER = ActiveInferenceLoop(
+    brain=LOGIC_ENGINE,
+    memory=EPISODIC_MEMORY,
+    store=VECTOR_STORE,
+    router=ROUTER,
+    heart=HEART,
+    surprise_detector=SURPRISE_DETECTOR,
+    session_manager=SESSION_MANAGER
+)
+
+# Initialize background worker for autonomous goals
+BACKGROUND_WORKER = BackgroundWorker(
+    brain=LOGIC_ENGINE,
+    heart=HEART,
+    store=VECTOR_STORE,
+    memory=EPISODIC_MEMORY,
+    action_parser=ACTION_PARSER,
+    router=ROUTER
+)
+set_background_worker(BACKGROUND_WORKER)
+
+# Also expose as AUTH_MANAGER for some endpoints that use that name
+AUTH_MANAGER = AUTH
+
+logger.info("✅ All core services initialized")
+
 # Setup Security
 API_KEY_NAME = "X-Aether-Key"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
-# Initialize Core Components
-STORE = AetherVectorStore(api_key=os.getenv("PINECONE_API_KEY"))
-MEMORY = EpisodicMemory(STORE)
-BRAIN = LogicEngine(pinecone_key=os.getenv("PINECONE_API_KEY"))
-ROUTER = Router()
-HEART = Heart(pinecone_key=os.getenv("PINECONE_API_KEY")) # Initialize the new Heart
-AUTH = AuthManagerSupabase()
-SESSION_MANAGER = SessionManager()  # Domain-aware session management
-EYE = Eye() # Initialize Perception Eye directly
+async def get_optional_api_key(
+    x_key: Optional[str] = Header(None, alias="X-Aether-Key"),
+    secret_key: Optional[str] = Header(None, alias="Aether-Secret-Key"),
+    auth: Optional[str] = Header(None, alias="Authorization")
+):
+    """Checks multiple possible header locations for the API key."""
+    if x_key: return x_key
+    if secret_key: return secret_key
+    if auth and auth.startswith("Bearer "): return auth.replace("Bearer ", "")
+    if auth and auth.startswith("ApiKey "): return auth.replace("ApiKey ", "")
+    return None
 
-# Initialize Action Parser
-ACTION_PARSER = ActionParser(ROUTER, STORE, MEMORY)
-
-# Initialize Sensory & Curiosity Components
-JEPA = JEPAAligner()
-SURPRISE_DETECTOR = SurpriseDetector(jepa=JEPA, store=STORE)
-
-# AETHER now takes SURPRISE_DETECTOR + SESSION_MANAGER
-AETHER = ActiveInferenceLoop(BRAIN, MEMORY, STORE, ROUTER, HEART, surprise_detector=SURPRISE_DETECTOR, session_manager=SESSION_MANAGER)
-RESEARCH_SCHEDULER = ResearchScheduler(redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"))
-
-# Initialize Background Worker for autonomous task completion
-BACKGROUND_WORKER = BackgroundWorker(
-    brain=BRAIN,
-    heart=HEART,
-    store=STORE,
-    memory=MEMORY,
-    action_parser=ACTION_PARSER,
-    router=ROUTER,
-    poll_interval=30  # Poll every 30 seconds
-)
-set_background_worker(BACKGROUND_WORKER)
-
-# --- HTTP Client for External Services ---
-http_client = httpx.AsyncClient(timeout=60.0) # 60 second timeout for model processing
-
-# --- Startup ---
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize background worker and other services on startup."""
-    # Start background worker in separate task
-    asyncio.create_task(BACKGROUND_WORKER.start())
-    logger.info("🚀 Background worker started for autonomous task completion")
+async def get_user_id(api_key: str = Depends(get_optional_api_key)):
+    # Dev mode bypass for local development/benchmarking
+    if settings.dev_mode and not api_key:
+        # Use first pilot user from settings, or fallback
+        pilot_user = settings.pilot_users[0] if settings.pilot_users else "dev_user"
+        logger.warning(f"⚠️ DEV MODE: Allowing unauthenticated request as {pilot_user}")
+        return pilot_user
     
-    if settings.features.agent_state_machine:
-        # Mock MetaController until fully implemented
-        class MockMetaController:
-            async def decide_next_action(self, user_id):
-                return {"adapter": "chat", "intent": "System: MetaController not ready."}
-
-        agent_sm = AgentStateMachine(
-            redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"),
-            aether_loop=AETHER,
-            meta_ctrl=MockMetaController(),
-            router=ROUTER
-        )
-
-        pilot_users = settings.pilot_users or []
-        for uid in pilot_users:
-            asyncio.create_task(agent_sm.run(uid))
-            logger.info(f"Started AgentStateMachine for pilot user: {uid}")
-
-# --- Schemas ---
-class ChatCompletionRequest(BaseModel):
-    model: str = "aethermind-v1"
-    messages: list
-    user: str # The user_id for episodic memory tracking
-    # Add a field for user feedback
-    reaction_score: Optional[float] = None 
-    last_message_id: Optional[str] = None
-
-# --- Middleware-like Auth ---
-async def get_user_id(api_key: str = Security(api_key_header)):
+    if not api_key:
+        raise HTTPException(status_code=401, detail="API key missing")
     user_data = AUTH.verify_api_key(api_key)
     if not user_data:
-        raise HTTPException(status_code=403, detail="Invalid or missing Aether-Secret-Key")
+        raise HTTPException(status_code=403, detail="Invalid API key")
     return user_data["user_id"]
 
 
-async def verify_api_key(api_key: str = Security(api_key_header)) -> dict:
+async def verify_api_key(api_key: str = Depends(get_optional_api_key)) -> dict:
     """
     Verify API key and return full user data dict.
-    
-    Returns:
-        dict with user_id, role, permissions, etc.
-    
-    Raises:
-        HTTPException 403 if key is invalid or missing
+    Checks multiple header variations (X-Aether-Key, Aether-Secret-Key, Authorization).
     """
+    # Dev mode bypass for local development/benchmarking
+    if settings.dev_mode and not api_key:
+        # Use first pilot user from settings, or fallback
+        pilot_user = settings.pilot_users[0] if settings.pilot_users else "dev_user"
+        logger.warning(f"⚠️ DEV MODE: Allowing unauthenticated request as {pilot_user}")
+        return {"user_id": pilot_user, "role": "admin", "permissions": ["all"]}
+    
+    if not api_key:
+        raise HTTPException(status_code=401, detail="API key missing")
     user_data = AUTH.verify_api_key(api_key)
     if not user_data:
-        raise HTTPException(status_code=403, detail="Invalid or missing Aether-Secret-Key")
+        raise HTTPException(status_code=403, detail="Invalid API key")
     return user_data
+
+
+# ============================================================================
+# Request Models (must be defined before endpoints that use them)
+# ============================================================================
+
+class ChatCompletionRequest(BaseModel):
+    """OpenAI-compatible chat completion request format."""
+    model: str = "aethermind-v1"
+    messages: list[dict]
+    temperature: float = 0.7
+    max_tokens: Optional[int] = None
+    stream: bool = False
+    user: Optional[str] = None
+    # AetherMind-specific fields for feedback loop
+    last_message_id: Optional[str] = None
+    reaction_score: Optional[float] = None
 
 
 # --- Endpoints ---
@@ -238,9 +269,18 @@ async def chat_completions(
     # Extract the last message from the list
     last_message = request.messages[-1]["content"]
     
+    # Check for system prompt override in the messages list
+    override_system = None
+    for msg in request.messages:
+        if msg.get("role") == "system":
+            override_system = msg.get("content")
+            break
+
     # Run the DCLA Logic Cycle
     # Now unpacks updated return values
-    response_text, message_id, emotion_vector, agent_state = await AETHER.run_cycle(user_id, last_message)
+    response_text, message_id, emotion_vector, agent_state = await AETHER.run_cycle(
+        user_id, last_message, override_prompt=override_system
+    )
     
     # Get activity events (tool creation, file changes, code execution)
     activity_events = AETHER.get_activity_events()
@@ -377,11 +417,12 @@ async def get_user_domain(authorization: str = Header(None)):
         raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
     
     api_key = authorization.replace("ApiKey ", "").replace("Bearer ", "")
-    user_id = AUTH.verify_key(api_key)
+    user_data = AUTH.verify_api_key(api_key)
     
-    if not user_id:
+    if not user_data:
         raise HTTPException(status_code=401, detail="Invalid API key")
     
+    user_id = user_data["user_id"]
     profile = SESSION_MANAGER.get_user_profile(user_id)
     
     return {
@@ -860,9 +901,65 @@ async def list_user_goals(
         logger.error(f"Failed to list goals: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-# ============================================================================
-# User Repos API Endpoints
-# ============================================================================
+# ==========================================
+# BENCHMARK MANAGEMENT ENDPOINTS
+# ==========================================
+
+@app.get("/v1/benchmarks")
+async def list_benchmarks(user_data: dict = Depends(verify_api_key)):
+    """List all available benchmarks and their last results."""
+    return await BENCHMARK_SERVICE.get_available_benchmarks()
+
+@app.post("/v1/benchmarks/run")
+async def run_benchmark(
+    family: str, 
+    model: Optional[str] = None,
+    user_data: dict = Depends(verify_api_key)
+):
+    """Start a benchmark run."""
+    benchmark_id = await BENCHMARK_SERVICE.start_benchmark(
+        family=family,
+        user_id=user_data["user_id"],
+        mode="api",
+        model=model
+    )
+    return {"benchmark_id": benchmark_id, "status": "started"}
+
+@app.get("/v1/benchmarks/{benchmark_id}/status")
+async def get_benchmark_status(
+    benchmark_id: str,
+    user_data: dict = Depends(verify_api_key)
+):
+    """Get status of a running benchmark."""
+    return await BENCHMARK_SERVICE.get_status(benchmark_id)
+
+# ==========================================
+# PROACTIVE INTERACTION ENDPOINT
+# ==========================================
+
+@app.get("/v1/proactive/check")
+async def check_proactive_interaction(
+    user_data: dict = Depends(verify_api_key)
+):
+    """
+    Check if AetherMind has anything proactive to say to the user.
+    This is called when the UI initializes or periodically.
+    """
+    user_id = user_data["user_id"]
+    
+    # Run the proactive check through the inference loop
+    need_to_speak, message, priority, metadata = await AETHER.check_proactive_need(user_id)
+    
+    return {
+        "should_interact": need_to_speak,
+        "message": message,
+        "priority": priority,
+        "metadata": metadata
+    }
+
+# ==========================================
+# GitHub Repos API Endpoints
+# ==========================================
 
 @app.get("/api/user/repos")
 async def get_user_repos(user_data: dict = Depends(verify_api_key)):
@@ -873,19 +970,200 @@ async def get_user_repos(user_data: dict = Depends(verify_api_key)):
     try:
         user_id = user_data["user_id"]
         
-        # Get user profile from Supabase
-        response = AUTH_MANAGER.supabase.table("users").select("metadata").eq("user_id", user_id).execute()
+        # Try to get user profile from Supabase
+        try:
+            if hasattr(AUTH_MANAGER, 'supabase') and AUTH_MANAGER.supabase:
+                response = AUTH_MANAGER.supabase.table("users").select("metadata").eq("user_id", user_id).execute()
+                
+                if response.data:
+                    user_metadata = response.data[0].get("metadata", {})
+                    connected_repos = user_metadata.get("connected_repos", [])
+                    return {"repos": connected_repos}
+        except Exception as db_error:
+            logger.warning(f"Could not fetch repos from database: {db_error}")
         
-        if not response.data:
-            return {"repos": []}
-        
-        user_metadata = response.data[0].get("metadata", {})
-        connected_repos = user_metadata.get("connected_repos", [])
-        
-        return {"repos": connected_repos}
+        # Return empty list if no repos found or database unavailable
+        return {"repos": []}
     
     except Exception as e:
         logger.error(f"Failed to fetch user repos: {e}", exc_info=True)
+        # Return empty list instead of error to prevent frontend crash
+        return {"repos": []}
+
+
+# ==========================================
+# Apps Management Endpoints
+# ==========================================
+
+@app.get("/v1/apps/list")
+async def list_user_apps(user_data: dict = Depends(verify_api_key)):
+    """
+    List all apps created by the authenticated user.
+    Returns apps from user metadata or sandbox sessions.
+    """
+    try:
+        user_id = user_data["user_id"]
+        
+        # Try to get apps from Supabase
+        try:
+            if hasattr(AUTH_MANAGER, 'supabase') and AUTH_MANAGER.supabase:
+                response = AUTH_MANAGER.supabase.table("user_apps").select("*").eq("user_id", user_id).execute()
+                
+                if response.data:
+                    return {
+                        "apps": [
+                            {
+                                "id": app.get("id"),
+                                "name": app.get("name", "Unnamed App"),
+                                "description": app.get("description", ""),
+                                "status": app.get("status", "stopped"),
+                                "template": app.get("template", "blank"),
+                                "created_at": app.get("created_at"),
+                                "updated_at": app.get("updated_at")
+                            }
+                            for app in response.data
+                        ],
+                        "total": len(response.data)
+                    }
+        except Exception as db_error:
+            logger.warning(f"Could not fetch apps from database: {db_error}")
+        
+        # Return empty list if no apps found or database unavailable
+        return {"apps": [], "total": 0}
+    
+    except Exception as e:
+        logger.error(f"Failed to list apps: {e}", exc_info=True)
+        return {"apps": [], "total": 0}
+
+
+# =============================================
+# UNIFIED PROJECT CREATION API
+# Supports: apps, tools, mcp servers, APIs
+# =============================================
+
+@app.post("/v1/projects/create")
+async def create_project(
+    project_data: dict,
+    user_data: dict = Depends(verify_api_key)
+):
+    """
+    Create a new project (app, tool, mcp server, or API).
+    
+    Body:
+    {
+        "name": "my-project",
+        "project_type": "app|tool|mcp|api",
+        "template": "blank|react|cli|stdio|fastapi|...",
+        "description": "What the project does",
+        "preview_mode": "iframe|terminal|logs|api-tester"
+    }
+    """
+    try:
+        user_id = user_data["user_id"]
+        project_type = project_data.get("project_type", "app")
+        
+        # Validate project type
+        valid_types = ["app", "tool", "mcp", "api"]
+        if project_type not in valid_types:
+            raise HTTPException(status_code=400, detail=f"Invalid project_type. Must be one of: {valid_types}")
+        
+        project_record = {
+            "id": f"{project_type}_{user_id}_{int(datetime.now().timestamp())}",
+            "user_id": user_id,
+            "name": project_data.get("name", f"New {project_type.upper()}"),
+            "project_type": project_type,
+            "template": project_data.get("template", "blank"),
+            "description": project_data.get("description", ""),
+            "preview_mode": project_data.get("preview_mode", "iframe"),
+            "status": "created",
+            "sandbox_id": None,
+            "files": [],
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+        
+        # Try to save to Supabase
+        try:
+            if hasattr(AUTH_MANAGER, 'supabase') and AUTH_MANAGER.supabase:
+                AUTH_MANAGER.supabase.table("user_projects").insert(project_record).execute()
+        except Exception as db_error:
+            logger.warning(f"Could not save project to database: {db_error}")
+        
+        logger.info(f"Created {project_type} project '{project_record['name']}' for user {user_id}")
+        return {"project": project_record, "message": f"{project_type.upper()} project created successfully"}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to create project: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/v1/projects/list")
+async def list_projects(
+    project_type: Optional[str] = None,
+    user_data: dict = Depends(verify_api_key)
+):
+    """
+    List all projects for the authenticated user.
+    Optionally filter by project_type (app, tool, mcp, api).
+    """
+    try:
+        user_id = user_data["user_id"]
+        
+        # Try to fetch from Supabase
+        try:
+            if hasattr(AUTH_MANAGER, 'supabase') and AUTH_MANAGER.supabase:
+                query = AUTH_MANAGER.supabase.table("user_projects").select("*").eq("user_id", user_id)
+                if project_type:
+                    query = query.eq("project_type", project_type)
+                response = query.order("created_at", desc=True).execute()
+                return {"projects": response.data, "total": len(response.data)}
+        except Exception as db_error:
+            logger.warning(f"Could not fetch projects from database: {db_error}")
+        
+        return {"projects": [], "total": 0}
+    
+    except Exception as e:
+        logger.error(f"Failed to list projects: {e}", exc_info=True)
+        return {"projects": [], "total": 0}
+
+
+@app.post("/v1/apps/create")
+async def create_app(
+    app_data: dict,
+    user_data: dict = Depends(verify_api_key)
+):
+    """
+    Create a new app for the authenticated user.
+    (Legacy endpoint - redirects to unified /v1/projects/create)
+    """
+    try:
+        user_id = user_data["user_id"]
+        
+        app_record = {
+            "id": f"app_{user_id}_{int(datetime.now().timestamp())}",
+            "user_id": user_id,
+            "name": app_data.get("name", "New App"),
+            "description": app_data.get("description", ""),
+            "template": app_data.get("template", "blank"),
+            "project_type": "app",
+            "status": "created",
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+        
+        # Try to save to Supabase
+        try:
+            if hasattr(AUTH_MANAGER, 'supabase') and AUTH_MANAGER.supabase:
+                AUTH_MANAGER.supabase.table("user_projects").insert(app_record).execute()
+        except Exception as db_error:
+            logger.warning(f"Could not save app to database: {db_error}")
+        
+        return {"app": app_record, "message": "App created successfully"}
+    
+    except Exception as e:
+        logger.error(f"Failed to create app: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -11,6 +11,7 @@ import { SplitViewPanel } from './components/SplitViewPanel.js';
 import { BrainVisualizer } from './components/BrainVisualizer.js';
 import { ApiKeyModal } from './components/ApiKeyModal.js';
 import { ResponseParser } from './components/ResponseParser.js';
+import { SandboxManager } from './components/SandboxManager.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 [ROUTER] DOMContentLoaded - Initializing AetherMind frontend...');
@@ -23,10 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('✅ [ROUTER] ApiKeyModal initialized');
     
     // Check if API key exists, if not show modal immediately
-    const apiKey = localStorage.getItem('aethermind_api_key');
+    const apiKey = localStorage.getItem('aethermind_api_key') || localStorage.getItem('aether_api_key');
     if (!apiKey) {
         console.warn('⚠️ [ROUTER] No API key found, showing modal...');
         apiKeyModal.show();
+    } else if (!localStorage.getItem('aethermind_api_key')) {
+        // Migration: Ensure it's stored under the canonical name
+        localStorage.setItem('aethermind_api_key', apiKey);
     }
     
     // Initialize Response Parser
@@ -36,6 +40,219 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('📦 [ROUTER] Creating core components...');
     const chat = new ChatInterface('messages');
     console.log('✅ [ROUTER] ChatInterface initialized');
+    
+    // Message Center for notifications
+    const messageCenter = {
+        notifications: [],
+        isOpen: false,
+        
+        add(notification) {
+            this.notifications.unshift({
+                id: `notif_${Date.now()}`,
+                ...notification,
+                timestamp: new Date().toISOString(),
+                read: false
+            });
+            this.updateBadge();
+        },
+        
+        updateBadge() {
+            const unreadCount = this.notifications.filter(n => !n.read).length;
+            const badge = document.getElementById('message-center-badge');
+            if (badge) {
+                badge.textContent = unreadCount;
+                badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+            }
+        },
+        
+        open() {
+            this.isOpen = true;
+            // Mark all as read
+            this.notifications.forEach(n => n.read = true);
+            this.updateBadge();
+            this.render();
+        },
+        
+        close() {
+            this.isOpen = false;
+            const modal = document.getElementById('message-center-modal');
+            if (modal) modal.remove();
+        },
+        
+        render() {
+            // Remove existing modal
+            const existing = document.getElementById('message-center-modal');
+            if (existing) existing.remove();
+            
+            const modal = document.createElement('div');
+            modal.id = 'message-center-modal';
+            modal.className = 'message-center-modal';
+            modal.innerHTML = `
+                <div class="message-center-overlay" onclick="window.messageCenter.close()"></div>
+                <div class="message-center-container">
+                    <div class="message-center-header">
+                        <div class="message-center-title">
+                            <i class="fas fa-inbox"></i>
+                            <span>Message Center</span>
+                            <span class="message-count">${this.notifications.length} messages</span>
+                        </div>
+                        <button class="message-center-close" onclick="window.messageCenter.close()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="message-center-body">
+                        ${this.notifications.length === 0 ? `
+                            <div class="message-center-empty">
+                                <i class="fas fa-bell-slash"></i>
+                                <p>No messages yet</p>
+                                <span>AetherMind will notify you about goal progress and important updates</span>
+                            </div>
+                        ` : this.notifications.map(n => `
+                            <div class="message-item ${n.read ? 'read' : 'unread'}" data-id="${n.id}">
+                                <div class="message-item-icon">
+                                    <i class="fas ${n.type === 'goal_update' ? 'fa-bullseye' : n.type === 'research' ? 'fa-search' : 'fa-comment-dots'}"></i>
+                                </div>
+                                <div class="message-item-content">
+                                    <div class="message-item-title">${n.title || 'AetherMind Notification'}</div>
+                                    <div class="message-item-text">${n.message}</div>
+                                    <div class="message-item-time">${this.formatTime(n.timestamp)}</div>
+                                </div>
+                                <div class="message-item-actions">
+                                    <button class="message-item-action" onclick="window.messageCenter.addToChat('${n.id}')">
+                                        <i class="fas fa-reply"></i> Reply
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    ${this.notifications.length > 0 ? `
+                        <div class="message-center-footer">
+                            <button class="message-center-clear" onclick="window.messageCenter.clearAll()">
+                                <i class="fas fa-trash"></i> Clear All
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            document.body.appendChild(modal);
+        },
+        
+        formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+            return date.toLocaleDateString();
+        },
+        
+        addToChat(notifId) {
+            const notif = this.notifications.find(n => n.id === notifId);
+            if (notif && window.chat) {
+                window.chat.addMessage('assistant', notif.message);
+                this.close();
+            }
+        },
+        
+        clearAll() {
+            this.notifications = [];
+            this.updateBadge();
+            this.render();
+        }
+    };
+    
+    window.messageCenter = messageCenter;
+    
+    // Proactive Interaction System (First Contact)
+    const proactiveSystem = {
+        lastCheck: 0,
+        interval: 30000, // Check every 30 seconds
+        
+        async checkManual() {
+            const key = localStorage.getItem('aethermind_api_key');
+            if (!key) return;
+            
+            // Get root URL - ensure api object is available
+            const rootUrl = api?.rootUrl || 'http://127.0.0.1:8000';
+            if (!api?.rootUrl) {
+                console.warn('🧠 [PROACTIVE] api.rootUrl not available, using fallback');
+            }
+            
+            console.log('🧠 [PROACTIVE] Checking for proactive notifications...');
+            try {
+                const response = await fetch(`${rootUrl}/v1/proactive/check`, {
+                    headers: { 'X-Aether-Key': key }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.should_interact && data.message) {
+                        this.triggerNotification(data.message, data.metadata);
+                    }
+                }
+            } catch (err) {
+                console.error('🧠 [PROACTIVE] Check failed:', err);
+            }
+        },
+        
+        triggerNotification(message, metadata = {}) {
+            console.log('🔔 [PROACTIVE] NOTIFICATION RECEIVED:', message);
+            
+            // Store in message center
+            messageCenter.add({
+                type: metadata.type || 'proactive',
+                title: metadata.title || 'AetherMind is reaching out',
+                message: message,
+                metadata: metadata
+            });
+            
+            // Show toast (stays until user closes it)
+            const toastId = `toast_${Date.now()}`;
+            const toast = document.createElement('div');
+            toast.id = toastId;
+            toast.className = 'aether-notification-toast';
+            toast.innerHTML = `
+                <button class="toast-close" onclick="document.getElementById('${toastId}').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="toast-icon"><i class="fas fa-comment-dots"></i></div>
+                <div class="toast-content">
+                    <div class="toast-title">${metadata.title || 'AetherMind is reaching out'}</div>
+                    <div class="toast-message">${message.substring(0, 150)}${message.length > 150 ? '...' : ''}</div>
+                </div>
+                <button class="toast-action" onclick="document.getElementById('${toastId}').remove(); window.messageCenter.open();">View</button>
+            `;
+            document.body.appendChild(toast);
+            
+            // Add to activity feed
+            if (window.activityFeed) {
+                window.activityFeed.addActivity({
+                    id: `proactive_${Date.now()}`,
+                    type: 'proactive_contact',
+                    status: 'completed',
+                    title: 'Proactive Interaction',
+                    details: 'AetherMind initiated contact based on goal progress',
+                    timestamp: new Date().toISOString(),
+                    data: { message, metadata }
+                });
+            }
+            
+            // NO auto-remove - notification stays until user closes it
+        },
+        
+        start() {
+            console.log('🧠 [PROACTIVE] Starting interaction loop...');
+            // First check after 5 seconds of idle
+            setTimeout(() => this.checkManual(), 5000);
+            // Then periodic
+            setInterval(() => this.checkManual(), this.interval);
+        }
+    };
+    
+    window.proactiveSystem = proactiveSystem;
+    proactiveSystem.start();
     
     const visualizer = new ThinkingVisualizer('visualizer-container');
     console.log('✅ [ROUTER] ThinkingVisualizer initialized');
@@ -75,12 +292,17 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const brainViz = new BrainVisualizer('brain-visualizer-container');
     console.log('✅ [ROUTER] BrainVisualizer initialized');
+    
+    // Initialize Sandbox Manager (App Creation Mode)
+    const sandboxManager = new SandboxManager('sandbox-mode-container');
+    console.log('✅ [ROUTER] SandboxManager initialized');
 
     // Make components globally accessible for testing/debugging
     window.activityFeed = activityFeed;
     window.splitView = splitView;
     window.brainViz = brainViz;
     window.chat = chat;
+    window.sandboxManager = sandboxManager;
 
     // DOM Elements
     const chatForm = document.getElementById('chat-form');

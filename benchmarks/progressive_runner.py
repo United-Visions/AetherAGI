@@ -46,6 +46,20 @@ from benchmarks.aether_client import AetherBenchmarkClient
 from benchmarks.score_tracker import ScoreTracker
 from benchmarks.base import Question, Answer, RoundResult
 
+# Import benchmark implementations
+from benchmarks.implementations.gsm8k import GSM8KBenchmark
+from benchmarks.implementations.mmlu import MMLUBenchmark
+from benchmarks.implementations.humaneval import HumanEvalBenchmark
+
+def get_benchmark_impl(family: str):
+    """Factory to get the benchmark implementation for a family."""
+    if family == "gsm":
+        return GSM8KBenchmark()
+    elif family == "mmlu":
+        return MMLUBenchmark()
+    elif family == "humaneval":
+        return HumanEvalBenchmark()
+    return None
 
 class ProgressiveRunner:
     """
@@ -89,6 +103,9 @@ class ProgressiveRunner:
             api_base=api_base,
             api_key=api_key,
         )
+        
+        # Get benchmark implementation for scoring
+        self.benchmark = get_benchmark_impl(family)
         
         self.score_tracker = ScoreTracker()
         self.all_results: List[Dict] = []
@@ -160,86 +177,119 @@ class ProgressiveRunner:
         return self._generate_final_report()
     
     async def _run_chunk(self) -> Dict[str, Any]:
-        """Run a single chunk of questions as a single batch request."""
+        """Run a single chunk of questions."""
         variant = self.loader.current_variant
         chunk_data, chunk_num, total_chunks = self.loader.get_next_chunk()
         
+        # Decide if we can batch this chunk
+        # Coding questions should NOT be batched because they require multiline responses 
+        # that break the numbered list parsing logic.
+        can_batch = variant.answer_format not in ["code", "json"]
+        
+        mode_str = "BATCH MODE" if can_batch else "SEQUENTIAL MODE"
         self._log(f"\n{'='*60}")
-        self._log(f"📝 {variant.name} - Chunk {chunk_num}/{total_chunks} (BATCH MODE)")
+        self._log(f"📝 {variant.name} - Chunk {chunk_num}/{total_chunks} ({mode_str})")
         self._log(f"   Questions: {len(chunk_data)}")
         self._log(f"{'='*60}")
         
         # Convert to Question objects
         questions = self._parse_questions(chunk_data, variant)
         
-        # Build batched prompt
-        batched_prompt = "Solve the following questions and provide only the final answers in a numbered list:\n\n"
-        for i, q in enumerate(questions):
-            batched_prompt += f"Question {i+1}: {q.text}\n\n"
-        
-        # Single Request for the whole chunk
-        self._log(f"   🚀 Sending batch request (1 chunk = 1 request)...")
-        
-        max_retries = 3
-        retry_count = 0
-        result = None
-        
-        while retry_count <= max_retries:
-            result = await self.aether.ask(
-                question=batched_prompt,
-                answer_format=variant.answer_format,
-                timeout=300.0  # Higher timeout for batch
-            )
-            
-            if "429" in str(result.get("raw_response", "")) or "RateLimitError" in str(result.get("raw_response", "")):
-                retry_count += 1
-                wait_time = 60 # Wait long for batch retry
-                self._log(f"   ⚠️ Rate limit hit. Waiting {wait_time}s... (Attempt {retry_count}/{max_retries})")
-                await asyncio.sleep(wait_time)
-            else:
-                break
-        
-        if not result or "ERROR" in result.get("raw_response", ""):
-            self._log(f"   ❌ Batch request failed: {result.get('raw_response', 'Unknown Error')}")
-            return {"score": 0, "correct": 0, "total": len(questions)}
-
-        # Parse the batched response
-        raw_outputs = result["response"].split("\n")
-        parsed_answers = {}
-        
-        # Look for numbered lines: "1. Answer", "3) Answer", etc.
-        for line in raw_outputs:
-            match = re.search(r'^(\d+)[\.\)\-\s]+(.*)', line.strip())
-            if match:
-                idx = int(match.group(1)) - 1
-                ans = match.group(2).strip()
-                parsed_answers[idx] = ans
-        
-        # Count results
         answers = []
         correct = 0
-        
-        for i, question in enumerate(questions):
-            # Fallback if parsing failed for a specific line
-            model_answer = parsed_answers.get(i, raw_outputs[i] if i < len(raw_outputs) else "")
+
+        if can_batch:
+            # --- BATCH EXECUTION ---
+            batched_prompt = "Solve the following questions and provide only the final answers in a numbered list:\n\n"
+            for i, q in enumerate(questions):
+                batched_prompt += f"Question {i+1}: {q.text}\n\n"
             
-            is_correct, extracted = self._check_answer(question, model_answer, variant)
+            self._log(f"   🚀 Sending batch request (1 chunk = 1 request)...")
             
-            if is_correct:
-                correct += 1
+            result = await self._ask_with_retry(batched_prompt, variant.answer_format)
             
-            answer = Answer(
-                question_id=question.id,
-                raw_response=model_answer,
-                extracted_answer=extracted,
-                is_correct=is_correct,
-                latency_ms=result["latency_ms"] / len(questions),
-                tokens_used=result["tokens_used"] // len(questions),
-            )
-            answers.append(answer)
-            status = "✓" if is_correct else "✗"
-            self._log(f"   [{i+1}/{len(questions)}] {status}", end="\r")
-        
+            if not result or "ERROR" in result.get("raw_response", ""):
+                self._log(f"   ❌ Batch request failed: {result.get('raw_response', 'Unknown Error')}")
+                return {"score": 0, "correct": 0, "total": len(questions)}
+
+            # Parse the batched response
+            raw_outputs = result["response"].split("\n")
+            parsed_answers = {}
+            
+            # Look for numbered lines: "1. Answer", "3) Answer", etc.
+            for line in raw_outputs:
+                match = re.search(r'^(\d+)[\.\)\-\s]+(.*)', line.strip())
+                if match:
+                    idx = int(match.group(1)) - 1
+                    ans = match.group(2).strip()
+                    parsed_answers[idx] = ans
+            
+            for i, question in enumerate(questions):
+                model_answer = parsed_answers.get(i, raw_outputs[i] if i < len(raw_outputs) else "")
+                is_correct, extracted = self._check_answer(question, model_answer, variant)
+                
+                if is_correct:
+                    correct += 1
+                
+                answer = Answer(
+                    question_id=question.id,
+                    raw_response=model_answer,
+                    extracted_answer=extracted,
+                    is_correct=is_correct,
+                    latency_ms=result["latency_ms"] / len(questions),
+                    tokens_used=result["tokens_used"] // len(questions),
+                )
+                answers.append(answer)
+                status = "✓" if is_correct else "✗"
+                self._log(f"   [{i+1}/{len(questions)}] {status}", end="\r")
+        else:
+            # --- SEQUENTIAL EXECUTION (for Code/Complex types) ---
+            for i, question in enumerate(questions):
+                # Use benchmark-specific formatting if available
+                if self.benchmark:
+                    prompt = self.benchmark.format_question_for_aether(question)
+                else:
+                    prompt = question.text
+                    
+                result = await self._ask_with_retry(prompt, variant.answer_format)
+                
+                model_answer = result.get("response", "")
+                is_correct, extracted = self._check_answer(question, model_answer, variant)
+                
+                if is_correct:
+                    correct += 1
+                
+                answer = Answer(
+                    question_id=question.id,
+                    raw_response=model_answer,
+                    extracted_answer=extracted,
+                    is_correct=is_correct,
+                    latency_ms=result.get("latency_ms", 0),
+                    tokens_used=result.get("tokens_used", 0),
+                )
+                answers.append(answer)
+                status = "✓" if is_correct else "✗"
+                self._log(f"   [{i+1}/{len(questions)}] {status} (id: {question.id})")
+                
+                if not is_correct and self.verbose:
+                    # Print error details for failed coding questions
+                    err = extracted.get("error") if isinstance(extracted, dict) else None
+                    if err:
+                        # Find the actual error message in the traceback
+                        err_str = str(err)
+                        if "ASSERTION_FAILED" in err_str:
+                            clean_err = err_str.split("ASSERTION_FAILED:")[1].strip()
+                        elif "ERROR:" in err_str:
+                            clean_err = err_str.split("ERROR:")[1].strip()
+                        else:
+                            clean_err = err_str.strip()
+                            
+                        # Only show the last few lines of traceback if too long
+                        if len(clean_err.split("\n")) > 5:
+                            clean_err = "..." + "\n".join(clean_err.split("\n")[-5:])
+                            
+                        self._log(f"      ❌ Error: {clean_err[:500]}")
+
         print()
         score = correct / len(questions) if questions else 0
         self._log(f"\n📊 Chunk {chunk_num} Results:")
@@ -256,6 +306,28 @@ class ProgressiveRunner:
         }
             
         return chunk_summary
+
+    async def _ask_with_retry(self, prompt: str, answer_format: str, max_retries: int = 3) -> Dict:
+        """Helper to call Aether with retry logic."""
+        retry_count = 0
+        result = None
+        
+        while retry_count <= max_retries:
+            result = await self.aether.ask(
+                question=prompt,
+                answer_format=answer_format,
+                timeout=300.0 if "Question" in prompt else 60.0
+            )
+            
+            raw = str(result.get("raw_response", ""))
+            if "429" in raw or "RateLimitError" in raw or "quota" in raw.lower():
+                retry_count += 1
+                wait_time = 30 * retry_count
+                self._log(f"   ⚠️ Rate limit hit. Waiting {wait_time}s... (Attempt {retry_count}/{max_retries})")
+                await asyncio.sleep(wait_time)
+            else:
+                break
+        return result
 
     def _save_checkpoint(self, last_chunk: Dict):
         """Save results to JSON file after every chunk."""
@@ -281,17 +353,27 @@ class ProgressiveRunner:
                 q_text = item.get(variant.question_field, "")
                 raw_answer = item.get(variant.answer_field, "")
                 
+                # For MMLU-style datasets, append choices to the question text
+                if variant.answer_format == "letter" and "choices" in item:
+                    choices = item["choices"]
+                    if isinstance(choices, list):
+                        for j, choice in enumerate(choices):
+                            letter = chr(65 + j)  # A, B, C, D...
+                            q_text += f"\n{letter}) {choice}"
+                
                 # Parse answer based on format
                 expected = self._extract_expected_answer(raw_answer, variant)
+                
+                # Use all fields as metadata (critical for code tests like HumanEval)
+                metadata = item.copy()
+                metadata["variant"] = variant.name
+                metadata["raw_answer"] = raw_answer
                 
                 questions.append(Question(
                     id=f"{variant.name}_{i}",
                     text=q_text,
                     expected_answer=expected,
-                    metadata={
-                        "variant": variant.name,
-                        "raw_answer": raw_answer,
-                    }
+                    metadata=metadata
                 ))
             except Exception as e:
                 self._log(f"   ⚠️ Failed to parse question {i}: {e}")
@@ -319,6 +401,17 @@ class ProgressiveRunner:
                 return match.group(1).replace(",", "")
             return raw_answer.strip()
         
+        elif variant.parser == "mmlu_index_to_letter":
+            # MMLU answer is an index (0, 1, 2, 3) -> convert to letter (A, B, C, D)
+            try:
+                idx = int(raw_answer)
+                return chr(65 + idx)  # 0->A, 1->B, 2->C, 3->D
+            except (ValueError, TypeError):
+                # If it's already a letter, just return it
+                if raw_answer.upper() in "ABCDEFGHIJ":
+                    return raw_answer.upper()
+                return raw_answer
+        
         elif variant.answer_format == "number":
             # Generic number extraction
             numbers = re.findall(r'-?\d+(?:,\d{3})*(?:\.\d+)?', raw_answer)
@@ -334,6 +427,10 @@ class ProgressiveRunner:
     
     def _check_answer(self, question: Question, response: str, variant: DatasetVariant) -> tuple:
         """Check if the response is correct."""
+        # Use full benchmark implementation if available
+        if self.benchmark:
+            return self.benchmark.check_answer(question, response)
+            
         expected = str(question.expected_answer).strip()
         
         # Extract answer from response

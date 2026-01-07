@@ -141,18 +141,38 @@ class HumanEvalBenchmark(BaseBenchmark, CodeExecutionMixin):
     def check_answer(self, question: Question, response: str) -> Tuple[bool, Any]:
         """
         Check if the code solution passes all test cases.
-        
-        Uses sandboxed execution to run the code with test cases.
         """
         # Extract code from response
         extracted_code = self.extract_answer(response)
         
         # Build full solution
         prompt = question.metadata.get("prompt", question.text)
-        full_code = prompt + extracted_code
+        
+        if "def " in extracted_code:
+            import re
+            prompt_func_match = re.search(r'def\s+([a-zA-Z0-9_]+)', prompt)
+            if prompt_func_match:
+                func_name = prompt_func_match.group(1)
+                if f"def {func_name}" in extracted_code:
+                    prompt_parts = re.split(f"def\\s+{func_name}", prompt)
+                    full_code = prompt_parts[0] + extracted_code
+                else:
+                    full_code = prompt + "\n" + extracted_code
+            else:
+                full_code = prompt + "\n" + extracted_code
+        else:
+            # FORCE INDENTATION of the body if model forgot it
+            lines = extracted_code.split('\n')
+            indented_lines = []
+            for line in lines:
+                if line.strip() and not (line.startswith('    ') or line.startswith('\t')):
+                    indented_lines.append('    ' + line)
+                else:
+                    indented_lines.append(line)
+            full_code = prompt + '\n' + '\n'.join(indented_lines)
         
         # Get test code
-        test_code = question.metadata.get("test_code", "")
+        test_code = question.metadata.get("test_code") or question.metadata.get("test", "")
         
         # Execute and check
         passed, error = self._execute_and_test(full_code, test_code)
@@ -190,17 +210,36 @@ class HumanEvalBenchmark(BaseBenchmark, CodeExecutionMixin):
     
     def _execute_and_test(self, code: str, test_code: str, timeout: float = 10.0) -> Tuple[bool, str]:
         """Execute code with tests in a sandboxed subprocess."""
+        import sys
+        
+        # Build the script to run
+        # Use raw string for the inner regex to avoid SyntaxWarnings
         full_code = f"""
 {code}
 
 # Run tests
 try:
 {chr(10).join('    ' + line for line in test_code.split(chr(10)) if line.strip())}
+    
+    # Actually CALL the check function if it was defined
+    if 'check' in locals():
+        # Get function name from code - very hacky but works for HumanEval
+        import re
+        func_match = re.search(r'def\\s+([a-zA-Z0-9_]+)', {repr(code)})
+        if func_match:
+            func_name = func_match.group(1)
+            check(locals()[func_name])
+        else:
+            # Fallback to general execution check
+            pass
+            
     print("ALL_TESTS_PASSED")
-except AssertionError as e:
-    print(f"ASSERTION_FAILED: {{e}}")
-except Exception as e:
-    print(f"ERROR: {{e}}")
+except AssertionError:
+    import traceback
+    print(f"ASSERTION_FAILED:\\n{{traceback.format_exc()}}")
+except Exception:
+    import traceback
+    print(f"ERROR:\\n{{traceback.format_exc()}}")
 """
         
         try:
@@ -209,7 +248,7 @@ except Exception as e:
                 f.flush()
                 
                 result = subprocess.run(
-                    ['python', f.name],
+                    [sys.executable, f.name],
                     capture_output=True,
                     text=True,
                     timeout=timeout

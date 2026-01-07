@@ -345,6 +345,49 @@ class GoalTracker:
         except Exception as e:
             logger.error(f"Failed to get pending goals: {e}")
             return []
+
+    async def get_user_goals(
+        self,
+        user_id: str,
+        include_completed: bool = True,
+        limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        """Return recent goals for a user with computed progress metadata."""
+        try:
+            query = self.supabase.table('goals').select('*').eq('user_id', user_id)
+
+            if not include_completed:
+                query = query.in_(
+                    'status',
+                    [TaskStatus.PENDING.value, TaskStatus.IN_PROGRESS.value, TaskStatus.RETRYING.value]
+                )
+
+            query = query.order('updated_at', desc=True)
+            if limit:
+                query = query.limit(limit)
+
+            response = query.execute()
+
+            goals_summary: List[Dict[str, Any]] = []
+            for row in response.data:
+                goal = Goal.from_dict(row)
+                progress = goal.get_progress()
+                goals_summary.append({
+                    "goal_id": goal.goal_id,
+                    "description": goal.description,
+                    "status": goal.status.value if isinstance(goal.status, TaskStatus) else goal.status,
+                    "priority": goal.priority,
+                    "progress": progress.get("percentage", 0),
+                    "metadata": goal.metadata,
+                    "updated_at": goal.updated_at,
+                    "subtasks": [st.to_dict() for st in goal.subtasks]
+                })
+
+            logger.debug(f"Fetched {len(goals_summary)} goals for user {user_id}")
+            return goals_summary
+        except Exception as e:
+            logger.error(f"Failed to get goals for user {user_id}: {e}")
+            return []
     
     async def mark_goal_completed(self, goal_id: str) -> None:
         """Mark a goal as completed."""

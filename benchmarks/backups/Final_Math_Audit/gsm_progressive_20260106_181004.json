@@ -1,0 +1,1883 @@
+{
+  "family": "gsm",
+  "completed_variants": [
+    "GSM-8K",
+    "GSM-Hard",
+    "GSM-Symbolic",
+    "GSM-Plus"
+  ],
+  "scores_by_variant": {
+    "GSM-8K": {
+      "chunks_completed": 14,
+      "scores": [
+        0.98,
+        0.98,
+        1.0,
+        0.98,
+        0.97,
+        0.96,
+        0.98,
+        0.97,
+        0.96,
+        0.97,
+        0.92,
+        0.98,
+        0.99,
+        0.9473684210526315
+      ],
+      "average": 0.9705263157894736
+    },
+    "GSM-Hard": {
+      "chunks_completed": 14,
+      "scores": [
+        0.74,
+        0.7,
+        0.66,
+        0.68,
+        0.74,
+        0.63,
+        0.51,
+        0.71,
+        0.67,
+        0.59,
+        0.61,
+        0.59,
+        0.57,
+        0.6842105263157895
+      ],
+      "average": 0.6488721804511278
+    },
+    "GSM-Symbolic": {
+      "chunks_completed": 50,
+      "scores": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0.99,
+        1.0,
+        0.5,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0.61,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0.58,
+        0.5,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "average": 0.9636
+    },
+    "GSM-Plus": {
+      "chunks_completed": 106,
+      "scores": [
+        0.85,
+        0.78,
+        0.83,
+        0.78,
+        0.82,
+        0.84,
+        0.76,
+        0.83,
+        0.85,
+        0.78,
+        0.86,
+        0.81,
+        0.82,
+        0.82,
+        0.82,
+        0.81,
+        0.83,
+        0.84,
+        0.74,
+        0.79,
+        0.86,
+        0.83,
+        0.8,
+        0.81,
+        0.84,
+        0.8,
+        0.81,
+        0.82,
+        0.8,
+        0.77,
+        0.78,
+        0.82,
+        0.76,
+        0.8,
+        0.82,
+        0.78,
+        0.84,
+        0.79,
+        0.84,
+        0.73,
+        0.85,
+        0.84,
+        0.83,
+        0.75,
+        0.83,
+        0.82,
+        0.86,
+        0.76,
+        0.85,
+        0.82,
+        0.82,
+        0.8,
+        0.74,
+        0.82,
+        0.83,
+        0.86,
+        0.83,
+        0.85,
+        0.78,
+        0.81,
+        0.82,
+        0.79,
+        0.77,
+        0.82,
+        0.81,
+        0.73,
+        0.73,
+        0.84,
+        0.76,
+        0.79,
+        0.86,
+        0.82,
+        0.8,
+        0.84,
+        0.79,
+        0.78,
+        0.68,
+        0.81,
+        0.79,
+        0.82,
+        0.74,
+        0.83,
+        0.75,
+        0.76,
+        0.85,
+        0.8,
+        0.82,
+        0.8,
+        0.8,
+        0.78,
+        0.83,
+        0.81,
+        0.74,
+        0.81,
+        0.73,
+        0.85,
+        0.78,
+        0.82,
+        0.83,
+        0.82,
+        0.85,
+        0.83,
+        0.8,
+        0.86,
+        0.77,
+        0.8269230769230769
+      ],
+      "average": 0.8061030478955007
+    }
+  },
+  "overall_average": 0.8494483805668017,
+  "last_chunk": {
+    "variant": "GSM-Plus",
+    "status": "completed"
+  },
+  "all_chunk_results": [
+    {
+      "variant": "GSM-8K",
+      "chunk": 1,
+      "total_chunks": 14,
+      "score": 0.98,
+      "correct": 98,
+      "total": 100,
+      "timestamp": "2026-01-06T10:43:03.863355+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 2,
+      "total_chunks": 14,
+      "score": 0.98,
+      "correct": 98,
+      "total": 100,
+      "timestamp": "2026-01-06T10:45:33.004974+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 3,
+      "total_chunks": 14,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T10:47:36.901065+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 4,
+      "total_chunks": 14,
+      "score": 0.98,
+      "correct": 98,
+      "total": 100,
+      "timestamp": "2026-01-06T10:49:53.311296+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 5,
+      "total_chunks": 14,
+      "score": 0.97,
+      "correct": 97,
+      "total": 100,
+      "timestamp": "2026-01-06T10:52:27.650488+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 6,
+      "total_chunks": 14,
+      "score": 0.96,
+      "correct": 96,
+      "total": 100,
+      "timestamp": "2026-01-06T10:54:52.194192+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 7,
+      "total_chunks": 14,
+      "score": 0.98,
+      "correct": 98,
+      "total": 100,
+      "timestamp": "2026-01-06T10:56:22.423471+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 8,
+      "total_chunks": 14,
+      "score": 0.97,
+      "correct": 97,
+      "total": 100,
+      "timestamp": "2026-01-06T10:58:47.440633+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 9,
+      "total_chunks": 14,
+      "score": 0.96,
+      "correct": 96,
+      "total": 100,
+      "timestamp": "2026-01-06T11:00:44.346278+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 10,
+      "total_chunks": 14,
+      "score": 0.97,
+      "correct": 97,
+      "total": 100,
+      "timestamp": "2026-01-06T11:02:50.099240+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 11,
+      "total_chunks": 14,
+      "score": 0.92,
+      "correct": 92,
+      "total": 100,
+      "timestamp": "2026-01-06T11:04:55.217829+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 12,
+      "total_chunks": 14,
+      "score": 0.98,
+      "correct": 98,
+      "total": 100,
+      "timestamp": "2026-01-06T11:06:51.086690+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 13,
+      "total_chunks": 14,
+      "score": 0.99,
+      "correct": 99,
+      "total": 100,
+      "timestamp": "2026-01-06T11:08:57.696032+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 14,
+      "total_chunks": 14,
+      "score": 0.9473684210526315,
+      "correct": 18,
+      "total": 19,
+      "timestamp": "2026-01-06T11:09:26.880509+00:00"
+    },
+    {
+      "variant": "GSM-Hard",
+      "chunk": 1,
+      "total_chunks": 14,
+      "score": 0.74,
+      "correct": 74,
+      "total": 100,
+      "timestamp": "2026-01-06T11:27:03.588671+00:00"
+    },
+    {
+      "variant": "GSM-Hard",
+      "chunk": 2,
+      "total_chunks": 14,
+      "score": 0.7,
+      "correct": 70,
+      "total": 100,
+      "timestamp": "2026-01-06T11:30:07.351565+00:00"
+    },
+    {
+      "variant": "GSM-Hard",
+      "chunk": 3,
+      "total_chunks": 14,
+      "score": 0.66,
+      "correct": 66,
+      "total": 100,
+      "timestamp": "2026-01-06T11:47:35.044945+00:00"
+    },
+    {
+      "variant": "GSM-Hard",
+      "chunk": 4,
+      "total_chunks": 14,
+      "score": 0.68,
+      "correct": 68,
+      "total": 100,
+      "timestamp": "2026-01-06T11:50:53.550171+00:00"
+    },
+    {
+      "variant": "GSM-Hard",
+      "chunk": 5,
+      "total_chunks": 14,
+      "score": 0.74,
+      "correct": 74,
+      "total": 100,
+      "timestamp": "2026-01-06T11:53:17.570424+00:00"
+    },
+    {
+      "variant": "GSM-Hard",
+      "chunk": 6,
+      "total_chunks": 14,
+      "score": 0.63,
+      "correct": 63,
+      "total": 100,
+      "timestamp": "2026-01-06T11:56:34.709763+00:00"
+    },
+    {
+      "variant": "GSM-Hard",
+      "chunk": 7,
+      "total_chunks": 14,
+      "score": 0.51,
+      "correct": 51,
+      "total": 100,
+      "timestamp": "2026-01-06T12:00:34.756165+00:00"
+    },
+    {
+      "variant": "GSM-Hard",
+      "chunk": 8,
+      "total_chunks": 14,
+      "score": 0.71,
+      "correct": 71,
+      "total": 100,
+      "timestamp": "2026-01-06T12:03:29.354484+00:00"
+    },
+    {
+      "variant": "GSM-Hard",
+      "chunk": 9,
+      "total_chunks": 14,
+      "score": 0.67,
+      "correct": 67,
+      "total": 100,
+      "timestamp": "2026-01-06T12:06:07.244737+00:00"
+    },
+    {
+      "variant": "GSM-Hard",
+      "chunk": 10,
+      "total_chunks": 14,
+      "score": 0.59,
+      "correct": 59,
+      "total": 100,
+      "timestamp": "2026-01-06T12:09:57.858136+00:00"
+    },
+    {
+      "variant": "GSM-Hard",
+      "chunk": 11,
+      "total_chunks": 14,
+      "score": 0.61,
+      "correct": 61,
+      "total": 100,
+      "timestamp": "2026-01-06T12:30:52.828601+00:00"
+    },
+    {
+      "variant": "GSM-Hard",
+      "chunk": 12,
+      "total_chunks": 14,
+      "score": 0.59,
+      "correct": 59,
+      "total": 100,
+      "timestamp": "2026-01-06T12:35:46.504212+00:00"
+    },
+    {
+      "variant": "GSM-Hard",
+      "chunk": 13,
+      "total_chunks": 14,
+      "score": 0.57,
+      "correct": 57,
+      "total": 100,
+      "timestamp": "2026-01-06T12:58:39.266234+00:00"
+    },
+    {
+      "variant": "GSM-Hard",
+      "chunk": 14,
+      "total_chunks": 14,
+      "score": 0.6842105263157895,
+      "correct": 13,
+      "total": 19,
+      "timestamp": "2026-01-06T13:00:53.785207+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 1,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:02:50.316601+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 2,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:04:26.484131+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 3,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:05:56.272693+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 4,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:06:50.455651+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 5,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:07:24.442703+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 6,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:08:50.430810+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 7,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:09:41.547892+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 8,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:10:23.301930+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 9,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:12:39.310687+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 10,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:14:26.227144+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 11,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:15:52.138845+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 12,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:16:36.983308+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 13,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:18:33.006670+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 14,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:19:13.875238+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 15,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:21:04.850019+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 16,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:21:50.216737+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 17,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:22:37.950974+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 18,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:23:43.985462+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 19,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:24:48.113595+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 20,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:26:04.472369+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 21,
+      "total_chunks": 50,
+      "score": 0.99,
+      "correct": 99,
+      "total": 100,
+      "timestamp": "2026-01-06T13:28:34.693187+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 22,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:30:13.964764+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 23,
+      "total_chunks": 50,
+      "score": 0.5,
+      "correct": 50,
+      "total": 100,
+      "timestamp": "2026-01-06T13:31:35.111544+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 24,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:32:36.859395+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 25,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:34:41.809791+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 26,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:36:10.609365+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 27,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:37:17.776180+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 28,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:39:00.130914+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 29,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:40:17.141022+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 30,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:42:19.745005+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 31,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:43:47.467452+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 32,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:44:53.001960+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 33,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:45:46.348431+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 34,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:46:55.773724+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 35,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:48:09.483650+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 36,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:49:29.270429+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 37,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:50:12.697537+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 38,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:51:09.311354+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 39,
+      "total_chunks": 50,
+      "score": 0.61,
+      "correct": 61,
+      "total": 100,
+      "timestamp": "2026-01-06T13:51:47.417642+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 40,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:53:38.004312+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 41,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:55:34.121118+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 42,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:57:06.891350+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 43,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:58:11.913422+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 44,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T13:59:13.987177+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 45,
+      "total_chunks": 50,
+      "score": 0.58,
+      "correct": 58,
+      "total": 100,
+      "timestamp": "2026-01-06T14:01:06.813032+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 46,
+      "total_chunks": 50,
+      "score": 0.5,
+      "correct": 50,
+      "total": 100,
+      "timestamp": "2026-01-06T14:02:41.113826+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 47,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T14:04:15.623864+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 48,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T14:05:13.991810+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 49,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T14:06:32.708389+00:00"
+    },
+    {
+      "variant": "GSM-Symbolic",
+      "chunk": 50,
+      "total_chunks": 50,
+      "score": 1.0,
+      "correct": 100,
+      "total": 100,
+      "timestamp": "2026-01-06T14:07:49.953341+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 1,
+      "total_chunks": 106,
+      "score": 0.85,
+      "correct": 85,
+      "total": 100,
+      "timestamp": "2026-01-06T14:20:49.812968+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 2,
+      "total_chunks": 106,
+      "score": 0.78,
+      "correct": 78,
+      "total": 100,
+      "timestamp": "2026-01-06T14:24:56.220239+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 3,
+      "total_chunks": 106,
+      "score": 0.83,
+      "correct": 83,
+      "total": 100,
+      "timestamp": "2026-01-06T14:26:40.258021+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 4,
+      "total_chunks": 106,
+      "score": 0.78,
+      "correct": 78,
+      "total": 100,
+      "timestamp": "2026-01-06T14:29:08.605705+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 5,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T14:31:10.652780+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 6,
+      "total_chunks": 106,
+      "score": 0.84,
+      "correct": 84,
+      "total": 100,
+      "timestamp": "2026-01-06T14:33:23.180121+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 7,
+      "total_chunks": 106,
+      "score": 0.76,
+      "correct": 76,
+      "total": 100,
+      "timestamp": "2026-01-06T14:35:31.561369+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 8,
+      "total_chunks": 106,
+      "score": 0.83,
+      "correct": 83,
+      "total": 100,
+      "timestamp": "2026-01-06T14:37:49.434270+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 9,
+      "total_chunks": 106,
+      "score": 0.85,
+      "correct": 85,
+      "total": 100,
+      "timestamp": "2026-01-06T14:39:46.650514+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 10,
+      "total_chunks": 106,
+      "score": 0.78,
+      "correct": 78,
+      "total": 100,
+      "timestamp": "2026-01-06T14:42:15.245233+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 11,
+      "total_chunks": 106,
+      "score": 0.86,
+      "correct": 86,
+      "total": 100,
+      "timestamp": "2026-01-06T14:44:03.038773+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 12,
+      "total_chunks": 106,
+      "score": 0.81,
+      "correct": 81,
+      "total": 100,
+      "timestamp": "2026-01-06T14:46:27.979459+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 13,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T14:49:34.099404+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 14,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T14:51:59.498268+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 15,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T14:54:27.771906+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 16,
+      "total_chunks": 106,
+      "score": 0.81,
+      "correct": 81,
+      "total": 100,
+      "timestamp": "2026-01-06T14:58:03.723467+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 17,
+      "total_chunks": 106,
+      "score": 0.83,
+      "correct": 83,
+      "total": 100,
+      "timestamp": "2026-01-06T15:00:33.384869+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 18,
+      "total_chunks": 106,
+      "score": 0.84,
+      "correct": 84,
+      "total": 100,
+      "timestamp": "2026-01-06T15:03:00.487537+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 19,
+      "total_chunks": 106,
+      "score": 0.74,
+      "correct": 74,
+      "total": 100,
+      "timestamp": "2026-01-06T15:05:17.800107+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 20,
+      "total_chunks": 106,
+      "score": 0.79,
+      "correct": 79,
+      "total": 100,
+      "timestamp": "2026-01-06T15:07:43.646214+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 21,
+      "total_chunks": 106,
+      "score": 0.86,
+      "correct": 86,
+      "total": 100,
+      "timestamp": "2026-01-06T15:10:07.784132+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 22,
+      "total_chunks": 106,
+      "score": 0.83,
+      "correct": 83,
+      "total": 100,
+      "timestamp": "2026-01-06T15:11:45.655909+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 23,
+      "total_chunks": 106,
+      "score": 0.8,
+      "correct": 80,
+      "total": 100,
+      "timestamp": "2026-01-06T15:13:46.713678+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 24,
+      "total_chunks": 106,
+      "score": 0.81,
+      "correct": 81,
+      "total": 100,
+      "timestamp": "2026-01-06T15:16:56.967724+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 25,
+      "total_chunks": 106,
+      "score": 0.84,
+      "correct": 84,
+      "total": 100,
+      "timestamp": "2026-01-06T15:19:13.865046+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 26,
+      "total_chunks": 106,
+      "score": 0.8,
+      "correct": 80,
+      "total": 100,
+      "timestamp": "2026-01-06T15:21:57.124381+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 27,
+      "total_chunks": 106,
+      "score": 0.81,
+      "correct": 81,
+      "total": 100,
+      "timestamp": "2026-01-06T15:24:23.733126+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 28,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T15:26:32.246736+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 29,
+      "total_chunks": 106,
+      "score": 0.8,
+      "correct": 80,
+      "total": 100,
+      "timestamp": "2026-01-06T15:28:39.929873+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 30,
+      "total_chunks": 106,
+      "score": 0.77,
+      "correct": 77,
+      "total": 100,
+      "timestamp": "2026-01-06T15:31:08.728095+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 31,
+      "total_chunks": 106,
+      "score": 0.78,
+      "correct": 78,
+      "total": 100,
+      "timestamp": "2026-01-06T15:33:48.698951+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 32,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T15:35:44.166447+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 33,
+      "total_chunks": 106,
+      "score": 0.76,
+      "correct": 76,
+      "total": 100,
+      "timestamp": "2026-01-06T15:38:52.313274+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 34,
+      "total_chunks": 106,
+      "score": 0.8,
+      "correct": 80,
+      "total": 100,
+      "timestamp": "2026-01-06T15:41:26.479727+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 35,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T15:43:52.605308+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 36,
+      "total_chunks": 106,
+      "score": 0.78,
+      "correct": 78,
+      "total": 100,
+      "timestamp": "2026-01-06T15:46:51.394791+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 37,
+      "total_chunks": 106,
+      "score": 0.84,
+      "correct": 84,
+      "total": 100,
+      "timestamp": "2026-01-06T15:48:58.948564+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 38,
+      "total_chunks": 106,
+      "score": 0.79,
+      "correct": 79,
+      "total": 100,
+      "timestamp": "2026-01-06T15:52:00.753694+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 39,
+      "total_chunks": 106,
+      "score": 0.84,
+      "correct": 84,
+      "total": 100,
+      "timestamp": "2026-01-06T15:53:54.817665+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 40,
+      "total_chunks": 106,
+      "score": 0.73,
+      "correct": 73,
+      "total": 100,
+      "timestamp": "2026-01-06T15:55:52.259546+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 41,
+      "total_chunks": 106,
+      "score": 0.85,
+      "correct": 85,
+      "total": 100,
+      "timestamp": "2026-01-06T15:58:09.511212+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 42,
+      "total_chunks": 106,
+      "score": 0.84,
+      "correct": 84,
+      "total": 100,
+      "timestamp": "2026-01-06T16:00:27.242055+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 43,
+      "total_chunks": 106,
+      "score": 0.83,
+      "correct": 83,
+      "total": 100,
+      "timestamp": "2026-01-06T16:02:51.375803+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 44,
+      "total_chunks": 106,
+      "score": 0.75,
+      "correct": 75,
+      "total": 100,
+      "timestamp": "2026-01-06T16:05:08.180397+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 45,
+      "total_chunks": 106,
+      "score": 0.83,
+      "correct": 83,
+      "total": 100,
+      "timestamp": "2026-01-06T16:07:18.440044+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 46,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T16:09:40.765798+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 47,
+      "total_chunks": 106,
+      "score": 0.86,
+      "correct": 86,
+      "total": 100,
+      "timestamp": "2026-01-06T16:12:06.294686+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 48,
+      "total_chunks": 106,
+      "score": 0.76,
+      "correct": 76,
+      "total": 100,
+      "timestamp": "2026-01-06T16:14:45.206279+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 49,
+      "total_chunks": 106,
+      "score": 0.85,
+      "correct": 85,
+      "total": 100,
+      "timestamp": "2026-01-06T16:17:02.328790+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 50,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T16:18:44.505049+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 51,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T16:21:10.341956+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 52,
+      "total_chunks": 106,
+      "score": 0.8,
+      "correct": 80,
+      "total": 100,
+      "timestamp": "2026-01-06T16:23:27.626747+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 53,
+      "total_chunks": 106,
+      "score": 0.74,
+      "correct": 74,
+      "total": 100,
+      "timestamp": "2026-01-06T16:25:45.458837+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 54,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T16:28:26.341016+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 55,
+      "total_chunks": 106,
+      "score": 0.83,
+      "correct": 83,
+      "total": 100,
+      "timestamp": "2026-01-06T16:30:59.143763+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 56,
+      "total_chunks": 106,
+      "score": 0.86,
+      "correct": 86,
+      "total": 100,
+      "timestamp": "2026-01-06T16:33:25.490117+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 57,
+      "total_chunks": 106,
+      "score": 0.83,
+      "correct": 83,
+      "total": 100,
+      "timestamp": "2026-01-06T16:35:15.762522+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 58,
+      "total_chunks": 106,
+      "score": 0.85,
+      "correct": 85,
+      "total": 100,
+      "timestamp": "2026-01-06T16:37:22.160237+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 59,
+      "total_chunks": 106,
+      "score": 0.78,
+      "correct": 78,
+      "total": 100,
+      "timestamp": "2026-01-06T16:39:55.873307+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 60,
+      "total_chunks": 106,
+      "score": 0.81,
+      "correct": 81,
+      "total": 100,
+      "timestamp": "2026-01-06T16:41:51.141280+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 61,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T16:44:05.368407+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 62,
+      "total_chunks": 106,
+      "score": 0.79,
+      "correct": 79,
+      "total": 100,
+      "timestamp": "2026-01-06T16:46:27.346838+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 63,
+      "total_chunks": 106,
+      "score": 0.77,
+      "correct": 77,
+      "total": 100,
+      "timestamp": "2026-01-06T16:48:58.306522+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 64,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T16:51:25.305806+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 65,
+      "total_chunks": 106,
+      "score": 0.81,
+      "correct": 81,
+      "total": 100,
+      "timestamp": "2026-01-06T17:05:15.359524+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 66,
+      "total_chunks": 106,
+      "score": 0.73,
+      "correct": 73,
+      "total": 100,
+      "timestamp": "2026-01-06T17:07:52.317539+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 67,
+      "total_chunks": 106,
+      "score": 0.73,
+      "correct": 73,
+      "total": 100,
+      "timestamp": "2026-01-06T17:10:39.131249+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 68,
+      "total_chunks": 106,
+      "score": 0.84,
+      "correct": 84,
+      "total": 100,
+      "timestamp": "2026-01-06T17:13:15.322925+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 69,
+      "total_chunks": 106,
+      "score": 0.76,
+      "correct": 76,
+      "total": 100,
+      "timestamp": "2026-01-06T17:16:18.746896+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 70,
+      "total_chunks": 106,
+      "score": 0.79,
+      "correct": 79,
+      "total": 100,
+      "timestamp": "2026-01-06T17:18:44.126858+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 71,
+      "total_chunks": 106,
+      "score": 0.86,
+      "correct": 86,
+      "total": 100,
+      "timestamp": "2026-01-06T17:21:00.282678+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 72,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T17:23:44.602404+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 73,
+      "total_chunks": 106,
+      "score": 0.8,
+      "correct": 80,
+      "total": 100,
+      "timestamp": "2026-01-06T17:25:46.085471+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 74,
+      "total_chunks": 106,
+      "score": 0.84,
+      "correct": 84,
+      "total": 100,
+      "timestamp": "2026-01-06T17:28:19.793212+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 75,
+      "total_chunks": 106,
+      "score": 0.79,
+      "correct": 79,
+      "total": 100,
+      "timestamp": "2026-01-06T17:31:36.430131+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 76,
+      "total_chunks": 106,
+      "score": 0.78,
+      "correct": 78,
+      "total": 100,
+      "timestamp": "2026-01-06T17:33:25.860789+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 77,
+      "total_chunks": 106,
+      "score": 0.68,
+      "correct": 68,
+      "total": 100,
+      "timestamp": "2026-01-06T17:35:57.183710+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 78,
+      "total_chunks": 106,
+      "score": 0.81,
+      "correct": 81,
+      "total": 100,
+      "timestamp": "2026-01-06T17:38:08.807913+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 79,
+      "total_chunks": 106,
+      "score": 0.79,
+      "correct": 79,
+      "total": 100,
+      "timestamp": "2026-01-06T17:40:50.820462+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 80,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T17:42:56.314240+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 81,
+      "total_chunks": 106,
+      "score": 0.74,
+      "correct": 74,
+      "total": 100,
+      "timestamp": "2026-01-06T17:46:02.481067+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 82,
+      "total_chunks": 106,
+      "score": 0.83,
+      "correct": 83,
+      "total": 100,
+      "timestamp": "2026-01-06T17:48:45.492338+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 83,
+      "total_chunks": 106,
+      "score": 0.75,
+      "correct": 75,
+      "total": 100,
+      "timestamp": "2026-01-06T17:51:03.673425+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 84,
+      "total_chunks": 106,
+      "score": 0.76,
+      "correct": 76,
+      "total": 100,
+      "timestamp": "2026-01-06T17:54:13.317544+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 85,
+      "total_chunks": 106,
+      "score": 0.85,
+      "correct": 85,
+      "total": 100,
+      "timestamp": "2026-01-06T17:56:12.357333+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 86,
+      "total_chunks": 106,
+      "score": 0.8,
+      "correct": 80,
+      "total": 100,
+      "timestamp": "2026-01-06T17:58:09.100453+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 87,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T18:00:24.574407+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 88,
+      "total_chunks": 106,
+      "score": 0.8,
+      "correct": 80,
+      "total": 100,
+      "timestamp": "2026-01-06T18:02:47.206141+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 89,
+      "total_chunks": 106,
+      "score": 0.8,
+      "correct": 80,
+      "total": 100,
+      "timestamp": "2026-01-06T18:05:23.578289+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 90,
+      "total_chunks": 106,
+      "score": 0.78,
+      "correct": 78,
+      "total": 100,
+      "timestamp": "2026-01-06T18:07:40.376515+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 91,
+      "total_chunks": 106,
+      "score": 0.83,
+      "correct": 83,
+      "total": 100,
+      "timestamp": "2026-01-06T18:09:51.409872+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 92,
+      "total_chunks": 106,
+      "score": 0.81,
+      "correct": 81,
+      "total": 100,
+      "timestamp": "2026-01-06T18:12:32.408907+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 93,
+      "total_chunks": 106,
+      "score": 0.74,
+      "correct": 74,
+      "total": 100,
+      "timestamp": "2026-01-06T18:14:58.736673+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 94,
+      "total_chunks": 106,
+      "score": 0.81,
+      "correct": 81,
+      "total": 100,
+      "timestamp": "2026-01-06T18:17:48.737683+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 95,
+      "total_chunks": 106,
+      "score": 0.73,
+      "correct": 73,
+      "total": 100,
+      "timestamp": "2026-01-06T18:21:06.856589+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 96,
+      "total_chunks": 106,
+      "score": 0.85,
+      "correct": 85,
+      "total": 100,
+      "timestamp": "2026-01-06T18:23:47.009568+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 97,
+      "total_chunks": 106,
+      "score": 0.78,
+      "correct": 78,
+      "total": 100,
+      "timestamp": "2026-01-06T18:25:49.578233+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 98,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T18:27:46.722759+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 99,
+      "total_chunks": 106,
+      "score": 0.83,
+      "correct": 83,
+      "total": 100,
+      "timestamp": "2026-01-06T18:29:37.952848+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 100,
+      "total_chunks": 106,
+      "score": 0.82,
+      "correct": 82,
+      "total": 100,
+      "timestamp": "2026-01-06T18:32:08.152141+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 101,
+      "total_chunks": 106,
+      "score": 0.85,
+      "correct": 85,
+      "total": 100,
+      "timestamp": "2026-01-06T18:34:11.282131+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 102,
+      "total_chunks": 106,
+      "score": 0.83,
+      "correct": 83,
+      "total": 100,
+      "timestamp": "2026-01-06T18:36:13.830123+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 103,
+      "total_chunks": 106,
+      "score": 0.8,
+      "correct": 80,
+      "total": 100,
+      "timestamp": "2026-01-06T18:38:31.288336+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 104,
+      "total_chunks": 106,
+      "score": 0.86,
+      "correct": 86,
+      "total": 100,
+      "timestamp": "2026-01-06T18:40:23.384092+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 105,
+      "total_chunks": 106,
+      "score": 0.77,
+      "correct": 77,
+      "total": 100,
+      "timestamp": "2026-01-06T18:43:18.555134+00:00"
+    },
+    {
+      "variant": "GSM-Plus",
+      "chunk": 106,
+      "total_chunks": 106,
+      "score": 0.8269230769230769,
+      "correct": 43,
+      "total": 52,
+      "timestamp": "2026-01-06T18:44:23.065875+00:00"
+    }
+  ],
+  "timestamp": "2026-01-06T18:44:23.072332+00:00"
+}

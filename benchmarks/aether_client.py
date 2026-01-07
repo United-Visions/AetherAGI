@@ -136,8 +136,11 @@ class AetherBenchmarkClient:
         # Remove think tags
         response = re.sub(r'<think>.*?</think>', '', response, flags=re.DOTALL)
         
-        # Remove any XML-like tags
-        response = re.sub(r'</?[a-zA-Z][a-zA-Z0-9_-]*[^>]*>', '', response)
+        # Remove specific action tags but NOT generic XML to avoid breaking code inequalities (e.g., x < y)
+        action_patterns = ['aether-write', 'aether-sandbox', 'aether-forge', 'aether-install', 'aether-research']
+        for tag in action_patterns:
+            response = re.sub(f'<{tag}[^>]*>.*?</{tag}>', '', response, flags=re.DOTALL)
+            response = re.sub(f'<{tag}[^>]*/>', '', response)
         
         # Clean up whitespace
         response = re.sub(r'\n{3,}', '\n\n', response)
@@ -171,6 +174,7 @@ class AetherBenchmarkClient:
         # Strip any tags that leaked through
         result["response"] = self._strip_all_tags(result["raw_response"])
         result["latency_ms"] = (time.time() - start_time) * 1000
+        result["activity_events"] = result.get("activity_events", [])
         
         return result
     
@@ -217,14 +221,17 @@ class AetherBenchmarkClient:
         """Call Aether via HTTP API."""
         async with httpx.AsyncClient(timeout=timeout) as client:
             try:
+                # Build headers - only include API key if it exists
+                headers = {"Content-Type": "application/json"}
+                if self.api_key:
+                    headers["X-Aether-Key"] = self.api_key
+                
                 response = await client.post(
                     f"{self.api_base}/v1/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {self.api_key}",
-                        "Content-Type": "application/json",
-                    },
+                    headers=headers,
                     json={
                         "model": self.model,
+                        "user": "benchmark_user", # Required by Aether API schema
                         "messages": [
                             {"role": "system", "content": system_prompt},
                             {"role": "user", "content": question},
@@ -241,6 +248,7 @@ class AetherBenchmarkClient:
                 return {
                     "raw_response": data["choices"][0]["message"]["content"] or "ERROR: Empty response from API",
                     "tokens_used": data.get("usage", {}).get("total_tokens", 0),
+                    "activity_events": data.get("metadata", {}).get("activity_events", [])
                 }
             except Exception as e:
                 return {

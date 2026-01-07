@@ -84,6 +84,7 @@
         <a href="#architecture" class="nav-link">Architecture</a>
         <a href="{{ url_for('pricing') }}" class="nav-link">Pricing</a>
         <a href="#domains" class="nav-link">Domains</a>
+        <a href="{{ url_for('whitepaper') }}" class="nav-link"><i class="fas fa-file-alt mr-1"></i>White Paper</a>
         <a href="{{ url_for('documentation') }}" class="nav-link"><i class="fas fa-book mr-1"></i>Docs</a>
         <a href="{{ url_for('github_login') }}" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg font-semibold transition">Start Free</a>
       </div>
@@ -103,9 +104,9 @@
          class="bg-green-600 hover:bg-green-700 px-10 py-4 rounded-lg font-bold text-xl transition shadow-lg">
         <i class="fab fa-github mr-2"></i> Sign up with GitHub
       </a>
-      <a href="#how-it-works"
+      <a href="{{ url_for('whitepaper') }}"
          class="border-2 border-green-600 hover:bg-green-600 px-10 py-4 rounded-lg font-bold text-xl transition">
-        Learn How It Works
+        <i class="fas fa-file-contract mr-2"></i> Read White Paper
       </a>
     </div>
     

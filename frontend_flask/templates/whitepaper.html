@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AetherMind – White Paper</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Fira+Code:wght@400;600&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .gradient-text {
+      background: linear-gradient(135deg, #10b981 0%, #3b82f6 50%, #8b5cf6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .whitepaper-content {
+      line-height: 1.8;
+    }
+    
+    .whitepaper-content h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      color: #10b981;
+    }
+    
+    .whitepaper-content h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(16, 185, 129, 0.3);
+      padding-bottom: 0.5rem;
+    }
+    
+    .whitepaper-content h3 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .whitepaper-content p {
+      margin-bottom: 1.25rem;
+      color: #d1d5db;
+    }
+    
+    .whitepaper-content ul, .whitepaper-content ol {
+      margin-bottom: 1.25rem;
+      padding-left: 1.5rem;
+    }
+    
+    .whitepaper-content li {
+      margin-bottom: 0.5rem;
+      color: #d1d5db;
+    }
+    
+    .whitepaper-content table {
+      width: 100%;
+      margin-bottom: 1.5rem;
+      border-collapse: collapse;
+      background: rgba(31, 41, 55, 0.6);
+      border-radius: 0.5rem;
+      overflow: hidden;
+    }
+    
+    .whitepaper-content th, .whitepaper-content td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .whitepaper-content th {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+      font-weight: 600;
+    }
+    
+    .whitepaper-content code {
+      font-family: 'Fira Code', monospace;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 0.2rem 0.4rem;
+      border-radius: 0.25rem;
+      font-size: 0.9em;
+      color: #3b82f6;
+    }
+    
+    .nav-link {
+      transition: color 0.2s;
+    }
+    
+    .nav-link:hover {
+      color: #10b981;
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+  
+  <!-- Navigation -->
+  <nav class="container mx-auto px-4 py-6">
+    <div class="flex justify-between items-center">
+      <a href="{{ url_for('home') }}" class="text-2xl font-bold gradient-text">AetherMind</a>
+      <div class="space-x-6">
+        <a href="{{ url_for('home') }}" class="nav-link">Home</a>
+        <a href="{{ url_for('documentation') }}" class="nav-link">Documentation</a>
+        <a href="{{ url_for('github_login') }}" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg font-semibold transition">Chat Now</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container mx-auto px-4 py-12 max-w-4xl">
+    <div class="bg-gray-800 bg-opacity-50 p-8 md:p-12 rounded-2xl shadow-2xl border border-gray-700">
+      <div class="whitepaper-content">
+        {{ content|safe }}
+      </div>
+    </div>
+    
+    <div class="mt-12 text-center">
+      <p class="text-gray-500 mb-6 italic">This white paper is dynamically generated from the official AetherMind Research documentation.</p>
+      <a href="{{ url_for('github_login') }}" class="inline-block bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 px-10 py-4 rounded-full text-xl font-bold transition transform hover:scale-105">
+        Experience the Aether Advantage
+      </a>
+    </div>
+  </main>
+
+  <footer class="container mx-auto px-4 py-12 border-t border-gray-800 text-center text-gray-500">
+    <p>&copy; 2026 AetherMind Research. Universal Developmental Continual Learning Architecture.</p>
+  </footer>
+
+</body>
+</html>

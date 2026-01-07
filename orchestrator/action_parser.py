@@ -23,7 +23,7 @@ class ActionTag:
         """Convert to activity event for frontend display."""
         event_id = f"{self.tag_type}_{self.timestamp}"
         
-        # Map tag types to activity types (18 total activity types)
+        # Map tag types to activity types (21 total activity types)
         activity_type_map = {
             "aether-write": "file_change",
             "aether-sandbox": "code_execution",
@@ -41,7 +41,11 @@ class ActionTag:
             "aether-surprise": "surprise_detection",
             "aether-deploy": "deployment",
             "aether-heart": "emotional_processing",
-            "aether-body-switch": "body_switch"
+            "aether-body-switch": "body_switch",
+            # NEW: App/Sandbox control
+            "aether-app-mode": "app_mode_control",
+            "aether-app-preview": "app_preview",
+            "aether-app-log": "app_log"
         }
         
         activity_type = activity_type_map.get(self.tag_type, "unknown")
@@ -180,6 +184,28 @@ class ActionTag:
                 "reason": self.content
             }
         
+        # NEW: App/Sandbox control tags
+        elif self.tag_type == "aether-app-mode":
+            return {
+                "action": self.attributes.get("action", "open"),  # open, close
+                "app_name": self.attributes.get("app_name", ""),
+                "template": self.attributes.get("template", "blank"),
+                "description": self.content
+            }
+        
+        elif self.tag_type == "aether-app-preview":
+            return {
+                "url": self.attributes.get("url", ""),
+                "port": self.attributes.get("port", "5000"),
+                "auto_refresh": self.attributes.get("auto_refresh", "true") == "true"
+            }
+        
+        elif self.tag_type == "aether-app-log":
+            return {
+                "level": self.attributes.get("level", "info"),  # info, warning, error, success
+                "message": self.content
+            }
+        
         return {}
     
     def _generate_title(self) -> str:
@@ -254,13 +280,27 @@ class ActionTag:
             adapter = self.attributes.get("adapter", "unknown")
             return f"Switching to {adapter} adapter"
         
+        # NEW: App/Sandbox control tags
+        elif self.tag_type == "aether-app-mode":
+            action = self.attributes.get("action", "open")
+            app_name = self.attributes.get("app_name", "app")
+            return f"{'Opening' if action == 'open' else 'Closing'} App Mode: {app_name}"
+        
+        elif self.tag_type == "aether-app-preview":
+            port = self.attributes.get("port", "5000")
+            return f"Updating preview on port {port}"
+        
+        elif self.tag_type == "aether-app-log":
+            level = self.attributes.get("level", "info")
+            return f"[{level.upper()}] Build log"
+        
         return "Processing action"
 
 
 class ActionParser:
     """Parse AetherMind action tags from Brain responses."""
     
-    # Tag patterns (17 action tag types + 2 special tags: think, summary)
+    # Tag patterns (20 action tag types + 2 special tags: think, summary)
     TAG_PATTERNS = {
         "aether-write": r'<aether-write\s+(.*?)>(.*?)</aether-write>',
         "aether-sandbox": r'<aether-sandbox\s+(.*?)>(.*?)</aether-sandbox>',
@@ -279,6 +319,10 @@ class ActionParser:
         "aether-deploy": r'<aether-deploy\s+(.*?)>(.*?)</aether-deploy>',
         "aether-heart": r'<aether-heart\s+(.*?)>(.*?)</aether-heart>',
         "aether-body-switch": r'<aether-body-switch\s+(.*?)>(.*?)</aether-body-switch>',
+        # NEW: App/Sandbox control tags
+        "aether-app-mode": r'<aether-app-mode\s*(.*?)>(.*?)</aether-app-mode>',
+        "aether-app-preview": r'<aether-app-preview\s*(.*?)>(.*?)</aether-app-preview>',
+        "aether-app-log": r'<aether-app-log\s*(.*?)>(.*?)</aether-app-log>',
         "think": r'<think>(.*?)</think>',  # Thinking process visualization
         "aether-chat-summary": r'<aether-chat-summary>(.*?)</aether-chat-summary>',
     }

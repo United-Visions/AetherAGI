@@ -1,0 +1,215 @@
+{
+  "family": "mmlu",
+  "completed_variants": [],
+  "scores_by_variant": {
+    "MMLU": {
+      "chunks_completed": 19,
+      "scores": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "average": 0.0
+    }
+  },
+  "overall_average": 0.0,
+  "last_chunk": {
+    "variant": "MMLU",
+    "chunk": 19,
+    "total_chunks": 71,
+    "score": 0.0,
+    "correct": 0,
+    "total": 200,
+    "timestamp": "2026-01-07T09:04:12.142085+00:00"
+  },
+  "all_chunk_results": [
+    {
+      "variant": "MMLU",
+      "chunk": 1,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T08:32:46.502042+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 2,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T08:34:32.851207+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 3,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T08:36:14.385788+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 4,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T08:37:52.790851+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 5,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T08:40:03.969413+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 6,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T08:41:35.135028+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 7,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T08:43:42.192142+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 8,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T08:45:43.631891+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 9,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T08:48:05.550333+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 10,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T08:49:50.516227+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 11,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T08:51:47.670996+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 12,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T08:53:55.351628+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 13,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T08:55:49.024554+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 14,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T08:57:09.473270+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 15,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T08:58:30.491207+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 16,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T08:59:56.486727+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 17,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T09:01:22.826783+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 18,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T09:02:40.358338+00:00"
+    },
+    {
+      "variant": "MMLU",
+      "chunk": 19,
+      "total_chunks": 71,
+      "score": 0.0,
+      "correct": 0,
+      "total": 200,
+      "timestamp": "2026-01-07T09:04:12.142085+00:00"
+    }
+  ],
+  "timestamp": "2026-01-07T09:04:12.146799+00:00"
+}

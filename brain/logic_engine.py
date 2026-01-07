@@ -96,8 +96,16 @@ class LogicEngine:
             "Acknowledge sensitive topics and proceed with care if the score is low."
         )
 
-        # 2b. IMAGINE – roll oucandidate plans if horizon > 1
-        if settings.imagination and context_vec and "plan" in user_input:
+        # 2b. IMAGINE – roll out candidate plans if horizon > 1
+        # Use safe array checking to avoid numpy ambiguous truth value errors
+        has_context_for_imagination = (
+            context_vec is not None and 
+            len(context_vec) > 0 and 
+            (isinstance(context_vec, np.ndarray) and np.any(context_vec) or 
+             not isinstance(context_vec, np.ndarray) and any(context_vec))
+        )
+        
+        if settings.imagination and has_context_for_imagination and "plan" in user_input:
             im = ImaginationEngine(self.jepa, horizon=settings.imagination_horizon)
             candidates = [["plan_step_1", "plan_step_2"], ["alt_plan_A", "alt_plan_B"]]
             best_plan = im.pick_best_plan(np.array(context_vec), candidates)
@@ -149,17 +157,21 @@ class LogicEngine:
 
             # 3. JEPA VERIFICATION (World Model Alignment)
             # If a context vector exists, we check the energy of the transition
-            if context_vec and any(context_vec):
+            # Use len() and np.any() to safely check numpy arrays
+            context_vec_arr = np.array(context_vec) if context_vec is not None else None
+            has_valid_context = context_vec_arr is not None and len(context_vec_arr) > 0 and np.any(context_vec_arr)
+            
+            if has_valid_context:
                 thought_vec = await self._get_thought_vector(raw_output)
                 is_unstable, energy_score = self.jepa.verify_state_transition(context_vec, thought_vec)
                 
                 if is_unstable:
                     logger.warning(f"JEPA Surprise Detected: {energy_score:.4f}")
                     # Trigger online learning update in the JEPA predictor
-                    self.jepa.update_world_model(np.array(context_vec), thought_vec)
+                    self.jepa.update_world_model(context_vec_arr, thought_vec)
                     raw_output = f"[Internal Update] {raw_output}"
 
-            if settings.imagination and context_vec:
+            if settings.imagination and has_valid_context:
                 im = ImaginationEngine(self.jepa, horizon=3)
                 hyp = im.imagine(np.array(context_vec), ["action_A", "action_B"])
                 context_text += "\nImagined:\n" + "\n".join(hyp)

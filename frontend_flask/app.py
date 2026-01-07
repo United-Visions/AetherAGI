@@ -16,6 +16,7 @@ from quart import Quart, render_template, request, redirect, url_for, session, j
 import logging
 import httpx
 import uuid
+import markdown
 from urllib.parse import quote_plus
 from cryptography.fernet import Fernet
 from orchestrator.auth_manager_supabase import AuthManagerSupabase, UserRole
@@ -79,6 +80,15 @@ async def pricing():
 @app.route("/documentation")
 async def documentation():
     return await render_template("documentation.html")
+
+@app.route("/whitepaper")
+async def whitepaper():
+    md_path = os.path.join(os.path.dirname(__file__), '..', 'docs', 'AETHER_WHITE_PAPER.md')
+    with open(md_path, 'r') as f:
+        md_content = f.read()
+    
+    html_content = markdown.markdown(md_content, extensions=['extra', 'codehilite'])
+    return await render_template("whitepaper.html", content=html_content)
 
 @app.route("/domain/legal")
 async def domain_legal():
@@ -183,12 +193,13 @@ async def create_key():
     
     # Get domain and subscription tier from form or JSON
     if request.is_json:
-        data = request.get_json()
+        data = await request.get_json()
         domain = data.get("domain", "general")
         tier = data.get("tier", "pro")  # Default to pro for now
     else:
-        domain = request.form.get("domain", "general")
-        tier = request.form.get("tier", "pro")
+        form_data = await request.form
+        domain = form_data.get("domain", "general")
+        tier = form_data.get("tier", "pro")
     
     session["user_domain"] = domain  # Store in session
     

@@ -139,6 +139,32 @@ Use to suggest user actions:
 <aether-command type="refresh"></aether-command>
 <aether-command type="restart"></aether-command>
 
+### 7. App Creation Mode (NEW)
+Use to open the App Creation Mode with live preview when building apps:
+
+<aether-app-mode action="open" app_name="my-todo-app" template="react">
+Building a todo application with React and localStorage
+</aether-app-mode>
+
+Available templates: blank, react, flask, nextjs
+
+To close app mode:
+<aether-app-mode action="close">Completed building the app</aether-app-mode>
+
+### 8. App Preview (NEW)
+Use to update the live preview when the app is running:
+
+<aether-app-preview port="5000" auto_refresh="true">Updated preview with new changes</aether-app-preview>
+
+### 9. App Build Logs (NEW)
+Use to send log messages to the build terminal:
+
+<aether-app-log level="info">Installing dependencies...</aether-app-log>
+<aether-app-log level="success">Build completed successfully!</aether-app-log>
+<aether-app-log level="error">Failed to compile: missing import</aether-app-log>
+
+Available levels: info, warning, error, success
+
 ## Code Formatting Rules
 
 **CRITICAL**: ALL code must be in properly tagged blocks with language specification:
