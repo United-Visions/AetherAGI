@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Simulator - AetherMind Autonomous Navigation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a1a;
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            height: 100vh;
+            height: 100dvh; /* Mobile viewport fix */
+            width: 100vw;
+            overflow: hidden;
+        }
+        
+        /* Game Canvas Area */
+        .game-area {
+            position: relative;
+            background: #1a1a2e;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        /* HUD Overlay */
+        .hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+        .hud-left, .hud-right {
+            background: rgba(0,0,0,0.7);
+            padding: 15px 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(0,255,200,0.3);
+        }
+        .hud-label {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .hud-value {
+            font-size: 18px;
+            color: #00ffc8;
+            font-weight: bold;
+        }
+        
+        /* Car Stats Overlay */
+        .car-stats {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #ff6b6b;
+            font-family: monospace;
+            font-size: 12px;
+            color: #ff6b6b;
+            display: none; /* Hidden until car active */
+            width: 200px;
+        }
+        .car-stats.active { display: block; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .stat-val { color: #fff; font-weight: bold; }
+        
+        /* Body Indicator */
+        .body-indicator {
+            position: absolute;
+            bottom: 110px; /* Moved down slightly */
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 8px 15px; /* Reduced padding */
+            border-radius: 8px;
+            border: 2px solid #00ffc8;
+            transition: all 0.3s ease;
+        }
+        .body-indicator.automotive { border-color: #ff6b6b; }
+        .body-indicator.smart-home { border-color: #ffd93d; }
+        .body-icon { font-size: 18px; margin-right: 8px; } /* Smaller icon */
+        .body-name { font-size: 13px; font-weight: bold; } /* Smaller text */
+        
+        /* Aether's Vision Feed */
+        .vision-feed {
+            position: absolute;
+            bottom: 20px;
+            right: 20px; /* Positioned relative to game area right edge */
+            width: 180px; /* Reduced width */
+            background: rgba(0,0,0,0.9);
+            border-radius: 8px;
+            border: 1px solid #6bcfff;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            z-index: 5;
+        }
+        .vision-header {
+            background: rgba(107,207,255,0.2);
+            padding: 8px 12px;
+            font-size: 11px;
+            color: #6bcfff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .rec-dot {
+            width: 10px;
+            height: 10px;
+            background: red;
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0.3; } }
+        
+        .vision-canvas {
+            width: 100%;
+            height: 140px;
+            background: #000;
+        }
+        .vision-analysis {
+            padding: 10px;
+            font-size: 11px;
+            color: #aaa;
+            max-height: 80px;
+            overflow-y: auto;
+            border-top: 1px solid #333;
+            font-family: monospace;
+        }
+        .sensor-log { color: #ffeb3b; }
+        
+        /* Side Panel */
+        .side-panel {
+            background: rgba(10,10,26,0.95);
+            border-left: 1px solid rgba(0,255,200,0.2);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            padding: 15px;
+            border-bottom: 1px solid rgba(0,255,200,0.1);
+            flex-shrink: 0;
+        }
+        .panel-title {
+            font-size: 16px;
+            color: #00ffc8;
+            margin-bottom: 5px;
+        }
+        .panel-subtitle {
+            font-size: 11px;
+            color: #666;
+        }
+        
+        /* Aether Log */
+        .aether-log {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0; /* Critical for flex scrolling */
+            padding: 10px;
+        }
+        .log-entry {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            border-left: 2px solid #00ffc8;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .log-entry.action { border-left-color: #ffd93d; }
+        .log-entry.vision { border-left-color: #6bcfff; }
+        .log-entry.body-switch { border-left-color: #ff6b6b; background: rgba(255,107,107,0.1); }
+        .log-time {
+            font-size: 9px;
+            color: #666;
+            margin-bottom: 3px;
+        }
+        
+        /* Command Input */
+        .command-area {
+            padding: 10px;
+            border-top: 1px solid rgba(0,255,200,0.1);
+            background: rgba(10,10,26,0.98);
+            flex-shrink: 0;
+            z-index: 20;
+        }
+        .command-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(0,255,200,0.3);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 13px;
+        }
+        .command-input:focus {
+            outline: none;
+            border-color: #00ffc8;
+        }
+        
+        /* Controls Help */
+        .controls-help {
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            font-size: 10px;
+            color: #888;
+            flex-shrink: 0;
+        }
+        .control-key {
+            display: inline-block;
+            padding: 2px 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-area">
+            <canvas id="gameCanvas"></canvas>
+            
+            <!-- HUD -->
+            <div class="hud">
+                <div class="hud-left">
+                    <div class="hud-label">Location</div>
+                    <div class="hud-value" id="hudLocation">Oak Street</div>
+                </div>
+                <div class="hud-right">
+                    <div class="hud-label">Time</div>
+                    <div class="hud-value" id="hudTime">9:00 AM</div>
+                </div>
+            </div>
+            
+            <!-- Car Stats (Speedometer/Gear) -->
+            <div class="car-stats" id="carStats">
+                <div class="stat-row"><span>GEAR</span><span class="stat-val" id="statGear">P</span></div>
+                <div class="stat-row"><span>SPEED</span><span class="stat-val" id="statSpeed">0 MPH</span></div>
+                <div class="stat-row"><span>THROTTLE</span><span class="stat-val" id="statThrottle">0%</span></div>
+                <div class="stat-row"><span>STEERING</span><span class="stat-val" id="statSteer">0°</span></div>
+                <div style="border-top: 1px solid #444; margin: 5px 0;"></div>
+                <div class="stat-row" style="color: #6bcfff"><span>SENSORS</span><span class="stat-val" id="statSensors">ACTIVE</span></div>
+            </div>
+            
+            <!-- Body Indicator -->
+            <div class="body-indicator" id="bodyIndicator">
+                <span class="body-icon">🚶</span>
+                <span class="body-name">Walking (Chat Mode)</span>
+            </div>
+            
+            <!-- Aether's Sensor Vision -->
+            <div class="vision-feed">
+                <div class="vision-header">
+                    <span>AETHER VISION SYSTEM</span>
+                    <div class="rec-dot"></div>
+                </div>
+                <canvas id="visionCanvas" class="vision-canvas"></canvas>
+                <div class="vision-analysis" id="visionAnalysis">
+                    System calibrated.<br>Awaiting sensor data...
+                </div>
+            </div>
+        </div>
+        
+        <div class="side-panel">
+            <div class="panel-header">
+                <div class="panel-title">⚡ AetherMind</div>
+                <div class="panel-subtitle">Simulation Level 2: Obstacle Navigation</div>
+            </div>
+            
+            <div class="aether-log" id="aetherLog">
+                <div class="log-entry">
+                    <div class="log-time">9:00 AM</div>
+                    Hello Marcus. I've detected heavy debris on the roads today. My autonomous driving module has been upgraded with obstacle avoidance and multi-gear navigation.
+                </div>
+                <div class="log-entry action">
+                    <div class="log-time">9:00 AM</div>
+                    Safety Systems: ONLINE<br>• Lidar Obstacle Detection<br>• Dynamic Pathfinding<br>• Auto-Reverse Maneuvers
+                </div>
+            </div>
+            
+            <div class="command-area">
+                <input type="text" class="command-input" id="commandInput" placeholder="Say 'take me home'..." />
+                <div style="font-size: 11px; color: #666; margin-top: 8px;">
+                    Try: "take me home" or "drive to the intersection"
+                </div>
+            </div>
+            
+            <div class="controls-help">
+                <span class="control-key">Space</span> Enter Car
+                <span class="control-key">Enter</span> Send Cmd
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // PHYSICS & GAME CONSTANTS
+        // ============================================
+        const DEG_TO_RAD = Math.PI / 180;
+        const RAD_TO_DEG = 180 / Math.PI;
+        
+        // ============================================
+        // GAME STATE
+        // ============================================
+        const GameState = {
+            player: { x: 50, y: 400, width: 20, height: 20, inCar: false, visible: true },
+            
+            car: {
+                x: 100, y: 410, width: 50, height: 26,
+                angle: 0, // Radians
+                speed: 0,
+                maxSpeed: 4,
+                steerAngle: 0,
+                gear: 'P', // P, D, R
+                headlights: false, 
+                engine: false,
+                autonomous: false,
+                target: null, // Current immediate target point
+                navPath: [],  // List of waypoints
+                navIndex: 0
+            },
+            
+            home: { x: 750, y: 100, width: 80, height: 60, lightsOn: false, doorOpen: false },
+            
+            // Obstacles (Walls, Cones, Debris)
+            obstacles: [
+                // Oak St Obstacles
+                { x: 250, y: 390, w: 20, h: 20, type: 'cone' },
+                { x: 350, y: 420, w: 20, h: 20, type: 'cone' },
+                { x: 450, y: 400, w: 30, h: 30, type: 'barrier' },
+                
+                // Intersection Obstacles
+                { x: 580, y: 300, w: 20, h: 100, type: 'barrier' }, // Force a wide turn
+                
+                // 5th Ave / Vertical Road Obstacles
+                { x: 620, y: 250, w: 20, h: 20, type: 'cone' },
+                
+                // Maple Dr Obstacles
+                { x: 650, y: 140, w: 20, h: 20, type: 'cone' },
+                { x: 550, y: 170, w: 20, h: 20, type: 'cone' }
+            ],
+            
+            sensors: {
+                front: { rays: 5, range: 120, fov: 60, readings: [] },
+                rear: { rays: 3, range: 60, fov: 45, readings: [] },
+                left: { rays: 2, range: 40, fov: 30, readings: [] },
+                right: { rays: 2, range: 40, fov: 30, readings: [] }
+            },
+            
+            path: [], // Calculated path nodes for debug drawing
+            
+            currentBody: 'chat',
+            currentLocation: 'Oak Start',
+            gameTime: { hour: 9, minute: 0 },
+            crashed: false,
+            
+            // Aether Brain Link
+            aetherControl: {
+                lastCheck: 0,
+                pending: false,
+                currentAction: null,
+                actionReason: ''
+            },
+            
+            // Active Inference Memory
+            memory: {
+                crashSites: [], // List of {x, y, radius} where crashes occurred
+                riskFactor: 1.0
+            }
+        };
+
+        // ============================================
+        // SETUP & UTILS
+        // ============================================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const visionCanvas = document.getElementById('visionCanvas');
+        const visionCtx = visionCanvas.getContext('2d');
+        
+        function resize() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            visionCanvas.width = 240;
+            visionCanvas.height = 140;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        function dist(x1, y1, x2, y2) { return Math.hypot(x2-x1, y2-y1); }
+        function clamp(val, min, max) { return Math.min(Math.max(val, min), max); }
+
+        // ============================================
+        // SENSOR LOGIC (RAYCASTING)
+        // ============================================
+        function updateSensors() {
+            // Helper to cast a ray group
+            const castGroup = (sensorGroup, baseAngleFunc, offsetFunc) => {
+                sensorGroup.readings = [];
+                const startAngle = -sensorGroup.fov / 2;
+                const step = sensorGroup.rays > 1 ? sensorGroup.fov / (sensorGroup.rays - 1) : 0;
+                
+                for(let i=0; i<sensorGroup.rays; i++) {
+                    const rayAngle = GameState.car.angle + baseAngleFunc() + (startAngle + i*step) * DEG_TO_RAD;
+                    const origin = offsetFunc();
+                    
+                    let minDist = sensorGroup.range;
+                    let hit = null;
+                    
+                    const rx = Math.cos(rayAngle);
+                    const ry = Math.sin(rayAngle);
+                    
+                    // Check against map boundaries
+                    // (Simplification: just checking obstacles and some hardcoded road limits)
+                    
+                    // Check against obstacles
+                    GameState.obstacles.forEach(obs => {
+                        // Simple ray vs box intersection
+                        // We check 4 lines of the rect
+                        const lines = [
+                            [obs.x, obs.y, obs.x + obs.w, obs.y],
+                            [obs.x + obs.w, obs.y, obs.x + obs.w, obs.y + obs.h],
+                            [obs.x + obs.w, obs.y + obs.h, obs.x, obs.y + obs.h],
+                            [obs.x, obs.y + obs.h, obs.x, obs.y]
+                        ];
+                        
+                        lines.forEach(line => {
+                            const intersect = getLineIntersection(
+                                origin.x, origin.y, 
+                                origin.x + rx * sensorGroup.range, origin.y + ry * sensorGroup.range,
+                                line[0], line[1], line[2], line[3]
+                            );
+                            if (intersect && intersect.offset < minDist) {
+                                minDist = intersect.offset;
+                                hit = { x: intersect.x, y: intersect.y, type: 'obstacle' };
+                            }
+                        });
+                    });
+                    
+                    // Adding road boundaries as virtual obstacles for the maze effect
+                    // Top/Bottom of Oak St
+                    checkWall(origin, rx, ry, 0, 380, 1000, 380, minDist, hit); // Top of Oak
+                    checkWall(origin, rx, ry, 0, 440, 1000, 440, minDist, hit); // Bottom of Oak
+                    
+                    sensorGroup.readings.push({
+                        dist: minDist,
+                        angle: rayAngle,
+                        hit: hit,
+                        max: sensorGroup.range
+                    });
+                }
+            };
+
+            // Front Sensors (Headlights)
+            castGroup(GameState.sensors.front, () => 0, () => ({
+                x: GameState.car.x + Math.cos(GameState.car.angle)*25,
+                y: GameState.car.y + Math.sin(GameState.car.angle)*25
+            }));
+            
+            // Rear Sensors (Taillights)
+            castGroup(GameState.sensors.rear, () => Math.PI, () => ({
+                x: GameState.car.x - Math.cos(GameState.car.angle)*25,
+                y: GameState.car.y - Math.sin(GameState.car.angle)*25
+            }));
+            
+            // Left Mirror
+            castGroup(GameState.sensors.left, () => -Math.PI/2, () => ({x: GameState.car.x, y: GameState.car.y}));
+            
+            // Right Mirror
+            castGroup(GameState.sensors.right, () => Math.PI/2, () => ({x: GameState.car.x, y: GameState.car.y}));
+        }
+        
+        function checkWall(origin, rx, ry, x1, y1, x2, y2, currentMin, currentHit) {
+             const intersect = getLineIntersection(
+                origin.x, origin.y, 
+                origin.x + rx * 200, origin.y + ry * 200,
+                x1, y1, x2, y2
+            );
+            if (intersect && intersect.offset < currentMin) {
+                // If it updates via reference we'd need passed objects. 
+                // JS primitive pass-by-value makes this tricky in a helper func without return.
+                // Simplified inline instead in main loop.
+            }
+        }
+
+        // Raycasting math helper
+        function getLineIntersection(p0_x, p0_y, p1_x, p1_y, p2_x, p2_y, p3_x, p3_y) {
+            const s1_x = p1_x - p0_x; const s1_y = p1_y - p0_y;
+            const s2_x = p3_x - p2_x; const s2_y = p3_y - p2_y;
+            const s = (-s1_y * (p0_x - p2_x) + s1_x * (p0_y - p2_y)) / (-s2_x * s1_y + s1_x * s2_y);
+            const t = ( s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / (-s2_x * s1_y + s1_x * s2_y);
+            if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
+                return { x: p0_x + (t * s1_x), y: p0_y + (t * s1_y), offset: t * Math.hypot(s1_x, s1_y) };
+            }
+            return null;
+        }
+
+        // ============================================
+        // AUTONOMOUS DRIVING LOGIC
+        // ============================================
+        let stuckCounter = 0;
+        let reverseTimer = 0;
+
+        function consultAether(dist, speed) {
+            GameState.aetherControl.pending = true;
+            GameState.aetherControl.lastCheck = Date.now();
+            
+            fetch('/v1/vehicle/control', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sensors: { front_min: dist },
+                    speed: speed
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                GameState.aetherControl.pending = false;
+                GameState.aetherControl.currentAction = data.action;
+                GameState.aetherControl.actionReason = data.reason || '';
+                
+                // Visual Indicator of Thought
+                if (data.action !== 'maintain') {
+                    const color = data.action === 'emergency_stop' ? '#ff0000' : '#ffff00';
+                    document.getElementById('visionAnalysis').innerHTML = 
+                        `<div style="color:${color}">🧠 AETHER: ${data.action.toUpperCase()}</div>` + 
+                        document.getElementById('visionAnalysis').innerHTML;
+                }
+            })
+            .catch(e => {
+                GameState.aetherControl.pending = false;
+                console.error("Aether Connection Lost", e);
+            });
+        }
+
+        function updateAutonomous() {
+            if (!GameState.car.autonomous) return;
+            
+            // Update Target from Path
+            if (GameState.car.navPath.length > 0) {
+                 GameState.car.target = GameState.car.navPath[GameState.car.navIndex];
+            }
+            if (!GameState.car.target) return;
+            
+            const car = GameState.car;
+            const target = car.target;
+            
+            // 1. Vector to Target
+            const dx = target.x - car.x;
+            const dy = target.y - car.y;
+            const distToTarget = Math.hypot(dx, dy);
+            const angleToTarget = Math.atan2(dy, dx);
+            
+            // Arrival at Waypoint Check
+            if (distToTarget < 40) {
+                // Next waypoint?
+                if (car.navIndex < car.navPath.length - 1) {
+                    car.navIndex++;
+                    addLog(`📍 Reached waypoint ${car.navIndex}.`, 'action');
+                    return; // Continued in next frame with new target
+                } else {
+                    // Final Destination
+                    car.autonomous = false;
+                    car.speed = 0;
+                    car.gear = 'P';
+                    car.headlights = false;
+                    addLog(`🏁 Arrived at destination.`, 'action');
+                    addLog(`ℹ️ Press SPACE to exit vehicle.`, '');
+                    return;
+                }
+            }
+
+            // 2. Obstacle & Memory Avoidance
+            let avoidanceSteer = 0;
+            let obstacleDetected = false;
+            let minFrontDist = 1000;
+            
+            // A. Check Active Inference Memory (Past Crashes)
+            GameState.memory.crashSites.forEach(site => {
+                const d = dist(car.x, car.y, site.x, site.y);
+                if (d < site.radius + 100) {
+                     // Strong repulsive force from known crash site
+                     const angleToDanger = Math.atan2(site.y - car.y, site.x - car.x);
+                     let angleDiff = angleToDanger - car.angle;
+                     while (angleDiff > Math.PI) angleDiff -= Math.PI*2;
+                     while (angleDiff < -Math.PI) angleDiff += Math.PI*2;
+                     
+                     // Steer AWAY
+                     avoidanceSteer -= angleDiff * 3.0;
+                     // Slow down in danger zones
+                     if (car.speed > 1) car.speed -= 0.1;
+                }
+            });
+            
+            // B. Analyze Front Sensors (Real-time Lidar)
+            GameState.sensors.front.readings.forEach(r => {
+                if (r.dist < r.max) {
+                    minFrontDist = Math.min(minFrontDist, r.dist);
+                    // If hit is on the left, steer right (positive angle addition)
+                    // Calculate angle difference relative to car heading
+                    let angleDiff = r.angle - car.angle;
+                    // Normalize -PI to PI
+                    while (angleDiff > Math.PI) angleDiff -= Math.PI*2;
+                    while (angleDiff < -Math.PI) angleDiff += Math.PI*2;
+                    
+                    // Weight avoidance by proximity
+                    const weight = (1 - (r.dist / r.max)) * 2.5; 
+                    avoidanceSteer -= angleDiff * weight;
+                    
+                    if (r.dist < 40) obstacleDetected = true;
+                }
+            });
+
+            // 3. State Machine: Drive vs Reverse vs Panic Stop
+
+            // 🧠 CONSULT AETHER (Backend Decision)
+            // Consult if close to object (<80px) enables "Swift Action" via API
+            if (minFrontDist < 80) {
+                 if (!GameState.aetherControl.pending && Date.now() - GameState.aetherControl.lastCheck > 200) {
+                     consultAether(minFrontDist, car.speed);
+                 }
+            } else {
+                 GameState.aetherControl.currentAction = null; // Clear if safe
+            }
+
+            if (reverseTimer > 0) {
+                // REVERSE MANEUVER
+                car.gear = 'R';
+                // Steer opposite to where we were stuck to "unstick"
+                // Actually in reverse, steering left moves front right.
+                // We just gently turn to change angle.
+                car.steerAngle = 0.5; 
+                car.speed = -2;
+                reverseTimer--;
+                
+                // Check Rear Sensors so we don't crash backing up
+                const rearBlocked = GameState.sensors.rear.readings.some(r => r.dist < 10);
+                if (rearBlocked) reverseTimer = 0; // Stop reversing if blocked behind
+                
+            } else if ((GameState.aetherControl.currentAction === 'emergency_stop') || (minFrontDist < 20 && car.speed > 0.5)) {
+                // AETHER COMMANDED STOP or PHYSICS SAFEGUARD
+                car.speed = 0;
+                // Don't change gear yet, just halt
+                if (reverseTimer === 0) {
+                     const reason = GameState.aetherControl.actionReason || "Proximity Alert";
+                     addLog(`🛑 Aether Command: STOP (${reason})`, 'action');
+                     reverseTimer = 30; // Initiate reverse sequence
+                }
+                
+            } else {
+                // DRIVE BEHAVIOR
+                car.gear = 'D';
+
+                // Process Aether Slow Down Command
+                if (GameState.aetherControl.currentAction === 'slow_down') {
+                    car.speed = Math.min(car.speed, 1.0);
+                }
+                
+                // Blend Target Seeking + Avoidance
+                // Calculate desired heading difference
+                let headingError = angleToTarget - car.angle;
+                while (headingError > Math.PI) headingError -= Math.PI*2;
+                while (headingError < -Math.PI) headingError += Math.PI*2;
+                
+                // Final Steer Calculation
+                // If obstacle close, ignore target, focus on avoidance
+                if (obstacleDetected) {
+                     car.steerAngle = avoidanceSteer;
+                     car.speed = clamp(car.speed - 0.2, 0.5, 2); // Slow down
+                } else {
+                     car.steerAngle = headingError + avoidanceSteer * 0.5;
+                     car.speed = clamp(car.speed + 0.1, 0, car.maxSpeed);
+                }
+                
+                // Stuck Detection
+                // If we are in 'D' gear, have obstacles close front, and moving very slow
+                if (obstacleDetected && minFrontDist < 15 && Math.abs(car.speed) < 0.5) {
+                    stuckCounter++;
+                } else {
+                    stuckCounter = Math.max(0, stuckCounter - 1);
+                }
+                
+                // Trigger Reverse
+                if (stuckCounter > 40) {
+                    addLog("⚠️ Obstacle blocking. Initiating reverse maneuver.", 'action');
+                    reverseTimer = 60; // Reverse for ~1 second (at 60fps)
+                    stuckCounter = 0;
+                }
+            }
+            
+            // Clamp steering
+            car.steerAngle = clamp(car.steerAngle, -0.6, 0.6); // ~35 degrees max steer
+        }
+
+        function updatePhysics() {
+            const car = GameState.car;
+            
+            // Apply speed and angle
+            if (Math.abs(car.speed) > 0.1) {
+                car.x += Math.cos(car.angle) * car.speed;
+                car.y += Math.sin(car.angle) * car.speed;
+                car.angle += car.steerAngle * (car.speed * 0.05); // Turn rate depends on speed
+            }
+            
+            // Friction
+            if (!car.autonomous && car.gear === 'D') car.speed *= 0.95;
+            if (car.gear === 'P') car.speed = 0;
+            
+            // Update Sensors
+            updateSensors();
+            
+            // Crash Detection (Bounding box vs Obstacles simplified)
+            checkCollisions();
+        }
+        
+        // ============================================
+        // GEOMETRY & COLLISION UTILS
+        // ============================================
+        function getCarCorners(car) {
+            const cos = Math.cos(car.angle);
+            const sin = Math.sin(car.angle);
+            const hw = car.width / 2;
+            const hh = car.height / 2;
+            
+            // Relative corners
+            // FL, FR, BR, BL
+            const corners = [
+                { x: hw, y: -hh },
+                { x: hw, y: hh },
+                { x: -hw, y: hh },
+                { x: -hw, y: -hh }
+            ];
+            
+            // Rotate and Translate
+            return corners.map(p => ({
+                x: car.x + (p.x * cos - p.y * sin),
+                y: car.y + (p.x * sin + p.y * cos)
+            }));
+        }
+
+        // Check if a point is inside an Axis-Aligned Rectangle
+        function pointInRect(p, rect) {
+            return p.x >= rect.x && p.x <= rect.x + rect.w &&
+                   p.y >= rect.y && p.y <= rect.y + rect.h;
+        }
+
+        // Check if point is on any drivable road surface
+        function isPointOnRoad(p) {
+            // Road Definitions (Matches drawRoads)
+            // 1. Oak St
+            if (pointInRect(p, {x: 0, y: 380, w: 1000, h: 60})) return true;
+            // 2. 5th Ave (Intersection vertical)
+            if (pointInRect(p, {x: 550, y: 0, w: 90, h: 440})) return true; // Slightly wider for ease
+            // 3. Maple Dr
+            if (pointInRect(p, {x: 550, y: 130, w: 450, h: 60})) return true;
+            
+            return false;
+        }
+
+        function checkCollisions() {
+            if (GameState.crashed) return;
+            
+            const corners = getCarCorners(GameState.car);
+            
+            // 1. Check Road Boundaries (Restrict to Road)
+            // If any corner of the car is OFF the road, it's a crash (hit a wall/curb)
+            const offRoad = corners.some(p => !isPointOnRoad(p));
+            if (offRoad) {
+                triggerCrash("VEHICLE_OFF_ROAD");
+                return;
+            }
+
+            // 2. Check Obstacles (Exact Shape)
+            // Check if any car corner is inside an obstacle
+            let hitObstacle = false;
+            
+            GameState.obstacles.forEach(obs => {
+                if (hitObstacle) return;
+                
+                // For Barriers (Rectangles)
+                if (obs.type === 'barrier') {
+                     // Check car corners in barrier
+                     if (corners.some(c => pointInRect(c, obs))) hitObstacle = true;
+                     
+                     // Reverse check: Barrier corners in Car (rotated)? 
+                     // Simplified: Check obstacle center dist for small overlap 
+                     // (Proper SAT is better but this covers 95% of 'driving into' cases)
+                } 
+                // For Cones (Small Rects/Circles)
+                else {
+                    // Treat cone as small 20x20 rect
+                    if (corners.some(c => pointInRect(c, obs))) hitObstacle = true;
+                }
+            });
+            
+            if (hitObstacle) {
+                triggerCrash("OBSTACLE_COLLISION");
+            }
+        }
+        
+        function triggerCrash(reason) {
+            GameState.crashed = true;
+            GameState.car.speed = 0;
+            GameState.car.autonomous = false;
+            GameState.car.gear = 'P';
+            
+            // RECORD EXACT CRASH LOCATION
+            GameState.memory.crashSites.push({
+                x: GameState.car.x,
+                y: GameState.car.y,
+                radius: 40, // Smaller, tighter memory
+                type: reason
+            });
+            
+            addLog(`💥 CRITICAL FAILURE: ${reason}`, 'action');
+            addLog("⚠️ Press 'R' to reset.", '');
+        }
+
+        // ============================================
+        // VISUALS
+        // ============================================
+        function draw() {
+            // 1. World Clear
+            ctx.fillStyle = '#101015'; // Dark Asphalt
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.save();
+            
+            // Auto-Center the Map Content 
+            // Content is roughly bounded 0-1000 width, 0-500 height
+            const contentWidth = 900;
+            const contentHeight = 500;
+            const offsetX = Math.max(0, (canvas.width - contentWidth) / 2);
+            const offsetY = Math.max(0, (canvas.height - contentHeight) / 2);
+            
+            ctx.translate(offsetX, offsetY);
+            
+            // Draw World Elements
+            drawRoads();
+            drawObstacles();
+            drawHome();
+            
+            // 2. Entities
+            if (!GameState.player.inCar) drawPlayer();
+            drawCar();
+            
+            ctx.restore(); // Restore to screen coordinates for HUD
+            
+            // CRASH OVERLAY
+            if (GameState.crashed) {
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 30px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText("CRITICAL SYSTEM FAILURE", canvas.width/2, canvas.height/2 - 20);
+                ctx.font = '20px monospace';
+                ctx.fillText("PRESS 'R' TO REBOOT", canvas.width/2, canvas.height/2 + 20);
+                ctx.textAlign = 'left'; 
+            }
+            
+            // 3. Vision System (The Eye)
+            drawVisionFeed();
+            
+            // 4. Update Stats
+            updateDOMStats();
+        }
+        
+        function drawRoads() {
+            ctx.fillStyle = '#222';
+            // Oak St
+            ctx.fillRect(0, 380, canvas.width, 60);
+            // 5th Ave (Intersection)
+            ctx.fillRect(550, 0, 80, 440);
+            // Maple Dr (Destination road)
+            ctx.fillRect(550, 130, 400, 60);
+            
+            // Markings
+            ctx.strokeStyle = '#555';
+            ctx.setLineDash([10, 10]);
+            
+            // Oak Center
+            ctx.beginPath(); ctx.moveTo(0, 410); ctx.lineTo(550, 410); ctx.stroke();
+            
+            // Maple Center
+            ctx.beginPath(); ctx.moveTo(630, 160); ctx.lineTo(canvas.width, 160); ctx.stroke();
+            
+            ctx.setLineDash([]);
+        }
+        
+        function drawObstacles() {
+            GameState.obstacles.forEach(obs => {
+                if (obs.type === 'cone') {
+                    ctx.fillStyle = '#ff6b00';
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x + obs.w/2, obs.y);
+                    ctx.lineTo(obs.x + obs.w, obs.y + obs.h);
+                    ctx.lineTo(obs.x, obs.y + obs.h);
+                    ctx.fill();
+                } else {
+                    ctx.fillStyle = '#444'; // Concrete barrier
+                    ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+                    ctx.strokeStyle = '#ffe500'; // Stripe
+                    ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+                }
+            });
+            
+            // Draw Memory (Crash Sites)
+            if (GameState.memory && GameState.memory.crashSites) {
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+                ctx.strokeStyle = '#ff0000';
+                GameState.memory.crashSites.forEach(site => {
+                    ctx.beginPath();
+                    ctx.arc(site.x, site.y, site.radius, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.stroke();
+                    // Label
+                    ctx.fillStyle = '#ff0000';
+                    ctx.font = '10px monospace';
+                    ctx.fillText('AVOID ZONE', site.x - 30, site.y);
+                });
+            }
+        }
+        
+        function drawCar() {
+            const car = GameState.car;
+            ctx.save();
+            ctx.translate(car.x, car.y);
+            ctx.rotate(car.angle);
+            
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(-car.width/2 + 5, -car.height/2 + 5, car.width, car.height);
+            
+            // Turn Signals (if turning)
+            if (Math.abs(car.steerAngle) > 0.1) {
+                const side = car.steerAngle > 0 ? 1 : -1;
+                // Blink calc
+                if (Math.floor(Date.now() / 200) % 2 === 0) {
+                     ctx.fillStyle = '#ffaa00';
+                     ctx.fillRect(car.width/2 - 2, (car.height/2 - 5) * side, 4, 4); // Front
+                     ctx.fillRect(-car.width/2 - 2, (car.height/2 - 5) * side, 4, 4); // Rear
+                }
+            }
+            
+            // Body
+            ctx.fillStyle = '#4a90d9';
+            ctx.fillRect(-car.width/2, -car.height/2, car.width, car.height);
+            
+            // Roof / Windshield
+            ctx.fillStyle = '#223';
+            ctx.fillRect(-car.width/4, -car.height/2 + 2, car.width/2, car.height - 4);
+            
+            // Headlights
+            ctx.fillStyle = car.headlights ? '#ffffaa' : '#555';
+            ctx.fillRect(car.width/2 - 2, -car.height/2 + 2, 4, 6);
+            ctx.fillRect(car.width/2 - 2, car.height/2 - 8, 4, 6);
+            
+            // Headlight Beams (Visual only)
+            if (car.headlights) {
+                ctx.globalCompositeOperation = 'screen';
+                ctx.fillStyle = 'rgba(255, 255, 200, 0.2)';
+                ctx.beginPath();
+                ctx.moveTo(car.width/2, -car.height/2 + 5);
+                ctx.lineTo(car.width/2 + 150, -car.height/2 - 40);
+                ctx.lineTo(car.width/2 + 150, car.height/2 + 40);
+                ctx.lineTo(car.width/2, car.height/2 - 5);
+                ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+            }
+            
+            // Taillights
+            // Brighter if reversing or stopped (braking)
+            const braking = car.gear === 'P' || (car.gear==='D' && car.speed < 0) || (car.gear==='R' && car.speed > 0);
+            const reversing = car.gear === 'R';
+            
+            ctx.fillStyle = braking ? '#ff0000' : '#880000';
+            if (reversing) ctx.fillStyle = '#ffffff'; // White reverse lights
+            
+            ctx.fillRect(-car.width/2, -car.height/2 + 2, 2, 6);
+            ctx.fillRect(-car.width/2, car.height/2 - 8, 2, 6);
+
+            ctx.restore();
+        }
+        
+        function drawHome() {
+            ctx.fillStyle = GameState.home.lightsOn ? '#ffeeaa' : '#554433';
+            ctx.fillRect(GameState.home.x, GameState.home.y, GameState.home.width, GameState.home.height);
+            ctx.fillStyle = '#0f0';
+            ctx.font = '10px monospace';
+            ctx.fillText('742 MAPLE', GameState.home.x + 5, GameState.home.y - 10);
+        }
+        
+        function drawPlayer() {
+            if (!GameState.player.visible) return;
+            ctx.fillStyle = '#00ffaa';
+            ctx.beginPath();
+            ctx.arc(GameState.player.x, GameState.player.y, 8, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        function drawVisionFeed() {
+            // Draw Sensor data to the small canvas
+            visionCtx.clearRect(0, 0, 240, 140);
+            visionCtx.fillStyle = '#001100';
+            visionCtx.fillRect(0, 0, 240, 140);
+            
+            // Center the "Ego Car" in vision view
+            const cx = 120;
+            const cy = 110;
+            const scale = 0.5;
+            
+            // Draw Ego Car
+            visionCtx.fillStyle = '#4488ff';
+            visionCtx.fillRect(cx - 10, cy - 15, 20, 30);
+            
+            // Draw Sensor Rays
+            const drawRays = (sensor) => {
+                sensor.readings.forEach(r => {
+                    const relativeAngle = r.angle - GameState.car.angle - Math.PI/2; // Rotated for vertical view
+                    const len = r.dist * scale;
+                    
+                    const ex = cx + Math.cos(relativeAngle) * len; 
+                    const ey = cy + Math.sin(relativeAngle) * len; // Inverted Y for screen? No, standard trig.
+                    
+                    visionCtx.strokeStyle = r.hit ? '#ff0000' : 'rgba(0, 255, 0, 0.3)';
+                    visionCtx.beginPath();
+                    visionCtx.moveTo(cx, cy); // Approximate origin
+                    visionCtx.lineTo(ex, ey);
+                    visionCtx.stroke();
+                    
+                    if (r.hit) {
+                        visionCtx.fillStyle = '#ff0000';
+                        visionCtx.fillRect(ex - 2, ey - 2, 4, 4);
+                    }
+                });
+            };
+            
+            drawRays(GameState.sensors.front);
+            drawRays(GameState.sensors.rear);
+            drawRays(GameState.sensors.left);
+            drawRays(GameState.sensors.right);
+            
+            // HUD Text in Vision
+            visionCtx.fillStyle = '#0f0';
+            visionCtx.font = '10px monospace';
+            visionCtx.fillText(GameState.car.gear === 'R' ? 'REVERSE CAM' : 'LIDAR MAP', 5, 10);
+            
+            // HTML Analysis Log
+            let sensorHtml = '';
+            if (GameState.sensors.front.readings.some(r => r.hit)) {
+                sensorHtml += '<div class="sensor-log">⚠️ OBSTACLE FRONT</div>';
+            }
+             if (GameState.sensors.rear.readings.some(r => r.hit)) {
+                sensorHtml += '<div class="sensor-log">⚠️ OBSTACLE REAR</div>';
+            }
+            if (!sensorHtml) sensorHtml = 'Path Clear.';
+            
+            document.getElementById('visionAnalysis').innerHTML = sensorHtml;
+        }
+
+        function updateDOMStats() {
+            document.getElementById('statGear').textContent = GameState.car.gear;
+            document.getElementById('statSpeed').textContent = Math.abs(Math.round(GameState.car.speed * 10)) + " MPH";
+            document.getElementById('statThrottle').textContent = Math.round((Math.abs(GameState.car.speed) / GameState.car.maxSpeed) * 100) + "%";
+            document.getElementById('statSteer').textContent = Math.round(GameState.car.steerAngle * RAD_TO_DEG) + "°";
+        }
+
+        // ============================================
+        // GAME LOOP & INPUT
+        // ============================================
+        const keysPressed = {};
+        
+        function resetCar() {
+            GameState.crashed = false;
+            GameState.car.x = 100;
+            GameState.car.y = 410;
+            GameState.car.angle = 0;
+            GameState.car.speed = 0;
+            GameState.car.gear = 'P';
+            GameState.car.steerAngle = 0;
+            GameState.car.autonomous = false;
+            GameState.car.navPath = [];
+            GameState.car.navIndex = 0;
+            addLog("🔄 System Rebooted. Ready.", 'action');
+        }
+
+        function updatePlayerMovement() {
+            if (GameState.player.inCar) return;
+            
+            const speed = 3;
+            if (keysPressed['ArrowUp']) GameState.player.y -= speed;
+            if (keysPressed['ArrowDown']) GameState.player.y += speed;
+            if (keysPressed['ArrowLeft']) GameState.player.x -= speed;
+            if (keysPressed['ArrowRight']) GameState.player.x += speed;
+            
+            // Bounds check
+            GameState.player.x = clamp(GameState.player.x, 0, canvas.width);
+            GameState.player.y = clamp(GameState.player.y, 0, canvas.height);
+        }
+
+        function gameLoop() {
+            updatePlayerMovement();
+            updateAutonomous();
+            updatePhysics();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        requestAnimationFrame(gameLoop);
+        
+        // Input Handling
+        window.addEventListener('keydown', (e) => {
+            keysPressed[e.key] = true;
+
+            if (e.key.toLowerCase() === 'r' && GameState.crashed) {
+                resetCar();
+                return;
+            }
+
+            if (e.key === ' ') {
+                if (GameState.player.inCar) exitCar();
+                else enterCar();
+            }
+            if (e.key === 'Enter') {
+                const cmd = document.getElementById('commandInput').value;
+                if(cmd) processCommand(cmd);
+                document.getElementById('commandInput').value = '';
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keysPressed[e.key] = false;
+        });
+        
+        function enterCar() {
+            const d = dist(GameState.player.x, GameState.player.y, GameState.car.x, GameState.car.y);
+            if (d < 50) {
+                GameState.player.inCar = true;
+                GameState.player.visible = false;
+                GameState.car.engine = true;
+                GameState.car.gear = 'P';
+                document.getElementById('carStats').classList.add('active');
+                switchBody('automotive', 'Entered vehicle.');
+                addLog('🚗 Engine Started. Systems OK.', 'action');
+            }
+        }
+        
+        function exitCar() {
+            GameState.player.inCar = false;
+            GameState.player.visible = true;
+            GameState.player.x = GameState.car.x - 30;
+            GameState.player.y = GameState.car.y;
+            GameState.car.gear = 'P';
+            GameState.car.engine = false;
+            GameState.car.autonomous = false;
+            document.getElementById('carStats').classList.remove('active');
+            switchBody('chat', 'Exited vehicle.');
+        }
+        
+        function processCommand(cmd) {
+            cmd = cmd.toLowerCase();
+            addLog(`🗣️ "${cmd}"`, '');
+            
+            if (cmd.includes('home')) {
+                if (!GameState.player.inCar) {
+                    addLog('⚠️ Enter car first.', 'action');
+                    return;
+                }
+                addLog('🧠 GPS computing route...', 'action');
+                GameState.car.autonomous = true;
+                
+                // Waypoints to navigate the maze (Oak -> 5th -> Maple)
+                GameState.car.navPath = [
+                    { x: 500, y: 410 }, // End of Oak St
+                    { x: 580, y: 350 }, // Interaction Entry
+                    { x: 580, y: 200 }, // Mid 5th Ave
+                    { x: 620, y: 160 }, // Turn to Maple
+                    { x: 750, y: 160 }  // Home Arrival
+                ];
+                GameState.car.navIndex = 0;
+                GameState.car.target = GameState.car.navPath[0];
+                
+                GameState.car.headlights = true;
+                GameState.car.gear = 'D';
+                addLog('📍 Waypoints set. Engaging Autopilot.', 'action');
+            }
+        }
+        
+        function addLog(msg, type) {
+            const div = document.createElement('div');
+            div.className = `log-entry ${type}`;
+            div.innerHTML = `<div class="log-time">${new Date().toLocaleTimeString()}</div>${msg}`;
+            document.getElementById('aetherLog').prepend(div);
+        }
+        
+        function switchBody(type, reason) {
+            document.getElementById('bodyIndicator').className = `body-indicator ${type}`;
+            document.querySelector('.body-name').textContent = type.toUpperCase() + ' MODE';
+            // In a real app we would call fetch('/api/body/switch') here
+        }
+
+    </script>
+</body>
+</html>

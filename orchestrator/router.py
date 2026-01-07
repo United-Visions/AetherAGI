@@ -6,6 +6,8 @@ Role: Routes brain intents to the correct body adapter.
 
 from body.adapters.chat_ui import ChatAdapter
 from body.adapters.practice_adapter import PracticeAdapter
+from body.adapters.smart_home import SmartHomeAdapter
+from body.adapters.automotive import AutomotiveAdapter
 import os, json, subprocess
 from body.adapters.toolforge_adapter import ToolForgeAdapter
 from config.settings import settings
@@ -18,7 +20,9 @@ class Router:
         In a more complex system, this could be done dynamically.
         """
         self.adapters = {
-            "chat": ChatAdapter()
+            "chat": ChatAdapter(),
+            "smart_home": SmartHomeAdapter(),
+            "automotive": AutomotiveAdapter()
         }
         if settings.practice_adapter:
             self.adapters["practice"] = PracticeAdapter()
@@ -28,6 +32,10 @@ class Router:
         # Dynamic logging based on loaded adapters
         adapter_names = ", ".join(self.adapters.keys())
         logger.info(f"Router initialized with adapters: {adapter_names}")
+    
+    def get_available_adapters(self) -> list:
+        """Return list of available adapter names."""
+        return list(self.adapters.keys())
 
     def forward_intent(self, intent: str, adapter_type: str = "chat"):
         """

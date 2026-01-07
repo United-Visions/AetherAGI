@@ -181,12 +181,9 @@ class ProgressiveRunner:
         variant = self.loader.current_variant
         chunk_data, chunk_num, total_chunks = self.loader.get_next_chunk()
         
-        # Decide if we can batch this chunk
-        # Coding questions should NOT be batched because they require multiline responses 
-        # that break the numbered list parsing logic.
-        can_batch = variant.answer_format not in ["code", "json"]
-        
-        mode_str = "BATCH MODE" if can_batch else "SEQUENTIAL MODE"
+        # Note: Batch mode is DISABLED - causes parsing issues with 0% scores
+        # All benchmarks now run in sequential mode for accuracy
+        mode_str = "SEQUENTIAL MODE"
         self._log(f"\n{'='*60}")
         self._log(f"📝 {variant.name} - Chunk {chunk_num}/{total_chunks} ({mode_str})")
         self._log(f"   Questions: {len(chunk_data)}")
@@ -198,97 +195,53 @@ class ProgressiveRunner:
         answers = []
         correct = 0
 
-        if can_batch:
-            # --- BATCH EXECUTION ---
-            batched_prompt = "Solve the following questions and provide only the final answers in a numbered list:\n\n"
-            for i, q in enumerate(questions):
-                batched_prompt += f"Question {i+1}: {q.text}\n\n"
+        # Sequential execution - each question gets its own API call for accuracy
+        # (Batch mode was disabled because LLMs don't return clean numbered lists)
+        for i, question in enumerate(questions):
+            # Use benchmark-specific formatting if available
+            if self.benchmark:
+                prompt = self.benchmark.format_question_for_aether(question)
+            else:
+                prompt = question.text
+                
+            result = await self._ask_with_retry(prompt, variant.answer_format)
             
-            self._log(f"   🚀 Sending batch request (1 chunk = 1 request)...")
+            model_answer = result.get("response", "")
+            is_correct, extracted = self._check_answer(question, model_answer, variant)
             
-            result = await self._ask_with_retry(batched_prompt, variant.answer_format)
+            if is_correct:
+                correct += 1
             
-            if not result or "ERROR" in result.get("raw_response", ""):
-                self._log(f"   ❌ Batch request failed: {result.get('raw_response', 'Unknown Error')}")
-                return {"score": 0, "correct": 0, "total": len(questions)}
-
-            # Parse the batched response
-            raw_outputs = result["response"].split("\n")
-            parsed_answers = {}
+            answer = Answer(
+                question_id=question.id,
+                raw_response=model_answer,
+                extracted_answer=extracted,
+                is_correct=is_correct,
+                latency_ms=result.get("latency_ms", 0),
+                tokens_used=result.get("tokens_used", 0),
+            )
+            answers.append(answer)
+            status = "✓" if is_correct else "✗"
+            self._log(f"   [{i+1}/{len(questions)}] {status} (id: {question.id})")
             
-            # Look for numbered lines: "1. Answer", "3) Answer", etc.
-            for line in raw_outputs:
-                match = re.search(r'^(\d+)[\.\)\-\s]+(.*)', line.strip())
-                if match:
-                    idx = int(match.group(1)) - 1
-                    ans = match.group(2).strip()
-                    parsed_answers[idx] = ans
-            
-            for i, question in enumerate(questions):
-                model_answer = parsed_answers.get(i, raw_outputs[i] if i < len(raw_outputs) else "")
-                is_correct, extracted = self._check_answer(question, model_answer, variant)
-                
-                if is_correct:
-                    correct += 1
-                
-                answer = Answer(
-                    question_id=question.id,
-                    raw_response=model_answer,
-                    extracted_answer=extracted,
-                    is_correct=is_correct,
-                    latency_ms=result["latency_ms"] / len(questions),
-                    tokens_used=result["tokens_used"] // len(questions),
-                )
-                answers.append(answer)
-                status = "✓" if is_correct else "✗"
-                self._log(f"   [{i+1}/{len(questions)}] {status}", end="\r")
-        else:
-            # --- SEQUENTIAL EXECUTION (for Code/Complex types) ---
-            for i, question in enumerate(questions):
-                # Use benchmark-specific formatting if available
-                if self.benchmark:
-                    prompt = self.benchmark.format_question_for_aether(question)
-                else:
-                    prompt = question.text
-                    
-                result = await self._ask_with_retry(prompt, variant.answer_format)
-                
-                model_answer = result.get("response", "")
-                is_correct, extracted = self._check_answer(question, model_answer, variant)
-                
-                if is_correct:
-                    correct += 1
-                
-                answer = Answer(
-                    question_id=question.id,
-                    raw_response=model_answer,
-                    extracted_answer=extracted,
-                    is_correct=is_correct,
-                    latency_ms=result.get("latency_ms", 0),
-                    tokens_used=result.get("tokens_used", 0),
-                )
-                answers.append(answer)
-                status = "✓" if is_correct else "✗"
-                self._log(f"   [{i+1}/{len(questions)}] {status} (id: {question.id})")
-                
-                if not is_correct and self.verbose:
-                    # Print error details for failed coding questions
-                    err = extracted.get("error") if isinstance(extracted, dict) else None
-                    if err:
-                        # Find the actual error message in the traceback
-                        err_str = str(err)
-                        if "ASSERTION_FAILED" in err_str:
-                            clean_err = err_str.split("ASSERTION_FAILED:")[1].strip()
-                        elif "ERROR:" in err_str:
-                            clean_err = err_str.split("ERROR:")[1].strip()
-                        else:
-                            clean_err = err_str.strip()
-                            
-                        # Only show the last few lines of traceback if too long
-                        if len(clean_err.split("\n")) > 5:
-                            clean_err = "..." + "\n".join(clean_err.split("\n")[-5:])
-                            
-                        self._log(f"      ❌ Error: {clean_err[:500]}")
+            if not is_correct and self.verbose:
+                # Print error details for failed questions
+                err = extracted.get("error") if isinstance(extracted, dict) else None
+                if err:
+                    # Find the actual error message in the traceback
+                    err_str = str(err)
+                    if "ASSERTION_FAILED" in err_str:
+                        clean_err = err_str.split("ASSERTION_FAILED:")[1].strip()
+                    elif "ERROR:" in err_str:
+                        clean_err = err_str.split("ERROR:")[1].strip()
+                    else:
+                        clean_err = err_str.strip()
+                        
+                    # Only show the last few lines of traceback if too long
+                    if len(clean_err.split("\n")) > 5:
+                        clean_err = "..." + "\n".join(clean_err.split("\n")[-5:])
+                        
+                    self._log(f"      ❌ Error: {clean_err[:500]}")
 
         print()
         score = correct / len(questions) if questions else 0

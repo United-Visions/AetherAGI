@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AetherMind Game Library - Body Switching Demos</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+        .header {
+            background: rgba(0,0,0,0.3);
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(0,255,200,0.2);
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ffc8;
+        }
+        .back-link {
+            color: #888;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        .back-link:hover { color: #00ffc8; }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 36px;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00ffc8, #00a8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 40px;
+            font-size: 18px;
+        }
+        
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+        }
+        
+        .game-card {
+            background: rgba(20,20,40,0.8);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(0,255,200,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,255,200,0.2);
+        }
+        
+        .game-preview {
+            height: 250px;
+            background: #000;
+            position: relative;
+            overflow: hidden;
+        }
+        .game-preview canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .game-info {
+            padding: 24px;
+        }
+        .game-title {
+            font-size: 22px;
+            margin-bottom: 10px;
+            color: #00ffc8;
+        }
+        .game-desc {
+            color: #aaa;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        .body-tags {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .body-tag {
+            padding: 6px 12px;
+            background: rgba(0,255,200,0.1);
+            border: 1px solid rgba(0,255,200,0.3);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #00ffc8;
+        }
+        .body-tag.automotive { border-color: #ff6b6b; color: #ff6b6b; background: rgba(255,107,107,0.1); }
+        .body-tag.smart-home { border-color: #ffd93d; color: #ffd93d; background: rgba(255,217,61,0.1); }
+        .body-tag.vision { border-color: #6bcfff; color: #6bcfff; background: rgba(107,207,255,0.1); }
+        
+        .play-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(90deg, #00ffc8, #00a8ff);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .play-btn:hover {
+            transform: scale(1.02);
+        }
+        
+        /* Mini preview animations */
+        .preview-1 { background: linear-gradient(45deg, #1a1a2e, #16213e); }
+        .preview-2 { background: linear-gradient(45deg, #1a1a2e, #2d132c); }
+        
+        .concept-box {
+            background: rgba(0,255,200,0.05);
+            border: 1px solid rgba(0,255,200,0.2);
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 40px;
+            text-align: center;
+        }
+        .concept-box h3 {
+            color: #00ffc8;
+            margin-bottom: 15px;
+        }
+        .concept-box p {
+            color: #888;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">⚡ AetherMind</div>
+        <a href="/" class="back-link">← Back to Chat</a>
+    </div>
+    
+    <div class="container">
+        <h1>🎮 Virtual Game Library</h1>
+        <p class="subtitle">Same Brain, Different Bodies — Watch Aether switch between controlling cars, homes, and city surveillance</p>
+        
+        <div class="games-grid">
+            <!-- Game 1: Life Simulator -->
+            <div class="game-card">
+                <div class="game-preview preview-1">
+                    <canvas id="preview-life"></canvas>
+                </div>
+                <div class="game-info">
+                    <h2 class="game-title">🚗 Life Simulator</h2>
+                    <p class="game-desc">
+                        Walk around town, enter your car, and say "Take me home". 
+                        Aether knows your name and address — she'll navigate the streets, 
+                        park, then automatically switch to your Smart Home: lights turn on, 
+                        door unlocks. You detach and walk inside.
+                    </p>
+                    <div class="body-tags">
+                        <span class="body-tag">chat</span>
+                        <span class="body-tag automotive">automotive</span>
+                        <span class="body-tag smart-home">smart_home</span>
+                        <span class="body-tag vision">vision/eye</span>
+                    </div>
+                    <button class="play-btn" onclick="window.location.href='/games/life-simulator'">
+                        ▶ Play Now
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Game 2: Smart City Manhunt -->
+            <div class="game-card">
+                <div class="game-preview preview-2">
+                    <canvas id="preview-city"></canvas>
+                </div>
+                <div class="game-info">
+                    <h2 class="game-title">🔍 Smart City Manhunt</h2>
+                    <p class="game-desc">
+                        A witness reports a shooting — white male, shot his wife at 9AM. 
+                        Aether receives the police scanner alert and begins her manhunt. 
+                        She accesses city cameras, tracks the suspect's movements, logs 
+                        each sighting, and reports last known location to dispatch.
+                    </p>
+                    <div class="body-tags">
+                        <span class="body-tag">chat</span>
+                        <span class="body-tag vision">vision/eye</span>
+                        <span class="body-tag" style="border-color:#ff4444;color:#ff4444;background:rgba(255,68,68,0.1);">surveillance</span>
+                    </div>
+                    <button class="play-btn" onclick="window.location.href='/games/smart-city'">
+                        ▶ Play Now
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="concept-box">
+            <h3>🧠 What This Proves</h3>
+            <p>
+                These games demonstrate AetherMind's <strong>body-agnostic architecture</strong>. 
+                The same Brain (reasoning engine) seamlessly switches between controlling a car (AutomotiveAdapter), 
+                a house (SmartHomeAdapter), and city cameras (VisionAdapter + RTSP). 
+                The game canvas acts as Aether's "eyes" — she processes what she sees through <code>perception/eye.py</code> 
+                and makes decisions using her Brain, regardless of which Body she's currently inhabiting.
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // Mini preview animations
+        function animatePreview(canvasId, type) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            let frame = 0;
+            
+            function draw() {
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                if (type === 'life') {
+                    // Draw simple road and car
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(0, canvas.height/2 - 30, canvas.width, 60);
+                    
+                    // Moving car
+                    const carX = (frame * 2) % (canvas.width + 100) - 50;
+                    ctx.fillStyle = '#ff6b6b';
+                    ctx.fillRect(carX, canvas.height/2 - 15, 40, 20);
+                    ctx.fillStyle = '#444';
+                    ctx.fillRect(carX + 5, canvas.height/2 - 25, 20, 10);
+                    
+                    // House
+                    ctx.fillStyle = '#ffd93d';
+                    ctx.fillRect(canvas.width - 80, canvas.height/2 - 60, 60, 50);
+                    ctx.fillStyle = '#8B4513';
+                    ctx.beginPath();
+                    ctx.moveTo(canvas.width - 90, canvas.height/2 - 60);
+                    ctx.lineTo(canvas.width - 50, canvas.height/2 - 90);
+                    ctx.lineTo(canvas.width - 10, canvas.height/2 - 60);
+                    ctx.fill();
+                } else {
+                    // Draw city grid
+                    ctx.strokeStyle = 'rgba(0,255,200,0.2)';
+                    for (let i = 0; i < 10; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(i * 50, 0);
+                        ctx.lineTo(i * 50, canvas.height);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(0, i * 30);
+                        ctx.lineTo(canvas.width, i * 30);
+                        ctx.stroke();
+                    }
+                    
+                    // Scanning effect
+                    ctx.fillStyle = `rgba(255,68,68,${0.3 + Math.sin(frame * 0.1) * 0.2})`;
+                    ctx.beginPath();
+                    ctx.arc(canvas.width/2, canvas.height/2, 30 + Math.sin(frame * 0.05) * 20, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Camera icons
+                    ctx.fillStyle = '#6bcfff';
+                    ctx.fillRect(30, 30, 15, 10);
+                    ctx.fillRect(canvas.width - 45, 30, 15, 10);
+                    ctx.fillRect(30, canvas.height - 40, 15, 10);
+                    ctx.fillRect(canvas.width - 45, canvas.height - 40, 15, 10);
+                }
+                
+                frame++;
+                requestAnimationFrame(draw);
+            }
+            draw();
+        }
+        
+        animatePreview('preview-life', 'life');
+        animatePreview('preview-city', 'city');
+    </script>
+</body>
+</html>

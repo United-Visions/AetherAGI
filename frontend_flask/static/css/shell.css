@@ -342,6 +342,31 @@ body {
     border-color: var(--accent-green);
 }
 
+/* Voice button states */
+#voice-btn.active {
+    background: var(--accent-green);
+    color: white;
+    border-color: var(--accent-green);
+}
+
+#voice-btn.active:hover {
+    background: var(--accent-red);
+    border-color: var(--accent-red);
+}
+
+#voice-btn.playing {
+    animation: voice-pulse 1s ease-in-out infinite;
+}
+
+@keyframes voice-pulse {
+    0%, 100% { 
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+    }
+    50% { 
+        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+    }
+}
+
 .input-wrapper {
     display: flex;
     align-items: flex-end;
@@ -355,6 +380,50 @@ body {
 
 .input-wrapper:focus-within {
     border-color: var(--accent-green);
+}
+
+/* Voice toggle button in input */
+.voice-toggle-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.voice-toggle-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+}
+
+.voice-toggle-btn.active {
+    color: var(--accent-green);
+    background: rgba(16, 185, 129, 0.15);
+}
+
+.voice-toggle-btn.active:hover {
+    color: var(--accent-red);
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.voice-toggle-btn.playing {
+    animation: voice-glow 1s ease-in-out infinite;
+}
+
+@keyframes voice-glow {
+    0%, 100% { 
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+    }
+    50% { 
+        box-shadow: 0 0 8px 4px rgba(16, 185, 129, 0.3);
+    }
 }
 
 #chat-input {
@@ -698,6 +767,67 @@ body {
     background: var(--accent-purple);
     color: white;
     border-color: var(--accent-purple);
+}
+
+/* Thinking Stream Animation */
+.thinking-stream {
+    margin-bottom: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-tertiary);
+    overflow: hidden;
+}
+
+.thinking-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    user-select: none;
+    transition: all var(--transition-fast);
+}
+
+.thinking-toggle:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.thinking-icon {
+    animation: pulse-think 2s ease-in-out infinite;
+}
+
+@keyframes pulse-think {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+.thinking-stream[open] .thinking-icon {
+    animation: none;
+    opacity: 1;
+}
+
+.thinking-content {
+    padding: 14px;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    max-height: 300px;
+    overflow-y: auto;
+    background: var(--bg-primary);
+    font-family: 'Fira Code', monospace;
+}
+
+.thinking-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.thinking-content::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
 }
 
 /* Photo/video capture prompt */

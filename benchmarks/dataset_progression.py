@@ -217,19 +217,19 @@ DATASET_PROGRESSIONS: Dict[str, ProgressionConfig] = {
     "gsm": ProgressionConfig(
         family=DatasetFamily.GSM,
         variants=GSM_VARIANTS,
-        chunk_size=100,
+        chunk_size=25,  # Reduced from 100 for sequential mode (each question = 1 API call)
         min_datasets_before_prompt=3,
     ),
     "mmlu": ProgressionConfig(
         family=DatasetFamily.MMLU,
         variants=MMLU_VARIANTS,
-        chunk_size=200,
+        chunk_size=50,  # Reduced from 200 for sequential mode
         min_datasets_before_prompt=2,
     ),
     "humaneval": ProgressionConfig(
         family=DatasetFamily.HUMANEVAL,
         variants=HUMANEVAL_VARIANTS,
-        chunk_size=50,
+        chunk_size=25,  # Reduced from 50 for coding tasks
         min_datasets_before_prompt=2,
     ),
 }

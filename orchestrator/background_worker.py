@@ -64,17 +64,30 @@ class BackgroundWorker:
         
         self.running = False
         self.active_tasks = {}  # goal_id -> asyncio.Task
+        self._shutdown_event = asyncio.Event()
         
-        # Setup signal handlers for graceful shutdown
-        signal.signal(signal.SIGINT, self._signal_handler)
-        signal.signal(signal.SIGTERM, self._signal_handler)
+        # Only setup signal handlers if running standalone (not under uvicorn)
+        # Uvicorn handles signals itself
+        if not self._is_running_under_uvicorn():
+            signal.signal(signal.SIGINT, self._signal_handler)
+            signal.signal(signal.SIGTERM, self._signal_handler)
         
         logger.info("BackgroundWorker initialized")
+    
+    def _is_running_under_uvicorn(self) -> bool:
+        """Check if running under uvicorn to avoid signal handler conflicts."""
+        import sys
+        return 'uvicorn' in sys.modules
     
     def _signal_handler(self, signum, frame):
         """Handle shutdown signals gracefully."""
         logger.warning(f"Received signal {signum}, initiating graceful shutdown...")
         self.running = False
+        # Force exit after second signal
+        if hasattr(self, '_received_signal'):
+            logger.warning("Second signal received, forcing exit...")
+            sys.exit(1)
+        self._received_signal = True
     
     async def start(self):
         """Start the background worker loop."""
@@ -84,15 +97,26 @@ class BackgroundWorker:
         while self.running:
             try:
                 await self._work_cycle()
+            except asyncio.CancelledError:
+                logger.info("BackgroundWorker cancelled")
+                break
             except Exception as e:
                 logger.error(f"Error in work cycle: {e}", exc_info=True)
             
-            # Wait before next poll
-            await asyncio.sleep(self.poll_interval)
+            # Use shorter sleep intervals for faster shutdown response
+            for _ in range(self.poll_interval):
+                if not self.running:
+                    break
+                await asyncio.sleep(1)
         
         # Cleanup on shutdown
         await self._cleanup()
         logger.info("BackgroundWorker stopped")
+    
+    def stop(self):
+        """Stop the background worker."""
+        logger.info("Stopping BackgroundWorker...")
+        self.running = False
     
     async def _work_cycle(self):
         """Single work cycle: poll for goals and spawn workers."""

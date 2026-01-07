@@ -1,10 +1,12 @@
 // UIOrchestrator.js - Agent-controlled dynamic UI
 // All UI changes flow through here, agent decides what to show
 
+import { api } from '../api.js';
+
 export class UIOrchestrator {
     constructor(shell) {
         this.shell = shell;
-        this.api = null; // Set by shell after api init
+        this.api = api; // Use imported api
         
         // Track what's currently visible
         this.activeComponents = new Set();

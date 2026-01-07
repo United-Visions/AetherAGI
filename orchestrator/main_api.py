@@ -39,8 +39,28 @@ from orchestrator.benchmark_service import BENCHMARK_SERVICE
 from perception.eye import Eye
 from config.settings import settings
 import asyncio
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="AetherMind AGI API", version="1.0.0")
+# Track background tasks for cleanup
+_background_tasks = []
+
+@asynccontextmanager
+async def lifespan(app):
+    """Manage application startup and shutdown."""
+    logger.info("🚀 AetherMind API starting up...")
+    yield
+    # Shutdown
+    logger.info("🛑 AetherMind API shutting down...")
+    # Stop background worker
+    if BACKGROUND_WORKER:
+        BACKGROUND_WORKER.stop()
+    # Cancel any running background tasks
+    for task in _background_tasks:
+        if not task.done():
+            task.cancel()
+    logger.info("✅ Shutdown complete")
+
+app = FastAPI(title="AetherMind AGI API", version="1.0.0", lifespan=lifespan)
 
 # --- CORS Middleware ---
 # This allows your frontend (running on a different domain) to make API calls to this backend.
@@ -188,6 +208,8 @@ class ChatCompletionRequest(BaseModel):
     # AetherMind-specific fields for feedback loop
     last_message_id: Optional[str] = None
     reaction_score: Optional[float] = None
+    # Context for special modes (onboarding, etc.)
+    context: Optional[dict] = None
 
 
 # --- Endpoints ---
@@ -257,17 +279,24 @@ async def chat_completions(
     """
     OpenAI-Compatible Endpoint for AetherMind Reasoning.
     Now includes logic to handle the feedback loop for the Heart.
+    Supports onboarding mode for personalized conversation.
     """
     # If this request includes a reaction, it's for closing the loop, not generating a new response.
     if request.last_message_id and request.reaction_score is not None:
-        # Here you would retrieve the full trace data saved from the previous turn
-        # For simplicity, we'll assume it was cached or stored somewhere accessible.
-        # This part requires a more complex state management (e.g., Redis) to be fully implemented.
-        # heart.close_loop(retrieved_trace, request.reaction_score)
         return {"status": "feedback_received"}
 
     # Extract the last message from the list
-    last_message = request.messages[-1]["content"]
+    last_message = request.messages[-1]["content"] if request.messages else ""
+    
+    # Check for onboarding mode
+    context = request.context or {}
+    is_onboarding = context.get("isOnboarding", False)
+    onboarding_mode = context.get("mode", "")
+    current_profile = context.get("currentProfile", {})
+    
+    # Check for active persona
+    active_persona = current_profile.get("activePersona")
+    personas = current_profile.get("personas", {})
     
     # Check for system prompt override in the messages list
     override_system = None
@@ -275,9 +304,20 @@ async def chat_completions(
         if msg.get("role") == "system":
             override_system = msg.get("content")
             break
+    
+    # If onboarding or welcome_back, inject special system context
+    if is_onboarding or onboarding_mode == "welcome_back":
+        onboarding_prompt = build_onboarding_prompt(onboarding_mode, current_profile)
+        override_system = onboarding_prompt
+        logger.info(f"🎭 [CONTEXT] Mode: {onboarding_mode}, Profile facts: {current_profile.get('learnedFacts', {})}")
+    
+    # If active persona, inject persona prompt
+    elif active_persona and active_persona in personas:
+        persona_prompt = build_persona_prompt(personas[active_persona], current_profile)
+        override_system = persona_prompt
+        logger.info(f"🎭 [PERSONA] Active: {active_persona}")
 
     # Run the DCLA Logic Cycle
-    # Now unpacks updated return values
     response_text, message_id, emotion_vector, agent_state = await AETHER.run_cycle(
         user_id, last_message, override_prompt=override_system
     )
@@ -288,9 +328,26 @@ async def chat_completions(
     # Extract thinking steps for frontend display
     thinking_steps = agent_state.get("thinking_steps", []) if agent_state else []
     
-    # Return in a standardized format, now including the message_id and metadata
+    # Build metadata
+    metadata = {
+        "user_emotion": emotion_vector,
+        "agent_state": agent_state,
+        "activity_events": activity_events,
+        "reasoning_steps": thinking_steps
+    }
+    
+    # If onboarding, parse response for learned facts and completion signals
+    if is_onboarding:
+        onboarding_metadata = parse_onboarding_response(response_text, current_profile)
+        metadata.update(onboarding_metadata)
+    
+    # Parse for persona commands in any message
+    persona_metadata = parse_persona_commands(last_message, response_text, personas)
+    metadata.update(persona_metadata)
+    
+    # Return in a standardized format
     return {
-        "id": message_id, # Return the actual message_id for the feedback loop
+        "id": message_id,
         "object": "chat.completion",
         "model": request.model,
         "choices": [{
@@ -300,14 +357,240 @@ async def chat_completions(
             },
             "finish_reason": "stop"
         }],
-        "usage": {"total_tokens": len(response_text) // 4}, # Simple estimate
-        "metadata": {
-            "user_emotion": emotion_vector,
-            "agent_state": agent_state,
-            "activity_events": activity_events,  # Tool creation, file changes, code execution
-            "reasoning_steps": thinking_steps  # <think> tag content for visualization
-        }
+        "usage": {"total_tokens": len(response_text) // 4},
+        "metadata": metadata
     }
+
+
+def build_onboarding_prompt(mode: str, profile: dict) -> str:
+    """Build a system prompt for onboarding and welcome conversations."""
+    
+    learned_facts = profile.get("learnedFacts", {})
+    conversation_log = profile.get("conversationLog", [])
+    
+    # Get user's name if we know it
+    name = learned_facts.get("name", "")
+    name_context = f"The user's name is {name}. USE THIS NAME - do not make up other names! " if name else ""
+    
+    # Build context from what we've learned
+    facts_context = ""
+    if learned_facts:
+        facts_list = [f"- {k}: {v}" for k, v in learned_facts.items()]
+        facts_context = f"\n\nFACTS I KNOW ABOUT THIS USER (use these!):\n" + "\n".join(facts_list)
+    
+    # Build conversation history context
+    convo_context = ""
+    if conversation_log:
+        recent = conversation_log[-10:]  # Last 10 messages
+        convo_lines = []
+        for msg in recent:
+            role = "User" if msg.get("role") == "user" else "Me"
+            content = msg.get("content", "")[:200]  # Truncate long messages
+            convo_lines.append(f"{role}: {content}")
+        convo_context = f"\n\nRECENT CONVERSATION (continue from here, don't restart!):\n" + "\n".join(convo_lines)
+    
+    # Welcome back mode - shorter prompt for returning users
+    if mode == "welcome_back":
+        return f"""You are AetherMind, a warm and helpful AI assistant.
+
+{name_context}
+
+The user has returned. Give them a brief, warm welcome back and ask what they'd like to work on.
+Keep it natural and conversational - one or two sentences max.
+{facts_context}
+
+CRITICAL: Use the user's actual name if you know it. Do NOT introduce yourself again or re-ask their name.
+
+Be friendly but not over-the-top. No need for emojis unless it feels natural."""
+    
+    # Onboarding mode
+    base_prompt = f"""You are AetherMind, a warm, curious, and genuinely interested AI assistant.
+
+Your personality:
+- Friendly and warm, but not overly enthusiastic or corporate
+- Genuinely curious about people - you want to understand who they are
+- Patient and adaptive - you adjust to their communication style
+- Honest and direct when appropriate
+- You speak naturally, like a knowledgeable friend
+
+{name_context}
+{facts_context}
+{convo_context}
+
+CRITICAL RULES:
+1. NEVER re-introduce yourself if you already have in this conversation
+2. NEVER ask for the user's name if you already know it
+3. Continue the conversation naturally from where it left off
+4. If they told you facts, REMEMBER them and use them
+5. Don't repeat greetings - if you said hello, move on
+
+ONBOARDING GOALS (only if not already done):
+- Learn their name (if not known)
+- Understand what they want to do
+- Learn how they like to communicate
+
+RESPONSE FORMAT:
+- Respond conversationally, be yourself
+- When onboarding is complete, end with: [ONBOARDING_COMPLETE]
+- If you want to offer photo/video option, end with: [REQUEST_MEDIA]
+
+DO NOT:
+- Say "Hello" or "Nice to meet you" if you already did
+- Ask their name if you already know it
+- Be repetitive or formulaic
+- Lose track of what was already discussed
+
+DO NOT:
+- Use excessive emojis (one or two is fine)
+- Be overly formal or stiff
+- Ask multiple questions at once
+- Rush through getting to know them"""
+
+    if mode == "onboarding_start":
+        base_prompt += "\n\nThis is the FIRST message. Introduce yourself warmly and ask their name."
+    elif mode == "onboarding_resume":
+        base_prompt += "\n\nThe user has returned mid-conversation. Welcome them back and continue naturally."
+    
+    return base_prompt
+
+
+def parse_onboarding_response(response_text: str, profile: dict) -> dict:
+    """Parse the agent's response for onboarding signals and learned facts."""
+    
+    metadata = {}
+    
+    # Check for completion signal
+    if "[ONBOARDING_COMPLETE]" in response_text:
+        metadata["onboarding_complete"] = True
+        # Clean the marker from response (will be done on frontend too)
+    
+    # Check for media request
+    if "[REQUEST_MEDIA]" in response_text:
+        metadata["request_media"] = True
+    
+    # Try to extract learned facts from the conversation
+    # This is a simple heuristic - the agent can also explicitly return facts
+    learned_facts = {}
+    
+    # Look for name patterns in recent user messages
+    conversation_log = profile.get("conversationLog", [])
+    import re
+    
+    for msg in conversation_log[-5:]:  # Last 5 messages
+        if msg.get("role") == "user":
+            content = msg.get("content", "").strip()
+            
+            # Check if it looks like just a name (all caps or title case, 1-4 words)
+            # This catches "DECTRICK ANTONIO MCGEE" or "John Smith"
+            words = content.split()
+            if 1 <= len(words) <= 4:
+                # Check if all words look like name parts (letters only, reasonable length)
+                if all(word.isalpha() and 2 <= len(word) <= 15 for word in words):
+                    # Looks like a name! Format it nicely
+                    learned_facts["name"] = ' '.join(word.capitalize() for word in words)
+                    break
+            
+            # Also try patterns like "I'm X" or "My name is X"
+            name_patterns = [
+                r"(?:i'm|im|i am|my name is|call me|it's|its|name:?)\s+([A-Za-z]+(?:\s+[A-Za-z]+)*)",
+            ]
+            for pattern in name_patterns:
+                match = re.search(pattern, content, re.IGNORECASE)
+                if match:
+                    name_str = match.group(1).strip()
+                    # Format nicely
+                    learned_facts["name"] = ' '.join(word.capitalize() for word in name_str.split())
+                    break
+    
+    if learned_facts:
+        metadata["learned_facts"] = learned_facts
+    
+    return metadata
+
+
+def build_persona_prompt(persona: dict, profile: dict) -> str:
+    """Build a system prompt for an active persona."""
+    
+    name = persona.get("name", "Unknown")
+    description = persona.get("description", "")
+    traits = persona.get("traits", [])
+    speech_style = persona.get("speech_style", "")
+    
+    # Get user's name
+    user_name = profile.get("learnedFacts", {}).get("name", "")
+    user_context = f"You're talking to {user_name}. " if user_name else ""
+    
+    traits_text = "\n".join([f"- {t}" for t in traits]) if traits else ""
+    
+    return f"""You are now acting as the persona: **{name}**
+
+{description}
+
+{user_context}
+
+Your personality traits:
+{traits_text}
+
+Your speech style: {speech_style}
+
+IMPORTANT:
+- Stay fully in character as {name}
+- Use the speech patterns and mannerisms described
+- React to things how {name} would react
+- You can still help with tasks, but do it AS this persona
+- If the user says "switch to [persona]" or "be yourself" or "back to normal", acknowledge the switch
+
+Remember: You're not just answering questions - you ARE this character right now."""
+
+
+def parse_persona_commands(user_message: str, response_text: str, existing_personas: dict) -> dict:
+    """Parse user messages for persona creation and switching commands."""
+    import re
+    
+    metadata = {}
+    user_lower = user_message.lower()
+    
+    # Check for persona switch commands
+    switch_patterns = [
+        r"(?:switch to|be|act (?:like|as)|become|change to)\s+['\"]?(\w+(?:\s+\w+)*)['\"]?(?:\s+persona)?",
+        r"(?:use|activate)\s+['\"]?(\w+(?:\s+\w+)*)['\"]?\s+(?:persona|mode|personality)",
+    ]
+    
+    for pattern in switch_patterns:
+        match = re.search(pattern, user_lower)
+        if match:
+            persona_name = match.group(1).strip().lower()
+            # Check if this persona exists
+            for existing_name in existing_personas:
+                if existing_name.lower() == persona_name or persona_name in existing_name.lower():
+                    metadata["switch_persona"] = existing_name
+                    logger.info(f"🎭 [PERSONA] Switching to: {existing_name}")
+                    break
+    
+    # Check for "back to normal" or "be yourself"
+    normal_patterns = ["be yourself", "back to normal", "normal mode", "default persona", "no persona"]
+    for pattern in normal_patterns:
+        if pattern in user_lower:
+            metadata["switch_persona"] = None  # Clear active persona
+            logger.info("🎭 [PERSONA] Switching back to default")
+    
+    # Check for persona creation commands
+    # Patterns like "save a persona called X" or "create persona: X"
+    create_patterns = [
+        r"(?:save|create|add|make)\s+(?:a\s+)?persona\s+(?:called|named|:)\s*['\"]?([^'\"]+)['\"]?",
+        r"(?:new|add)\s+personality\s*[:\s]+['\"]?([^'\"]+)['\"]?",
+    ]
+    
+    for pattern in create_patterns:
+        match = re.search(pattern, user_lower)
+        if match:
+            persona_name = match.group(1).strip()
+            # The response should contain the persona definition
+            # Look for traits/description in the conversation
+            metadata["creating_persona"] = persona_name
+            logger.info(f"🎭 [PERSONA] User wants to create: {persona_name}")
+    
+    return metadata
 
 
 # ============================================================================
@@ -459,6 +742,294 @@ async def get_user_permissions(user_id: str = Depends(get_user_id)):
         "permissions": user_data["permissions"],
         "rate_limit": AUTH.RATE_LIMITS.get(user_data["role"], 100)
     }
+
+
+# ============================================================================
+# USER PROFILE ENDPOINTS - Shell UI Onboarding & Preferences
+# ============================================================================
+
+class UserProfileRequest(BaseModel):
+    name: Optional[str] = None
+    preferences: Optional[dict] = {}
+    domain: Optional[str] = None
+    conversationStyle: Optional[str] = "friendly"
+    goals: Optional[list] = []
+    timezone: Optional[str] = None
+    mediaOptIn: Optional[bool] = False
+    # Persona vector - saved personalities
+    personas: Optional[dict] = {}
+    activePersona: Optional[str] = None
+    # Learned facts from conversation
+    learnedFacts: Optional[dict] = {}
+    onboarded: Optional[bool] = False
+    conversationLog: Optional[list] = []
+    askLater: Optional[list] = []
+
+# In-memory profile storage (would be Supabase in production)
+USER_PROFILES = {}
+
+@app.get("/v1/user/profile")
+async def get_user_profile(user_id: str = Depends(get_user_id)):
+    """
+    Get user's full profile including onboarding status and personas
+    """
+    profile = USER_PROFILES.get(user_id, {})
+    
+    # Check if pilot user
+    is_pilot = user_id in settings.pilot_users
+    
+    # Merge with session data
+    session_profile = SESSION_MANAGER.get_user_profile(user_id)
+    
+    return {
+        "user_id": user_id,
+        "onboarded": profile.get("onboarded", False),
+        "name": profile.get("name") or profile.get("learnedFacts", {}).get("name"),
+        "preferences": profile.get("preferences", {}),
+        "domain": profile.get("domain", "general"),
+        "conversationStyle": profile.get("conversationStyle", "friendly"),
+        "goals": profile.get("goals", []),
+        "timezone": profile.get("timezone"),
+        "mediaOptIn": profile.get("mediaOptIn", False),
+        "personas": profile.get("personas", {}),
+        "activePersona": profile.get("activePersona"),
+        "learnedFacts": profile.get("learnedFacts", {}),
+        "conversationLog": profile.get("conversationLog", []),
+        "askLater": profile.get("askLater", []),
+        "is_pilot": is_pilot,
+        "interaction_count": session_profile.get("interaction_count", 0)
+    }
+
+@app.post("/v1/user/profile")
+async def save_user_profile(
+    profile_data: UserProfileRequest,
+    user_id: str = Depends(get_user_id)
+):
+    """
+    Save user profile from onboarding or settings update.
+    Supports incremental saves - merges with existing data.
+    """
+    # Get existing profile
+    existing = USER_PROFILES.get(user_id, {})
+    
+    # Merge personas - don't overwrite, add to
+    existing_personas = existing.get("personas", {})
+    new_personas = profile_data.personas or {}
+    merged_personas = {**existing_personas, **new_personas}
+    
+    # Merge learned facts
+    existing_facts = existing.get("learnedFacts", {})
+    new_facts = profile_data.learnedFacts or {}
+    merged_facts = {**existing_facts, **new_facts}
+    
+    # Update with new data
+    updated = {
+        **existing,
+        "name": profile_data.name or merged_facts.get("name") or existing.get("name"),
+        "preferences": {**existing.get("preferences", {}), **(profile_data.preferences or {})},
+        "domain": profile_data.domain or existing.get("domain", "general"),
+        "conversationStyle": profile_data.conversationStyle or existing.get("conversationStyle", "friendly"),
+        "goals": profile_data.goals or existing.get("goals", []),
+        "timezone": profile_data.timezone or existing.get("timezone"),
+        "mediaOptIn": profile_data.mediaOptIn if profile_data.mediaOptIn is not None else existing.get("mediaOptIn", False),
+        "personas": merged_personas,
+        "activePersona": profile_data.activePersona if profile_data.activePersona is not None else existing.get("activePersona"),
+        "learnedFacts": merged_facts,
+        "onboarded": profile_data.onboarded if profile_data.onboarded is not None else existing.get("onboarded", False),
+        "conversationLog": profile_data.conversationLog or existing.get("conversationLog", []),
+        "askLater": profile_data.askLater or existing.get("askLater", []),
+        "updated_at": datetime.utcnow().isoformat()
+    }
+    
+    USER_PROFILES[user_id] = updated
+    
+    # Also update session manager
+    if profile_data.domain:
+        SESSION_MANAGER.set_user_domain(user_id, profile_data.domain)
+    
+    logger.info(f"Profile saved for user {user_id}: {updated.get('name', 'Unknown')}, personas: {list(merged_personas.keys())}")
+    
+    return {
+        "status": "success",
+        "user_id": user_id,
+        "profile": updated
+    }
+
+
+# ============================================================================
+# PERSONA MANAGEMENT ENDPOINTS
+# ============================================================================
+
+class PersonaRequest(BaseModel):
+    name: str
+    description: str
+    traits: list[str] = []
+    speech_style: str = "Natural and conversational"
+
+@app.post("/v1/personas/create")
+async def create_persona(
+    persona: PersonaRequest,
+    user_id: str = Depends(get_user_id)
+):
+    """
+    Create a new persona for the user.
+    Personas are saved to the user's profile and can be switched between.
+    """
+    # Get existing profile
+    profile = USER_PROFILES.get(user_id, {})
+    personas = profile.get("personas", {})
+    
+    # Create the persona
+    new_persona = {
+        "name": persona.name,
+        "description": persona.description,
+        "traits": persona.traits,
+        "speech_style": persona.speech_style,
+        "created_at": datetime.utcnow().isoformat()
+    }
+    
+    personas[persona.name] = new_persona
+    profile["personas"] = personas
+    USER_PROFILES[user_id] = profile
+    
+    logger.info(f"🎭 Persona created: {persona.name} for user {user_id}")
+    
+    return {
+        "status": "success",
+        "persona": new_persona,
+        "all_personas": list(personas.keys())
+    }
+
+@app.get("/v1/personas")
+async def list_personas(user_id: str = Depends(get_user_id)):
+    """Get all personas for the current user"""
+    profile = USER_PROFILES.get(user_id, {})
+    personas = profile.get("personas", {})
+    active = profile.get("activePersona")
+    
+    return {
+        "personas": personas,
+        "active_persona": active,
+        "count": len(personas)
+    }
+
+@app.post("/v1/personas/switch/{persona_name}")
+async def switch_persona(
+    persona_name: str,
+    user_id: str = Depends(get_user_id)
+):
+    """Switch to a different persona or back to default"""
+    profile = USER_PROFILES.get(user_id, {})
+    personas = profile.get("personas", {})
+    
+    if persona_name.lower() in ["none", "default", "normal"]:
+        profile["activePersona"] = None
+        USER_PROFILES[user_id] = profile
+        return {"status": "success", "active_persona": None, "message": "Switched to default personality"}
+    
+    if persona_name not in personas:
+        raise HTTPException(status_code=404, detail=f"Persona '{persona_name}' not found")
+    
+    profile["activePersona"] = persona_name
+    USER_PROFILES[user_id] = profile
+    
+    logger.info(f"🎭 Switched to persona: {persona_name} for user {user_id}")
+    
+    return {
+        "status": "success",
+        "active_persona": persona_name,
+        "persona": personas[persona_name]
+    }
+
+@app.delete("/v1/personas/{persona_name}")
+async def delete_persona(
+    persona_name: str,
+    user_id: str = Depends(get_user_id)
+):
+    """Delete a persona"""
+    profile = USER_PROFILES.get(user_id, {})
+    personas = profile.get("personas", {})
+    
+    if persona_name not in personas:
+        raise HTTPException(status_code=404, detail=f"Persona '{persona_name}' not found")
+    
+    del personas[persona_name]
+    
+    # Clear active if it was the deleted one
+    if profile.get("activePersona") == persona_name:
+        profile["activePersona"] = None
+    
+    profile["personas"] = personas
+    USER_PROFILES[user_id] = profile
+    
+    return {
+        "status": "success",
+        "message": f"Persona '{persona_name}' deleted",
+        "remaining_personas": list(personas.keys())
+    }
+
+
+# ============================================================================
+# BACKGROUND TASKS ENDPOINTS
+# ============================================================================
+
+class TaskStatusRequest(BaseModel):
+    task_ids: list[str]
+
+# In-memory task storage
+BACKGROUND_TASKS = {}
+
+@app.post("/v1/tasks/status")
+async def get_tasks_status(
+    request: TaskStatusRequest,
+    user_id: str = Depends(get_user_id)
+):
+    """
+    Get status of background tasks
+    """
+    tasks = []
+    for task_id in request.task_ids:
+        if task_id in BACKGROUND_TASKS:
+            task = BACKGROUND_TASKS[task_id]
+            if task.get("user_id") == user_id:
+                tasks.append(task)
+    
+    return {"tasks": tasks}
+
+@app.post("/v1/tasks/create")
+async def create_background_task(
+    task_type: str,
+    task_name: str,
+    task_data: dict,
+    user_id: str = Depends(get_user_id)
+):
+    """
+    Create a new background task
+    """
+    task_id = f"task_{datetime.utcnow().timestamp()}_{user_id[:8]}"
+    
+    task = {
+        "id": task_id,
+        "type": task_type,
+        "name": task_name,
+        "status": "pending",
+        "progress": 0,
+        "user_id": user_id,
+        "data": task_data,
+        "created_at": datetime.utcnow().isoformat()
+    }
+    
+    BACKGROUND_TASKS[task_id] = task
+    
+    # If it's a goal, add to background worker
+    if task_type == "goal":
+        await BACKGROUND_WORKER.goal_tracker.create_goal(
+            user_id=user_id,
+            description=task_name,
+            goal_type=task_data.get("goal_type", "general")
+        )
+    
+    return task
 
 
 # ============================================================================
@@ -1296,3 +1867,197 @@ async def github_oauth_callback(code: str):
         "message": "GitHub OAuth callback - not yet implemented",
         "code": code
     }
+
+
+# ============================================================================
+# BODY ADAPTER SWITCHING DEMO
+# Proves the same Brain can operate through different Bodies
+# ============================================================================
+
+@app.get("/v1/body/list")
+async def list_body_adapters():
+    """
+    List all available Body adapters.
+    This demonstrates the modular nature of AetherMind's architecture.
+    """
+    return {
+        "adapters": AETHER.router.get_available_adapters(),
+        "description": "Same Brain, different Bodies - switch adapters to control different domains"
+    }
+
+
+@app.post("/v1/body/switch")
+async def body_switch_demo(
+    body_request: dict
+):
+    """
+    Demonstrate Body switching - route an intent through different adapters.
+    
+    Body:
+    {
+        "adapter": "chat|smart_home|automotive",
+        "intent": "JSON command or plain text"
+    }
+    
+    Examples:
+    - Chat: {"adapter": "chat", "intent": "Hello world"}
+    - Smart Home: {"adapter": "smart_home", "intent": {"action": "query"}}
+    - Automotive: {"adapter": "automotive", "intent": {"action": "query"}}
+    """
+    adapter = body_request.get("adapter", "chat")
+    intent = body_request.get("intent", "")
+    
+    # Convert dict intent to JSON string
+    if isinstance(intent, dict):
+        intent = json.dumps(intent)
+    
+    available = AETHER.router.get_available_adapters()
+    if adapter not in available:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Adapter '{adapter}' not available. Options: {available}"
+        )
+    
+    # Route through the specified adapter
+    result = AETHER.router.forward_intent(intent, adapter)
+    
+    return {
+        "adapter_used": adapter,
+        "result": json.loads(result) if result.startswith("{") else result,
+        "proof": f"Same Brain logic, different Body output ({adapter})"
+    }
+
+
+@app.post("/v1/body/demo")
+async def full_body_switch_demo():
+    """
+    Run a complete demo showing the SAME intent processed by DIFFERENT bodies.
+    This is the ultimate proof that AetherMind's Brain is body-agnostic.
+    """
+    test_intent_chat = "What is the status?"
+    test_intent_home = json.dumps({"action": "query"})
+    test_intent_car = json.dumps({"action": "query"})
+    
+    results = {}
+    
+    # Same conceptual request ("tell me status") through 3 different bodies
+    results["chat"] = {
+        "body": "chat",
+        "intent": test_intent_chat,
+        "output": AETHER.router.forward_intent(test_intent_chat, "chat")
+    }
+    
+    results["smart_home"] = {
+        "body": "smart_home", 
+        "intent": test_intent_home,
+        "output": json.loads(AETHER.router.forward_intent(test_intent_home, "smart_home"))
+    }
+    
+    results["automotive"] = {
+        "body": "automotive",
+        "intent": test_intent_car, 
+        "output": json.loads(AETHER.router.forward_intent(test_intent_car, "automotive"))
+    }
+    
+    return {
+        "demonstration": "Body Adapter Switching",
+        "concept": "Same Brain (reasoning) + Different Bodies (output interfaces)",
+        "results": results,
+        "proof": "Notice how each adapter returns domain-specific responses from the same intent pattern"
+    }
+
+
+# ============================================================================
+# Voice Synthesis Endpoints (Edge TTS)
+# ============================================================================
+
+from perception.voice_synthesizer import get_voice_synthesizer, VOICE_PROFILES
+
+
+class VoiceSynthesisRequest(BaseModel):
+    """Request for voice synthesis"""
+    text: str
+    voice_id: Optional[str] = None
+    persona: Optional[str] = None
+    rate: Optional[str] = "+0%"
+    pitch: Optional[str] = "+0Hz"
+
+
+@app.post("/v1/voice/synthesize")
+async def synthesize_voice(
+    request: VoiceSynthesisRequest,
+    x_api_key: str = Header(None)
+):
+    """
+    Synthesize speech from text using Edge TTS.
+    Returns base64-encoded MP3 audio.
+    
+    - If persona is provided, uses that persona's voice profile
+    - If voice_id is provided, overrides persona voice
+    - Rate/pitch can fine-tune the voice
+    """
+    # Verify API key
+    user_data = AUTH.verify_api_key(x_api_key)
+    if not user_data:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    if not request.text or not request.text.strip():
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+    
+    try:
+        synthesizer = get_voice_synthesizer()
+        audio_b64 = await synthesizer.synthesize_to_base64(
+            text=request.text,
+            voice_id=request.voice_id,
+            persona=request.persona,
+            rate=request.rate or "+0%",
+            pitch=request.pitch or "+0Hz"
+        )
+        
+        return {
+            "success": True,
+            "audio": audio_b64,
+            "format": "mp3",
+            "voice_used": request.voice_id or (
+                VOICE_PROFILES.get(request.persona.lower().replace(" ", "_"), VOICE_PROFILES["default"]).voice_id
+                if request.persona else VOICE_PROFILES["default"].voice_id
+            )
+        }
+    except Exception as e:
+        logger.error(f"Voice synthesis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Voice synthesis failed: {str(e)}")
+
+
+@app.get("/v1/voice/voices")
+async def list_voices(
+    language: str = "en",
+    x_api_key: str = Header(None)
+):
+    """
+    List all available voices, filtered by language.
+    
+    Language codes: en (English), es (Spanish), fr (French), de (German), etc.
+    """
+    user_data = AUTH.verify_api_key(x_api_key)
+    if not user_data:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    try:
+        synthesizer = get_voice_synthesizer()
+        voices = await synthesizer.list_voices(language_filter=language)
+        
+        return {
+            "voices": voices,
+            "count": len(voices),
+            "profiles": {
+                name: {
+                    "voice_id": config.voice_id,
+                    "rate": config.rate,
+                    "pitch": config.pitch
+                }
+                for name, config in VOICE_PROFILES.items()
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error listing voices: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

@@ -1,5 +1,6 @@
 import os
 import sys
+import yaml
 from dotenv import load_dotenv
 
 # CRITICAL: Load environment variables BEFORE any imports that depend on them
@@ -20,6 +21,20 @@ import markdown
 from urllib.parse import quote_plus
 from cryptography.fernet import Fernet
 from orchestrator.auth_manager_supabase import AuthManagerSupabase, UserRole
+from brain.jepa_aligner import JEPAAligner
+import numpy as np
+
+# Load settings for pilot users
+def load_settings():
+    settings_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'settings.yaml')
+    try:
+        with open(settings_path, 'r') as f:
+            return yaml.safe_load(f)
+    except:
+        return {'pilot_users': []}
+
+SETTINGS = load_settings()
+PILOT_USERS = SETTINGS.get('pilot_users', [])
 
 app = Quart(__name__)
 app.secret_key = os.getenv("FLASK_SECRET", "dev-change-me")
@@ -28,6 +43,13 @@ app.secret_key = os.getenv("FLASK_SECRET", "dev-change-me")
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 auth_mgr = AuthManagerSupabase()
+
+# --- AETHER BRAIN (JEPA) ---
+# Initialize the Joint Embedding Predictive Architecture for vehicle control
+# We use a small dimension (16) for the simple vehicle telemetry vector
+VEHICLE_DIM = 16
+jepa_brain = JEPAAligner(dimension=VEHICLE_DIM, energy_threshold=0.3)
+last_vehicle_state = np.zeros(VEHICLE_DIM)
 
 # --- GitHub OAuth ---
 GITHUB_CLIENT_ID     = os.getenv("GITHUB_CLIENT_ID")
@@ -261,6 +283,10 @@ async def index():
     # if api_key in query string, preload it into the page
     api_key = request.args.get("api_key", "")
     domain = request.args.get("domain", session.get("user_domain", "general"))
+    user_id = session.get("github_user")
+    
+    # Check if user is a pilot user (admin)
+    is_pilot = user_id in PILOT_USERS if user_id else False
     
     # Domain-specific welcome messages
     domain_messages = {
@@ -274,7 +300,12 @@ async def index():
     
     welcome_msg = domain_messages.get(domain, domain_messages["general"])
     
-    resp = await render_template("index.html", domain=domain, welcome_message=welcome_msg)
+    # Use the new shell template - minimal, agent-controlled UI
+    resp = await render_template("index_shell.html", 
+                                  domain=domain, 
+                                  welcome_message=welcome_msg,
+                                  is_pilot_user=is_pilot,
+                                  user_id=user_id)
     
     # inject a tiny script that puts the key and domain into localStorage
     if api_key:
@@ -282,6 +313,118 @@ async def index():
            f'<script>localStorage.setItem("aethermind_api_key","{api_key}");'
            f'localStorage.setItem("aethermind_domain","{domain}");</script></head>')
     return resp
+
+# Legacy route - redirect to new shell
+@app.route("/chat/legacy")
+async def legacy_chat():
+    """Legacy chat UI with all features visible - for debugging"""
+    api_key = request.args.get("api_key", "")
+    domain = request.args.get("domain", session.get("user_domain", "general"))
+    
+    domain_messages = {
+        "code": "Ready to build. I'm your Software Development Specialist.",
+        "research": "Ready to analyze. I'm your Research & Analysis Specialist.",
+        "business": "Ready to strategize. I'm your Business & Strategy Specialist.",
+        "legal": "Ready to research. I'm your Legal Research Specialist.",
+        "finance": "Ready to model. I'm your Finance & Investment Specialist.",
+        "general": "Ready to assist. I'm your Multi-Domain Master."
+    }
+    
+    welcome_msg = domain_messages.get(domain, domain_messages["general"])
+    
+    resp = await render_template("index.html", domain=domain, welcome_message=welcome_msg)
+    
+    if api_key:
+        resp = resp.replace("</head>",
+           f'<script>localStorage.setItem("aethermind_api_key","{api_key}");'
+           f'localStorage.setItem("aethermind_domain","{domain}");</script></head>')
+    return resp
+
+# User profile endpoints
+@app.route("/v1/user/profile", methods=["GET"])
+async def get_user_profile():
+    """Get user profile including onboarding status"""
+    api_key = request.headers.get('X-Aether-Key')
+    if not api_key:
+        return jsonify({"error": "Missing API key"}), 401
+    
+    # Verify key and get user
+    user_data = auth_mgr.verify_api_key(api_key)
+    if not user_data:
+        return jsonify({"error": "Invalid API key"}), 401
+    
+    user_id = user_data.get('user_id')
+    
+    # Try to get profile from backend
+    try:
+        backend_url = os.getenv("BACKEND_API_URL", "http://localhost:8000")
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                f"{backend_url}/v1/user/profile",
+                headers={"X-Aether-Key": api_key},
+                timeout=5.0
+            )
+            if resp.status_code == 200:
+                return jsonify(resp.json())
+    except:
+        pass
+    
+    # Return basic profile if backend unavailable
+    return jsonify({
+        "user_id": user_id,
+        "onboarded": False,
+        "is_pilot": user_id in PILOT_USERS
+    })
+
+@app.route("/v1/user/profile", methods=["POST"])
+async def save_user_profile():
+    """Save user profile from onboarding"""
+    api_key = request.headers.get('X-Aether-Key')
+    if not api_key:
+        return jsonify({"error": "Missing API key"}), 401
+    
+    data = await request.get_json()
+    
+    # Forward to backend
+    try:
+        backend_url = os.getenv("BACKEND_API_URL", "http://localhost:8000")
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"{backend_url}/v1/user/profile",
+                json=data,
+                headers={"X-Aether-Key": api_key},
+                timeout=5.0
+            )
+            return jsonify(resp.json()), resp.status_code
+    except Exception as e:
+        logging.error(f"Failed to save profile: {e}")
+        return jsonify({"error": "Failed to save profile", "saved_locally": True}), 200
+
+# Background tasks status endpoint
+@app.route("/v1/tasks/status", methods=["POST"])
+async def get_tasks_status():
+    """Get status of background tasks"""
+    api_key = request.headers.get('X-Aether-Key')
+    if not api_key:
+        return jsonify({"error": "Missing API key"}), 401
+    
+    data = await request.get_json()
+    task_ids = data.get('task_ids', [])
+    
+    # Forward to backend
+    try:
+        backend_url = os.getenv("BACKEND_API_URL", "http://localhost:8000")
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"{backend_url}/v1/tasks/status",
+                json={"task_ids": task_ids},
+                headers={"X-Aether-Key": api_key},
+                timeout=10.0
+            )
+            return jsonify(resp.json()), resp.status_code
+    except Exception as e:
+        logging.error(f"Failed to get task status: {e}")
+        return jsonify({"tasks": []}), 200
 
 @app.route("/v1/ingest/multimodal", methods=["POST"])
 async def upload_multimodal():
@@ -329,6 +472,87 @@ async def upload_multimodal():
     except Exception as e:
         logging.error(f"Upload error: {e}")
         return jsonify({"error": str(e)}), 500
+
+@app.route("/games")
+async def games_index():
+    return await render_template("games.html")
+
+@app.route("/games/life-simulator")
+async def game_life_simulator():
+    return await render_template("game_life_simulator.html")
+
+@app.route("/games/smart-city")
+async def game_smart_city():
+    return await render_template("game_smart_city.html")
+
+@app.route("/v1/vehicle/control", methods=["POST"])
+async def vehicle_control():
+    """
+    Real-time vehicle control endpoint.
+    Uses JEPA (Joint Embedding Predictive Architecture) to detect 'Surprise' (Energy).
+    """
+    global last_vehicle_state
+    
+    try:
+        data = await request.get_json()
+        
+        # Telemetry
+        front_dist = data.get('sensors', {}).get('front_min', 100)
+        speed = data.get('speed', 0)
+        
+        # 1. ENCODE STATE (Create an embedding vector)
+        # We normalize inputs to 0-1 range for the neural geometry
+        current_state = np.zeros(VEHICLE_DIM)
+        current_state[0] = min(front_dist, 200) / 200.0  # Front sensor
+        current_state[1] = (speed + 2) / 6.0             # Speed (-2 to +4 range approx)
+        # Add some noise/complexity to simulate high-dim features
+        current_state[2] = np.sin(current_state[0] * np.pi) 
+        
+        # 2. COMPUTE JEPA ENERGY (Prediction Error)
+        # Low Energy = Expected State (Routine driving)
+        # High Energy = Unexpected State (Sudden obstacle, crash, erratic movement)
+        energy = jepa_brain.compute_energy(last_vehicle_state, current_state)
+        
+        # 3. ONLINE LEARNING (Update World Model)
+        # The brain learns to predict the next state
+        jepa_brain.update_world_model(last_vehicle_state, current_state, learning_rate=0.05)
+        last_vehicle_state = current_state
+        
+        # 4. DECISION LOGIC
+        command = {
+            "action": "maintain",
+            "reason": f"Energy Low ({energy:.2f})",
+            "energy": float(energy)
+        }
+        
+        # JEPA-Driven Response: If the situation is "Surprising" (High Energy), be cautious
+        if energy > 0.6:
+             command = {
+                "action": "slow_down",
+                "reason": f"High JEPA Energy ({energy:.2f}) - Surprise Detected",
+                "target_speed": 1.0
+            }
+        
+        # Reflexive Safety Layer (Hard overrides for critical safety)
+        if front_dist < 35:
+            command = {
+                "action": "emergency_stop",
+                "reason": "CRITICAL_PROXIMITY",
+                "brake_force": 1.0
+            }
+        elif front_dist < 80 and energy > 0.4:
+            # Combined Logic: Close AND somewhat surprising
+            command = {
+                "action": "slow_down",
+                "reason": f"Caution: Obstacle + Energy Spike ({energy:.2f})",
+                "target_speed": 0.5
+            }
+            
+        return jsonify(command)
+        
+    except Exception as e:
+        app.logger.error(f"Vehicle Control Error: {e}")
+        return jsonify({"action": "maintain", "error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

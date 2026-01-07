@@ -3,7 +3,7 @@ features:
 
 promoter_gate: false
 meta_controller: false
-pilot_users: [ "United-Visions"]     # add your own test id
+pilot_users: [ "United-Visions"]     # add your own test id - these users see admin panel
 diff_retrieval: false
 imagination: false
 imagination_horizon: 5
@@ -12,3 +12,42 @@ toolforge_adapter: true  # Enable autonomous tool creation
 
 # Development mode - bypasses API key auth for localhost requests
 dev_mode: true  # Set to false in production!
+
+# Shell UI Configuration - Agent-controlled dynamic interface
+shell_ui:
+  # Core features always available
+  core_features:
+    - chat
+    - notifications
+    - background_tasks
+  
+  # Features agent can activate based on user needs
+  pluggable_features:
+    - camera           # Photo/video capture
+    - voice            # Voice recording
+    - file_upload      # File attachments
+    - split_view       # Side-by-side panels
+    - sandbox          # App building mode (hidden from view, runs in background)
+    - activity_feed    # Detailed activity log (admin only)
+    - brain_visualizer # Brain state visualization (admin only)
+    - benchmarks       # Benchmark runner (admin only)
+  
+  # Features that run in background (not visible UI)
+  background_only:
+    - sandbox_execution
+    - tool_forging
+    - mcp_servers
+    - autonomous_goals
+    - research_tasks
+
+# Onboarding configuration
+onboarding:
+  ask_for_media: true           # Ask user for photo/video
+  media_retry_hours: 24         # Hours before re-asking if declined
+  personalization_depth: high   # low/medium/high - how much to learn about user
+  
+# Tool forging priority
+tool_forging:
+  enabled: true
+  priority: secondary           # primary = prefer forging, secondary = fallback after search
+  fallback_after_search: true   # Forge if firecrawl/search returns no good results

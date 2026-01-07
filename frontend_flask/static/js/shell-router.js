@@ -6,6 +6,7 @@ import { UIOrchestrator } from './core/UIOrchestrator.js';
 import { OnboardingAgent } from './core/OnboardingAgent.js';
 import { NotificationManager } from './core/NotificationManager.js';
 import { BackgroundTaskManager } from './core/BackgroundTaskManager.js';
+import { VoiceManager } from './core/VoiceManager.js';
 import { ApiKeyModal } from './components/ApiKeyModal.js';
 
 class AetherShell {
@@ -19,6 +20,7 @@ class AetherShell {
         this.notifications = null;
         this.tasks = null;
         this.onboarding = null;
+        this.voice = null;
     }
 
     async init() {
@@ -41,6 +43,7 @@ class AetherShell {
         this.tasks = new BackgroundTaskManager();
         this.ui = new UIOrchestrator(this);
         this.onboarding = new OnboardingAgent(this);
+        this.voice = new VoiceManager(this);
         
         // Set up DOM references
         this.setupDOM();
@@ -109,7 +112,12 @@ class AetherShell {
         
         // Camera and voice (lazy load when needed)
         document.getElementById('camera-btn')?.addEventListener('click', () => this.ui.activateCamera());
-        document.getElementById('voice-btn')?.addEventListener('click', () => this.ui.activateVoice());
+        document.getElementById('voice-btn')?.addEventListener('click', () => this.toggleVoice());
+    }
+
+    toggleVoice() {
+        const enabled = this.voice.toggle();
+        this.toast(enabled ? '🔊 Voice enabled' : '🔇 Voice muted', 'info');
     }
 
     async checkUserProfile() {
@@ -122,6 +130,18 @@ class AetherShell {
         } catch (err) {
             console.log('📝 [SHELL] No existing profile, starting fresh');
             this.isOnboarded = false;
+        }
+    }
+
+    async saveProfile() {
+        try {
+            await api.saveUserProfile(this.userProfile);
+            localStorage.setItem('aethermind_profile', JSON.stringify(this.userProfile));
+            console.log('💾 [SHELL] Profile saved');
+        } catch (err) {
+            console.warn('⚠️ [SHELL] Could not save profile:', err);
+            // Save locally as fallback
+            localStorage.setItem('aethermind_profile', JSON.stringify(this.userProfile));
         }
     }
 
@@ -168,8 +188,13 @@ class AetherShell {
         const typingId = this.showTyping();
         
         try {
-            // Send to backend
-            const response = await api.sendMessage(this.messageHistory);
+            // Send to backend with profile context (includes personas)
+            const response = await api.chat({
+                messages: this.messageHistory,
+                context: {
+                    currentProfile: this.userProfile
+                }
+            });
             
             // Remove typing indicator
             this.removeTyping(typingId);
@@ -190,9 +215,32 @@ class AetherShell {
                 });
             }
             
+            // Check for persona changes
+            if (metadata.save_persona) {
+                if (!this.userProfile.personas) this.userProfile.personas = {};
+                this.userProfile.personas[metadata.save_persona.name] = metadata.save_persona;
+                await this.saveProfile();
+                this.toast(`Persona "${metadata.save_persona.name}" saved! 🎭`, 'success');
+            }
+            
+            if (metadata.hasOwnProperty('switch_persona')) {
+                this.userProfile.activePersona = metadata.switch_persona;
+                await this.saveProfile();
+                if (metadata.switch_persona) {
+                    this.toast(`Switched to ${metadata.switch_persona} persona 🎭`, 'info');
+                } else {
+                    this.toast('Back to normal mode 🎭', 'info');
+                }
+            }
+            
             // Display response
             this.addMessage('assistant', assistantMsg.content, metadata);
             this.messageHistory.push(assistantMsg);
+            
+            // Speak the response if voice is enabled
+            if (this.voice?.enabled) {
+                this.voice.speak(assistantMsg.content);
+            }
             
         } catch (err) {
             this.removeTyping(typingId);
@@ -272,11 +320,46 @@ class AetherShell {
         document.getElementById(id)?.remove();
     }
 
-    showWelcomeBack() {
-        const name = this.userProfile?.name || 'there';
-        const greeting = this.getTimeBasedGreeting();
+    async showWelcomeBack() {
+        // Use the real agent to welcome the user back
+        const name = this.userProfile?.learnedFacts?.name || this.userProfile?.name || 'there';
         
-        this.addMessage('assistant', `${greeting}, ${name}! 👋 Good to see you again. What would you like to work on today?`);
+        const typingId = this.showTyping();
+        
+        try {
+            const response = await api.chat({
+                messages: [],
+                context: {
+                    mode: 'welcome_back',
+                    isOnboarding: false,
+                    currentProfile: this.userProfile
+                }
+            });
+            
+            this.removeTyping(typingId);
+            
+            let assistantMsg = response.choices?.[0]?.message?.content || 
+                `${this.getTimeBasedGreeting()}, ${name}! 👋 Good to see you again. What would you like to work on?`;
+            
+            this.addMessage('assistant', assistantMsg);
+            this.messageHistory.push({ role: 'assistant', content: assistantMsg });
+            
+            // Speak welcome if voice enabled
+            if (this.voice?.enabled) {
+                this.voice.speak(assistantMsg);
+            }
+            
+        } catch (err) {
+            this.removeTyping(typingId);
+            // Fallback to simple greeting if API fails
+            const greeting = this.getTimeBasedGreeting();
+            const fallbackMsg = `${greeting}, ${name}! 👋 Good to see you again. What would you like to work on today?`;
+            this.addMessage('assistant', fallbackMsg);
+            
+            if (this.voice?.enabled) {
+                this.voice.speak(fallbackMsg);
+            }
+        }
     }
 
     getTimeBasedGreeting() {
@@ -287,8 +370,18 @@ class AetherShell {
     }
 
     formatMessage(content) {
-        // Basic markdown-like formatting
-        let formatted = this.escapeHtml(content);
+        // Extract and handle <think> tags first - animate as thinking stream
+        let thinkingContent = '';
+        let mainContent = content;
+        
+        const thinkMatch = content.match(/<think>([\s\S]*?)<\/think>/);
+        if (thinkMatch) {
+            thinkingContent = thinkMatch[1].trim();
+            mainContent = content.replace(/<think>[\s\S]*?<\/think>/, '').trim();
+        }
+        
+        // Basic markdown-like formatting on main content
+        let formatted = this.escapeHtml(mainContent);
         
         // Bold
         formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -301,6 +394,19 @@ class AetherShell {
         
         // Line breaks
         formatted = formatted.replace(/\n/g, '<br>');
+        
+        // If there was thinking content, add collapsible thinking section
+        if (thinkingContent) {
+            const thinkingHtml = `
+                <details class="thinking-stream">
+                    <summary class="thinking-toggle">
+                        <span class="thinking-icon">💭</span> View thinking process
+                    </summary>
+                    <div class="thinking-content">${this.escapeHtml(thinkingContent).replace(/\n/g, '<br>')}</div>
+                </details>
+            `;
+            formatted = thinkingHtml + formatted;
+        }
         
         return formatted;
     }

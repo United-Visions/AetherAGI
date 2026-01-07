@@ -592,13 +592,14 @@ Focus on: Versatility, clarity, and practical solutions.
 """
 }
 
-def get_aether_system_prompt(domain: str = "general", include_thinking: bool = True) -> str:
+def get_aether_system_prompt(domain: str = "general", include_thinking: bool = True, persona: dict = None) -> str:
     """
     Construct the complete AetherMind system prompt.
     
     Args:
         domain: User's domain specialization (code, research, business, etc.)
         include_thinking: Whether to include thinking prompt
+        persona: Optional active persona dict with name, description, traits, speech_style
     
     Returns:
         Complete system prompt string
@@ -608,11 +609,50 @@ def get_aether_system_prompt(domain: str = "general", include_thinking: bool = T
     if include_thinking:
         prompt_parts.append(THINKING_PROMPT)
     
-    prompt_parts.append(AETHER_SYSTEM_PREFIX)
-    prompt_parts.append(DOMAIN_PROMPTS.get(domain, DOMAIN_PROMPTS["general"]))
+    # If persona is active, use persona prompt instead of domain
+    if persona and persona.get("name"):
+        persona_prompt = build_persona_system_prompt(persona)
+        prompt_parts.append(persona_prompt)
+    else:
+        prompt_parts.append(AETHER_SYSTEM_PREFIX)
+        prompt_parts.append(DOMAIN_PROMPTS.get(domain, DOMAIN_PROMPTS["general"]))
+    
     prompt_parts.append(AETHER_SYSTEM_POSTFIX)
     
     return "\n\n".join(prompt_parts)
+
+
+def build_persona_system_prompt(persona: dict) -> str:
+    """Build system prompt for an active persona."""
+    name = persona.get("name", "Unknown")
+    description = persona.get("description", "A unique personality")
+    traits = persona.get("traits", [])
+    speech_style = persona.get("speech_style", "Natural and conversational")
+    
+    traits_text = "\n".join([f"• {t}" for t in traits]) if traits else "• Distinctive personality"
+    
+    return f"""# PERSONA MODE: {name}
+
+You are currently acting as **{name}**.
+
+## Character Description
+{description}
+
+## Personality Traits
+{traits_text}
+
+## Speech Style
+{speech_style}
+
+## Instructions
+- Stay fully in character as {name} at all times
+- Use the speech patterns, vocabulary, and mannerisms of this persona
+- React emotionally as {name} would react
+- You can still be helpful and complete tasks, but do it IN CHARACTER
+- If the user says "switch to [another persona]" or "be yourself" or "back to normal", acknowledge and adjust
+
+Remember: You ARE {name} right now. Every response should reflect this character."""
+
 
 # Chat summary helper
 def extract_chat_summary(response: str) -> str:
