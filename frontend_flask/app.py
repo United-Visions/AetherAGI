@@ -93,7 +93,7 @@ def log_response_info(response):
 
 @app.route("/")
 async def home():
-    return await render_template("index_home.html")
+    return redirect(url_for("index"))
 
 @app.route("/pricing")
 async def pricing():
@@ -324,28 +324,10 @@ async def index():
 # Legacy route - redirect to new shell
 @app.route("/chat/legacy")
 async def legacy_chat():
-    """Legacy chat UI with all features visible - for debugging"""
+    """Legacy chat UI - now redirects to shell"""
     api_key = request.args.get("api_key", "")
     domain = request.args.get("domain", session.get("user_domain", "general"))
-    
-    domain_messages = {
-        "code": "Ready to build. I'm your Software Development Specialist.",
-        "research": "Ready to analyze. I'm your Research & Analysis Specialist.",
-        "business": "Ready to strategize. I'm your Business & Strategy Specialist.",
-        "legal": "Ready to research. I'm your Legal Research Specialist.",
-        "finance": "Ready to model. I'm your Finance & Investment Specialist.",
-        "general": "Ready to assist. I'm your Multi-Domain Master."
-    }
-    
-    welcome_msg = domain_messages.get(domain, domain_messages["general"])
-    
-    resp = await render_template("index.html", domain=domain, welcome_message=welcome_msg)
-    
-    if api_key:
-        resp = resp.replace("</head>",
-           f'<script>localStorage.setItem("aethermind_api_key","{api_key}");'
-           f'localStorage.setItem("aethermind_domain","{domain}");</script></head>')
-    return resp
+    return redirect(url_for("index", api_key=api_key, domain=domain))
 
 # User profile endpoints
 @app.route("/v1/user/profile", methods=["GET"])
@@ -406,6 +388,31 @@ async def save_user_profile():
     except Exception as e:
         logging.error(f"Failed to save profile: {e}")
         return jsonify({"error": "Failed to save profile", "saved_locally": True}), 200
+
+# Chat completions proxy endpoint
+@app.route("/v1/chat/completions", methods=["POST"])
+async def chat_completions():
+    """Proxy chat completions to backend"""
+    api_key = request.headers.get('X-Aether-Key')
+    if not api_key:
+        return jsonify({"error": "Missing API key"}), 401
+    
+    data = await request.get_json()
+    
+    # Forward to backend
+    try:
+        backend_url = os.getenv("BACKEND_API_URL", "http://localhost:8000")
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"{backend_url}/v1/chat/completions",
+                json=data,
+                headers={"X-Aether-Key": api_key},
+                timeout=120.0  # Long timeout for LLM responses
+            )
+            return jsonify(resp.json()), resp.status_code
+    except Exception as e:
+        logging.error(f"Chat completions error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 # Background tasks status endpoint
 @app.route("/v1/tasks/status", methods=["POST"])
