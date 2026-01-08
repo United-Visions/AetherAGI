@@ -20,13 +20,16 @@ class SupabaseClient:
         return cls._instance
     
     def _initialize(self):
-        """Initialize Supabase client with credentials from .env"""
-        url = os.getenv("SB_URL")
-        key = os.getenv("SB_SECRET_KEY")
+        """Initialize Supabase client with credentials from environment"""
+        # Try multiple environment variable names for flexibility
+        url = os.environ.get("SB_URL") or os.environ.get("SUPABASE_URL")
+        key = os.environ.get("SB_SECRET_KEY") or os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_SERVICE_KEY")
         
         if not url or not key:
-            logger.error("SB_URL or SB_SECRET_KEY not found in environment")
-            raise ValueError("Supabase credentials missing from .env")
+            logger.warning("⚠️  Supabase credentials not found. Database features disabled.")
+            logger.info("Set SB_URL and SB_SECRET_KEY in environment to enable Supabase")
+            self._client = None
+            return
         
         try:
             self._client = create_client(url, key)
@@ -39,7 +42,7 @@ class SupabaseClient:
     def client(self) -> Client:
         """Get the Supabase client instance"""
         if self._client is None:
-            self._initialize()
+            logger.warning("Supabase client not initialized - database features disabled")
         return self._client
     
     async def create_tables_if_not_exist(self):

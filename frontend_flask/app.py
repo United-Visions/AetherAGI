@@ -198,10 +198,12 @@ async def onboarding():
         return redirect(url_for("home"))
     return await render_template("onboarding.html", github_user=session["github_user"])
 
-@app.route("/create_key", methods=["POST"])
+@app.route("/create_key", methods=["GET", "POST"])
 async def create_key():
     """
     Generate a personal API key for authenticated user.
+    GET: Show key creation form
+    POST: Generate and return key
     
     Architecture:
     - Backend service keys (PINECONE_API_KEY, RUNPOD_API_KEY) are in .env
@@ -211,6 +213,11 @@ async def create_key():
     if "github_user" not in session:
         return jsonify({"error": "Not authenticated"}), 401
     
+    # Handle GET request - show form
+    if request.method == "GET":
+        return await render_template("create_key.html", github_user=session["github_user"])
+    
+    # Handle POST request - generate key
     user_id = session["github_user"]
     
     # Get domain and subscription tier from form or JSON

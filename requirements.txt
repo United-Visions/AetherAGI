@@ -25,4 +25,5 @@ litellm
 edge-tts
 supabase
 quart
+markdown
 

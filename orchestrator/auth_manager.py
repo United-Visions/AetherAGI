@@ -81,8 +81,8 @@ class AuthManager:
         # JWT secret for token-based auth
         self.jwt_secret = secret_key or os.getenv("JWT_SECRET", secrets.token_urlsafe(32))
         
-        # Encryption for stored keys
-        self.encryption_key = encryption_key or os.getenv("ENCRYPTION_KEY")
+        # Encryption for stored keys - try multiple env var names
+        self.encryption_key = encryption_key or os.environ.get("FERNET_KEY") or os.environ.get("ENCRYPTION_KEY")
         if self.encryption_key:
             if isinstance(self.encryption_key, str):
                 self.encryption_key = self.encryption_key.encode()
