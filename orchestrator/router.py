@@ -14,6 +14,7 @@ from body.adapters.playcanvas_editor_adapter import PlayCanvasEditorAdapter
 from body.adapters.mixamo_adapter import MixamoAdapter
 from body.adapters.meshy_adapter import MeshyAdapter
 from body.adapters.sketchfab_adapter import SketchfabAdapter
+from body.adapters.embodiment_3d_adapter import get_embodiment_adapter
 import os, json, subprocess
 
 from body.adapters.toolforge_adapter import ToolForgeAdapter
@@ -35,7 +36,8 @@ class Router:
             "playcanvas_editor": PlayCanvasEditorAdapter(),
             "mixamo": MixamoAdapter(),
             "meshy": MeshyAdapter(),
-            "sketchfab": SketchfabAdapter()
+            "sketchfab": SketchfabAdapter(),
+            "embodiment_3d": get_embodiment_adapter()  # Real-time 3D doll control
         }
         if settings.practice_adapter:
             self.adapters["practice"] = PracticeAdapter()

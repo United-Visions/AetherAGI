@@ -149,16 +149,9 @@ export class OnboardingAgent {
                     primary: a.primary || false,
                     handler: () => this.handleAction(a)
                 }));
-                this.shell.addInteractiveMessage('assistant', assistantMsg, actions);
-                
-                // Speak the message if voice is enabled (after typing)
-                if (this.isVoiceEnabled()) {
-                    // Clean thinking tags before speaking
-                    const cleanMsg = assistantMsg.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-                    if (cleanMsg) {
-                        this.shell.voice?.speak(cleanMsg);
-                    }
-                }
+                // Wait for message to type out before appending actions
+                // addInteractiveMessage handles speaking if voice is enabled
+                await this.shell.addInteractiveMessage('assistant', assistantMsg, actions);
             } else {
                 // Use typing animation for regular messages
                 await this.shell.addMessageWithTyping('assistant', assistantMsg, this.isVoiceEnabled());

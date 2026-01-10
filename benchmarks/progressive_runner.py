@@ -553,31 +553,79 @@ class ProgressiveRunner:
             # Silent fail to avoid crashing runner
             pass
 
-    def _save_checkpoint(self, last_chunk: Dict):
-        """Save results to JSON file after every chunk."""
-        # Also report to Supabase
-        self._report_chunk_to_supabase(last_chunk)
+    def _save_final_results_to_supabase(self, results: Dict) -> bool:
+        """Save final benchmark results to Supabase. Returns True if successful."""
+        if not self.supabase:
+            return False
 
-        results_dir = Path(__file__).parent / "results"
-        results_dir.mkdir(exist_ok=True)
+        try:
+            # Compute summary stats for the final results table
+            scores_by_variant = results.get("scores_by_variant", {})
+            completed_variants = results.get("completed_variants", [])
+            
+            payload = {
+                "run_id": self.run_id or f"local_{int(datetime.now().timestamp())}",
+                "day_id": self.day_id or "day_1",
+                "family": results.get("family", self.loader.family),
+                "status": "completed",
+                "overall_average": results.get("overall_average", 0),
+                "completed_variants": completed_variants,
+                "scores_by_variant": scores_by_variant,
+                "total_questions": sum(
+                    v.get("total_questions", 0) for v in scores_by_variant.values()
+                ),
+                "total_correct": sum(
+                    v.get("total_correct", 0) for v in scores_by_variant.values()
+                ),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "metadata": {
+                    "yolo_mode": self.yolo_mode,
+                    "model": self.aether.model,
+                    "chunk_size": self.loader.config.chunk_size,
+                    "all_chunk_results": results.get("all_chunk_results", [])
+                }
+            }
+            
+            # Insert final results
+            self.supabase.table("benchmark_runs").upsert(
+                payload, 
+                on_conflict="run_id"
+            ).execute()
+            
+            self._log(f"✅ Final results saved to Supabase (run_id: {payload['run_id']})")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Supabase final save failed: {e}", file=sys.stderr)
+            return False
+
+    def _save_checkpoint(self, last_chunk: Dict):
+        """Save checkpoint after every chunk - primarily to Supabase."""
+        # Report to Supabase (primary storage)
+        self._report_chunk_to_supabase(last_chunk)
         
-        if self.output_path:
-            results_path = Path(self.output_path)
-            # Ensure the directory exists if a full path is provided
-            results_path.parent.mkdir(exist_ok=True)
+        # Only save JSON locally if Supabase is not available (dev mode)
+        if not self.supabase:
+            results_dir = Path(__file__).parent / "results"
+            results_dir.mkdir(exist_ok=True)
+            
+            if self.output_path:
+                results_path = Path(self.output_path)
+                results_path.parent.mkdir(exist_ok=True)
+            else:
+                filename = f"{self.loader.family}_yolo_progressive.json" if self.yolo_mode else f"{self.loader.family}_progressive.json"
+                results_path = results_dir / filename
+            
+            report = self.loader.get_final_report()
+            report["last_chunk"] = last_chunk
+            report["all_chunk_results"] = self.all_results
+            report["timestamp"] = datetime.now(timezone.utc).isoformat()
+            
+            with open(results_path, "w") as f:
+                json.dump(report, f, indent=2, default=str)
+            self._log(f"   💾 Checkpoint saved to: {results_path}")
         else:
-            # Default filename logic
-            filename = f"{self.loader.family}_yolo_progressive.json" if self.yolo_mode else f"{self.loader.family}_progressive.json"
-            results_path = results_dir / filename
-        
-        report = self.loader.get_final_report()
-        report["last_chunk"] = last_chunk
-        report["all_chunk_results"] = self.all_results
-        report["timestamp"] = datetime.now(timezone.utc).isoformat()
-        
-        with open(results_path, "w") as f:
-            json.dump(report, f, indent=2, default=str)
-        self._log(f"   💾 Checkpoint saved to: {results_path}")
+            self._log(f"   💾 Checkpoint saved to Supabase")
 
     def _parse_questions(self, data: List[Dict], variant: DatasetVariant) -> List[Question]:
         """Parse raw data into Question objects."""
@@ -941,22 +989,26 @@ Dataset Families:
     try:
         results = asyncio.run(runner.run(auto_continue=args.auto))
         
-        # Determine final save path
-        if args.output:
-            results_path = Path(args.output)
-        else:
-            results_path = Path(__file__).parent / "results" / f"{family}_progressive.json"
+        # Save to Supabase first (primary storage)
+        saved_to_supabase = runner._save_final_results_to_supabase(results)
         
-        results_path.parent.mkdir(exist_ok=True)
-        with open(results_path, "w") as f:
-            json.dump(results, f, indent=2, default=str)
-        print(f"\n📁 Final results saved to: {results_path}")
+        # Fallback to JSON only if Supabase fails or for local dev
+        if not saved_to_supabase:
+            if args.output:
+                results_path = Path(args.output)
+            else:
+                results_path = Path(__file__).parent / "results" / f"{args.family}_progressive.json"
+            
+            results_path.parent.mkdir(exist_ok=True)
+            with open(results_path, "w") as f:
+                json.dump(results, f, indent=2, default=str)
+            print(f"\n📁 Final results saved to JSON fallback: {results_path}")
         
     except KeyboardInterrupt:
         print("\n\n⚠️ Interrupted by user")
         sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Error running {family}: {e}")
+        print(f"\n❌ Error running {args.family}: {e}")
         raise
 
 

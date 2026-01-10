@@ -1,6 +1,7 @@
 """
 Path: perception/eye.py
 Role: Unified ingestion of video, images, PDFs, and audio using LiteLLM (Google Gemini) and Whisper.
+Also handles real-time vision data from 3D game environment.
 """
 import av
 import io
@@ -23,6 +24,89 @@ class Eye:
         
         # Initialize Transcriber (uses local Whisper or API)
         self.transcriber = Transcriber(model_name="whisper-1")
+        
+        # Cache for game vision data
+        self.game_vision_cache = {
+            "last_frame": None,
+            "description": None,
+            "objects": [],
+            "timestamp": None
+        }
+
+    async def analyze_game_frame(self, base64_image: str, context: dict = None) -> dict:
+        """
+        Analyze a screenshot from the 3D game environment.
+        
+        Args:
+            base64_image: Base64-encoded PNG image from game camera
+            context: Additional context (position, nearby objects, etc.)
+            
+        Returns:
+            {
+                "description": str,
+                "objects": list,
+                "scene_understanding": str
+            }
+        """
+        try:
+            # Build contextual prompt
+            prompt = "Describe what you see in this 3D game environment. "
+            
+            if context:
+                if context.get("position"):
+                    pos = context["position"]
+                    prompt += f"You are at position ({pos['x']:.1f}, {pos['y']:.1f}, {pos['z']:.1f}). "
+                
+                if context.get("nearby_objects"):
+                    nearby = ", ".join([obj["name"] for obj in context["nearby_objects"][:5]])
+                    prompt += f"Nearby objects: {nearby}. "
+            
+            prompt += "Identify: buildings, terrain, characters, objects, landmarks. Be specific."
+            
+            # Analyze via LiteLLM
+            response = await litellm.acompletion(
+                model=self.vision_model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}}
+                        ]
+                    }
+                ],
+                max_tokens=1024
+            )
+            
+            description = response.choices[0].message.content.strip()
+            
+            # Cache the result
+            self.game_vision_cache = {
+                "last_frame": base64_image,
+                "description": description,
+                "objects": context.get("nearby_objects", []) if context else [],
+                "timestamp": context.get("timestamp") if context else None
+            }
+            
+            logger.info(f"🎮 Game vision analyzed: {description[:100]}...")
+            
+            return {
+                "description": description,
+                "objects": self.game_vision_cache["objects"],
+                "scene_understanding": description
+            }
+            
+        except Exception as e:
+            logger.error(f"Game vision analysis failed: {e}")
+            return {
+                "description": "[Vision analysis unavailable]",
+                "objects": [],
+                "scene_understanding": "Unable to analyze scene"
+            }
+    
+    def get_cached_vision(self) -> dict:
+        """Get the most recent game vision data"""
+        return self.game_vision_cache
 
     async def _analyze_image(self, image: Image.Image, prompt: str = "Describe this image in detail. Transcribe any text visible.") -> str:
         """Helper to analyze a single PIL image using LiteLLM."""

@@ -21,6 +21,10 @@
                 <span class="brand-tag">Your Personal AI</span>
             </div>
             <div class="header-actions">
+                <!-- Key Management -->
+                <a href="/manage_keys" class="header-btn" title="Manage Keys" style="text-decoration:none; color:inherit; display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-key"></i>
+                </a>
                 <!-- Notification Bell - Core Feature -->
                 <button id="notification-btn" class="header-btn" title="Notifications">
                     <i class="fas fa-bell"></i>
@@ -131,7 +135,9 @@
         window.AETHER_CONFIG = {
             isPilotUser: {{ is_pilot_user | tojson }},
             userId: {{ user_id | tojson if user_id else 'null' }},
-            welcomeMessage: {{ welcome_message | tojson if welcome_message else '"Hello! I\'m AetherMind."' }}
+            welcomeMessage: {{ welcome_message | tojson if welcome_message else '"Hello! I\'m AetherMind."' }},
+            apiKey: {{ api_key | tojson if api_key else 'null' }},
+            domain: {{ domain | tojson if domain else 'null' }}
         };
     </script>
     <script type="module" src="{{ url_for('static', filename='js/shell-router.js') }}?v={{ range(10000, 99999) | random }}"></script>

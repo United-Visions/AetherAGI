@@ -194,6 +194,23 @@ class AuthManagerSupabase:
         except Exception as e:
             logger.error(f"Error revoking API key: {e}")
             return False
+
+    def revoke_api_key_by_id(self, key_id: str) -> bool:
+        """Revoke an API key by its UUID"""
+        try:
+            result = self.db.table("api_keys")\
+                .update({"revoked": True})\
+                .eq("id", key_id)\
+                .execute()
+            
+            if result.data:
+                logger.info(f"✅ API key revoked by ID: {key_id}")
+                return True
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error revoking API key by ID: {e}")
+            return False
     
     def list_user_keys(self, user_id: str) -> List[Dict]:
         """List all keys for a user"""

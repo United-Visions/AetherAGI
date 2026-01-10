@@ -15,6 +15,9 @@ class AetherShell {
         this.messageHistory = [];
         this.isOnboarded = false;
         
+        // Add lock for message sending to prevent double-submissions
+        this.isSending = false;
+        
         // Core managers
         this.ui = null;
         this.notifications = null;
@@ -24,8 +27,23 @@ class AetherShell {
     }
 
     async init() {
+        // Prevent double initialization
+        if (window.aether) {
+            console.warn('⚠️ [SHELL] Shell already initialized, skipping.');
+            return;
+        }
+
         console.log('🚀 [SHELL] Initializing AetherMind Shell...');
         
+        // Handle server-injected keys (from redirect)
+        if (this.config.apiKey) {
+            console.log('🔑 [SHELL] Found injected API key, saving...');
+            localStorage.setItem('aethermind_api_key', this.config.apiKey);
+        }
+        if (this.config.domain) {
+            localStorage.setItem('aethermind_domain', this.config.domain);
+        }
+
         // Initialize API Key Modal
         const apiKeyModal = new ApiKeyModal();
         setApiKeyModal(apiKeyModal);
@@ -201,30 +219,37 @@ class AetherShell {
     }
 
     async handleSend(e) {
-        e.preventDefault();
+        if (e) e.preventDefault();
+        
+        // Prevent race conditions/double submissions
+        if (this.isSending) return;
+        this.isSending = true;
         
         const text = this.elements.chatInput.value.trim();
-        if (!text) return;
+        if (!text) {
+            this.isSending = false;
+            return;
+        }
         
         // Clear input
         this.elements.chatInput.value = '';
         this.elements.sendBtn.disabled = true;
         this.elements.chatInput.style.height = 'auto';
         
-        // Add user message
-        this.addMessage('user', text);
-        this.messageHistory.push({ role: 'user', content: text });
-        
-        // Check if still onboarding
-        if (!this.isOnboarded) {
-            await this.onboarding.handleResponse(text);
-            return;
-        }
-        
-        // Show typing indicator
-        const typingId = this.showTyping();
-        
         try {
+            // Add user message
+            this.addMessage('user', text);
+            this.messageHistory.push({ role: 'user', content: text });
+            
+            // Check if still onboarding
+            if (!this.isOnboarded) {
+                await this.onboarding.handleResponse(text);
+                return;
+            }
+            
+            // Show typing indicator
+            const typingId = this.showTyping();
+            
             // Send to backend with profile context (includes personas)
             const response = await api.chat({
                 messages: this.messageHistory,
@@ -276,9 +301,11 @@ class AetherShell {
             this.messageHistory.push(assistantMsg);
             
         } catch (err) {
-            this.removeTyping(typingId);
+            this.removeTyping(typingId || 'typing');
             this.addMessage('assistant', "I'm having trouble connecting. Let me try again in a moment.");
             console.error('❌ [SHELL] Send error:', err);
+        } finally {
+            this.isSending = false;
         }
     }
 
@@ -307,8 +334,9 @@ class AetherShell {
         return row;
     }
 
-    addInteractiveMessage(role, content, actions = []) {
-        const row = this.addMessage(role, content);
+    async addInteractiveMessage(role, content, actions = []) {
+        // Use typing effect for assistant (returns promise) or direct add for user
+        const row = await this.addMessageWithTyping(role, content, this.isVoiceEnabled());
         
         if (actions.length > 0) {
             const actionsDiv = document.createElement('div');
@@ -322,7 +350,9 @@ class AetherShell {
                 actionsDiv.appendChild(chip);
             });
             
+            // Append after the text content
             row.querySelector('.assistant-text, .user-bubble')?.appendChild(actionsDiv);
+            this.scrollToBottom();
         }
         
         return row;

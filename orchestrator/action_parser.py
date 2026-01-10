@@ -45,7 +45,9 @@ class ActionTag:
             # NEW: App/Sandbox control
             "aether-app-mode": "app_mode_control",
             "aether-app-preview": "app_preview",
-            "aether-app-log": "app_log"
+            "aether-app-log": "app_log",
+            # NEW: Game world control
+            "aether-game": "game_action"
         }
         
         activity_type = activity_type_map.get(self.tag_type, "unknown")
@@ -264,6 +266,19 @@ class ActionTag:
                 "data": content_json
             }
         
+        # NEW: Game world control
+        elif self.tag_type == "aether-game":
+            try:
+                content_json = json.loads(self.content)
+            except:
+                content_json = {}
+            
+            return {
+                "action": self.attributes.get("action", "move"),
+                "target": self.attributes.get("target", "player"),
+                "params": content_json
+            }
+        
         return {}
     
     def _generate_title(self) -> str:
@@ -376,6 +391,12 @@ class ActionTag:
             query = self.attributes.get("query", "models")
             return f"SketchFab: {action} ({query})"
         
+        # NEW: Game world control
+        elif self.tag_type == "aether-game":
+            action = self.attributes.get("action", "move")
+            target = self.attributes.get("target", "player")
+            return f"Game: {action} {target}"
+        
         return "Processing action"
 
 
@@ -413,6 +434,19 @@ class ActionParser:
         "aether-meshy": r'<aether-meshy\s+(.*?)>(.*?)</aether-meshy>',
         # NEW: SketchFab model library
         "aether-sketchfab": r'<aether-sketchfab\s+(.*?)>(.*?)</aether-sketchfab>',
+        # NEW: 3D Embodiment control (real-time doll commands)
+        "aether-3d-move": r'<aether-3d-move\s+(.*?)>(.*?)</aether-3d-move>',
+        "aether-3d-look": r'<aether-3d-look\s+(.*?)>(.*?)</aether-3d-look>',
+        "aether-3d-animation": r'<aether-3d-animation\s+(.*?)>(.*?)</aether-3d-animation>',
+        "aether-3d-explore": r'<aether-3d-explore\s+(.*?)>(.*?)</aether-3d-explore>',
+        "aether-3d-teleport": r'<aether-3d-teleport\s+(.*?)>(.*?)</aether-3d-teleport>',
+        "aether-3d-emotion": r'<aether-3d-emotion\s+(.*?)>(.*?)</aether-3d-emotion>',
+        "aether-3d-state": r'<aether-3d-state>(.*?)</aether-3d-state>',
+        "aether-3d-perception": r'<aether-3d-perception>(.*?)</aether-3d-perception>',
+        # NEW: Active vision control (camera/gaze)
+        "aether-3d-vision": r'<aether-3d-vision\s+(.*?)>(.*?)</aether-3d-vision>',
+        # OLD: Game environment control (3D world actions) - deprecated in favor of specific 3d tags
+        "aether-game": r'<aether-game\s+(.*?)>(.*?)</aether-game>',
         "think": r'<think>(.*?)</think>',  # Thinking process visualization
         "aether-chat-summary": r'<aether-chat-summary>(.*?)</aether-chat-summary>',
     }
@@ -608,6 +642,15 @@ class ActionExecutor:
             
             elif action_tag.tag_type == "aether-sketchfab":
                 result = await self._execute_sketchfab(action_tag)
+            
+            elif action_tag.tag_type == "aether-game":
+                result = await self._execute_game(action_tag)
+            
+            # 3D Embodiment control tags
+            elif action_tag.tag_type in ["aether-3d-move", "aether-3d-look", "aether-3d-animation",
+                                          "aether-3d-explore", "aether-3d-teleport", "aether-3d-emotion",
+                                          "aether-3d-state", "aether-3d-perception", "aether-3d-vision"]:
+                result = await self._execute_3d_embodiment(action_tag)
             
             else:
                 result = {
@@ -958,4 +1001,116 @@ class ActionExecutor:
                 "success": False,
                 "result": "",
                 "error": f"PlayCanvas execution failed: {str(e)}"
+            }
+    
+    async def _execute_game(self, tag: ActionTag) -> Dict:
+        """Execute game world action - sends command to Unity/Three.js environment."""
+        action = tag.attributes.get("action", "move")
+        target = tag.attributes.get("target", "player")
+        
+        try:
+            params = json.loads(tag.content) if tag.content.strip() else {}
+        except json.JSONDecodeError:
+            params = {}
+        
+        # Build the game command
+        game_command = {
+            "action": action,
+            "target": target,
+            "params": params
+        }
+        
+        try:
+            # Import the Unity adapter and queue the command
+            from body.adapters.unity_adapter import UNITY_ADAPTER
+            
+            result = UNITY_ADAPTER.execute(json.dumps(game_command))
+            result_json = json.loads(result)
+            
+            logger.info(f"🎮 Game command queued: {action} -> {target}")
+            
+            return {
+                "success": result_json.get("status") == "queued",
+                "result": f"Executed {action} on {target}",
+                "error": None,
+                "output": result,
+                "metadata": {
+                    "action": action,
+                    "target": target,
+                    "params": params,
+                    "queue_length": result_json.get("queue_length", 0)
+                }
+            }
+        except Exception as e:
+            logger.error(f"Game action failed: {e}", exc_info=True)
+            return {
+                "success": False,
+                "result": "",
+                "error": str(e),
+                "metadata": {"action": action, "target": target}
+            }
+    
+    async def _execute_3d_embodiment(self, tag: ActionTag) -> Dict:
+        """Execute 3D embodiment control commands - real-time doll control via WebSocket."""
+        try:
+            # Import the embodiment adapter
+            from body.adapters.embodiment_3d_adapter import get_embodiment_adapter
+            embodiment_adapter = get_embodiment_adapter()
+            
+            # Map tag types to action types
+            action_type_map = {
+                "aether-3d-move": "move",
+                "aether-3d-look": "look",
+                "aether-3d-animation": "animation",
+                "aether-3d-explore": "explore",
+                "aether-3d-teleport": "teleport",
+                "aether-3d-emotion": "emotion",
+                "aether-3d-state": "get_state",
+                "aether-3d-perception": "get_perception",
+                "aether-3d-vision": "vision"
+            }
+            
+            action_type = action_type_map.get(tag.tag_type, "unknown")
+            
+            # Parse content as JSON or use attributes
+            params = {}
+            if tag.content.strip():
+                try:
+                    params = json.loads(tag.content)
+                except json.JSONDecodeError:
+                    # If not JSON, treat as plain text description
+                    params = {"description": tag.content}
+            
+            # Merge attributes into params
+            params.update(tag.attributes)
+            
+            # Build the intent JSON
+            intent = {
+                "action_type": action_type,
+                **params
+            }
+            
+            # Execute via adapter (broadcasts to WebSocket clients)
+            result = await embodiment_adapter.execute(json.dumps(intent))
+            
+            logger.info(f"🎮 3D Embodiment: {action_type} executed")
+            
+            return {
+                "success": True,
+                "result": result,
+                "error": None,
+                "metadata": {
+                    "action_type": action_type,
+                    "connected_clients": len(embodiment_adapter.websocket_clients),
+                    "params": params
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"3D Embodiment execution failed: {e}", exc_info=True)
+            return {
+                "success": False,
+                "result": "",
+                "error": str(e),
+                "metadata": {"tag_type": tag.tag_type}
             }

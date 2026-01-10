@@ -161,7 +161,7 @@
                     <button onclick="copyKey()"><i class="far fa-copy"></i></button>
                 </div>
                 <div class="button-group">
-                     <a href="{{ url_for('index') }}" class="button primary-button">Go to Chat <i class="fas fa-rocket" style="margin-left: 8px;"></i></a>
+                     <button type="button" class="button primary-button" onclick="goToChat()">Go to Chat <i class="fas fa-rocket" style="margin-left: 8px;"></i></button>
                 </div>
             </div>
         </div>
@@ -170,6 +170,7 @@
     <script>
         let currentStep = 1;
         let selectedDomain = null;
+        let generatedApiKey = null;
 
         function showStep(step) {
             document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
@@ -197,36 +198,33 @@
                 alert('Please select a domain.');
                 return;
             }
-            try {
-                const response = await fetch('/v1/user/domain', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ domain: selectedDomain })
-                });
-                if (!response.ok) throw new Error('Failed to set domain');
-                
-                // Now that domain is set, create the API key
-                await createApiKey();
-                nextStep();
-
-            } catch (error) {
-                console.error('Error setting domain:', error);
-                alert('There was an error setting your domain. Please try again.');
-            }
+            // Proceed to create key with selected domain
+            await createApiKey(selectedDomain);
+            nextStep();
         }
 
-        async function createApiKey() {
+        async function createApiKey(domain) {
             try {
                 const response = await fetch('/create_key', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        domain: domain || 'general',
+                        tier: 'pro' 
+                    })
                 });
+                
                 if (!response.ok) throw new Error('Failed to create API key');
+                
                 const data = await response.json();
-                document.getElementById('api-key-placeholder').textContent = data.api_key;
+                generatedApiKey = data.api_key;
+                localStorage.setItem('aethermind_api_key', generatedApiKey);
+                localStorage.setItem('aethermind_user_domain', domain || selectedDomain || 'general');
+                document.getElementById('api-key-placeholder').textContent = generatedApiKey;
             } catch (error) {
                 console.error('Error creating API key:', error);
                 document.getElementById('api-key-placeholder').textContent = "Error generating key.";
+                alert('There was an error generating your API key. Please try again.');
             }
         }
 
@@ -237,6 +235,19 @@
             }, (err) => {
                 alert('Failed to copy key.');
             });
+        }
+
+        function goToChat() {
+            if (!generatedApiKey) {
+                alert('Generate a key before continuing.');
+                return;
+            }
+            const domain = selectedDomain || localStorage.getItem('aethermind_user_domain') || 'general';
+            const params = new URLSearchParams({
+                api_key: generatedApiKey,
+                domain
+            });
+            window.location.href = `/chat?${params.toString()}`;
         }
 
         // This logic handles starting at the right step if the user is redirected from GitHub auth

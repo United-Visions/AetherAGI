@@ -702,12 +702,63 @@ async def create_key():
         # Pass key to chat page via query-param (client stores in localStorage)
         return redirect(url_for("index", api_key=key, domain=domain))
 
+@app.route("/logout")
+async def logout():
+    """Clear session and local storage via redirect"""
+    session.clear()
+    # Return a page that clears localStorage and redirects to home
+    return """
+    <html>
+        <head>
+            <script>
+                localStorage.clear();
+                window.location.href = "/";
+            </script>
+        </head>
+        <body>Logging out...</body>
+    </html>
+    """
+
+@app.route("/manage_keys")
+async def manage_keys():
+    """Manage API keys for the authenticated user"""
+    if "github_user" not in session:
+        return redirect(url_for("github_login"))
+    
+    user_id = session["github_user"]
+    keys = auth_mgr.list_user_keys(user_id)
+    
+    # Sort keys by created_at desc
+    keys.sort(key=lambda k: k.get("created_at", ""), reverse=True)
+    
+    return await render_template("manage_keys.html", 
+                               github_user=user_id, 
+                               keys=keys,
+                               domain=session.get("user_domain", "general"))
+
+@app.route("/manage_keys/revoke", methods=["POST"])
+async def revoke_key():
+    """Revoke an API key"""
+    if "github_user" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    data = await request.form
+    key_id = data.get("key_id")
+    
+    if key_id:
+        auth_mgr.revoke_api_key_by_id(key_id)
+        
+    return redirect(url_for("manage_keys"))
+
 # --- existing chat page ---
 @app.route("/chat")
 async def index():
     # if api_key in query string, preload it into the page
     api_key = request.args.get("api_key", "")
     domain = request.args.get("domain", session.get("user_domain", "general"))
+    # If no key, redirect to login/management
+    # actually, allow them to land but JS will check and redirect if invalid.
+    
     user_id = session.get("github_user")
     
     # Check if user is a pilot user (admin)
@@ -730,13 +781,9 @@ async def index():
                                   domain=domain, 
                                   welcome_message=welcome_msg,
                                   is_pilot_user=is_pilot,
-                                  user_id=user_id)
+                                  user_id=user_id,
+                                  api_key=api_key)
     
-    # inject a tiny script that puts the key and domain into localStorage
-    if api_key:
-        resp = resp.replace("</head>",
-           f'<script>localStorage.setItem("aethermind_api_key","{api_key}");'
-           f'localStorage.setItem("aethermind_domain","{domain}");</script></head>')
     return resp
 
 # Legacy route - redirect to new shell
@@ -866,20 +913,21 @@ async def voice_synthesize_proxy():
     if request.method == "OPTIONS":
         return "", 200
     
-    api_key = request.headers.get('X-Api-Key')
+    # Check for X-Aether-Key first (new standard), fallback to X-Api-Key (legacy)
+    api_key = request.headers.get('X-Aether-Key') or request.headers.get('X-Api-Key')
     if not api_key:
         return jsonify({"error": "Missing API key"}), 401
     
     data = await request.get_json()
     
-    # Forward to backend
+    # Forward to backend with standard header
     try:
         backend_url = os.getenv("BACKEND_API_URL", "http://localhost:8000")
         async with httpx.AsyncClient() as client:
             resp = await client.post(
                 f"{backend_url}/v1/voice/synthesize",
                 json=data,
-                headers={"X-Api-Key": api_key},
+                headers={"X-Aether-Key": api_key},
                 timeout=60.0
             )
             return jsonify(resp.json()), resp.status_code
@@ -890,7 +938,8 @@ async def voice_synthesize_proxy():
 @app.route("/v1/voice/voices", methods=["GET"])
 async def voice_list_proxy():
     """Proxy voice list to backend"""
-    api_key = request.headers.get('X-Api-Key')
+    # Check for X-Aether-Key first (new standard), fallback to X-Api-Key (legacy)
+    api_key = request.headers.get('X-Aether-Key') or request.headers.get('X-Api-Key')
     language = request.args.get("language", "en")
     
     # Forward to backend
@@ -899,7 +948,7 @@ async def voice_list_proxy():
         async with httpx.AsyncClient() as client:
             resp = await client.get(
                 f"{backend_url}/v1/voice/voices?language={language}",
-                headers={"X-Api-Key": api_key} if api_key else {},
+                headers={"X-Aether-Key": api_key} if api_key else {},
                 timeout=30.0
             )
             return jsonify(resp.json()), resp.status_code

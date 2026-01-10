@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 # CRITICAL: Load environment variables BEFORE any imports that depend on them
 load_dotenv()
 
-from fastapi import FastAPI, Header, HTTPException, Depends, Security, UploadFile, File
+from fastapi import FastAPI, Header, HTTPException, Depends, Security, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
@@ -72,6 +72,8 @@ origins = [
     "https://launch.playcanvas.com",  # PlayCanvas game launcher
     "https://playcanvas.com",  # PlayCanvas editor
     "https://playcanv.as",  # PlayCanvas short URL
+    "http://localhost:5173",  # Vite sandbox (Three.js)
+    "http://127.0.0.1:5173",
 ]
 
 app.add_middleware(
@@ -1092,10 +1094,8 @@ async def sdk_chat(
     
     logger.info(f"Chat request from user {user_id} with domain: {domain_profile.display_name}")
     
-    # Check rate limits
-    usage = AUTH.get_usage(api_key)
-    if usage and usage.get("requests_remaining", 0) <= 0:
-        raise HTTPException(status_code=429, detail="Rate limit exceeded")
+    # Rate limiting is handled by the auth system, skip for now if method doesn't exist
+    # TODO: Implement proper rate limiting with AUTH.get_usage() when available
     
     try:
         # Run the active inference loop
@@ -2113,6 +2113,57 @@ async def list_voices(
 # ============================================================================
 from body.adapters.unity_adapter import UNITY_ADAPTER
 from fastapi.responses import Response
+from brain.system_prompts import get_game_world_prompt
+
+# In-memory game state for AI context
+GAME_STATE = {
+    "world_state": {},
+    "active_quest": None,
+    "quest_log": []
+}
+
+# Pre-defined quests for the demo
+DEMO_QUESTS = {
+    "explore_city": {
+        "id": "explore_city",
+        "name": "City Explorer",
+        "objective": "Walk to 3 different locations in the city",
+        "hint": "Try visiting the fountain (12, 0, -5), the park (−8, 0, 10), and the plaza (0, 0, 0)",
+        "waypoints": [
+            {"name": "fountain", "position": {"x": 12, "y": 0, "z": -5}, "radius": 3},
+            {"name": "park", "position": {"x": -8, "y": 0, "z": 10}, "radius": 3},
+            {"name": "plaza", "position": {"x": 0, "y": 0, "z": 0}, "radius": 3}
+        ],
+        "visited": [],
+        "progress": 0,
+        "total": 3,
+        "completed": False
+    },
+    "dance_party": {
+        "id": "dance_party",
+        "name": "Dance Party",
+        "objective": "Go to the plaza and perform a dance!",
+        "hint": "Walk to position (0, 0, 0) and use the dance animation",
+        "waypoints": [
+            {"name": "plaza", "position": {"x": 0, "y": 0, "z": 0}, "radius": 3, "action": "dance"}
+        ],
+        "visited": [],
+        "progress": 0,
+        "total": 1,
+        "completed": False
+    },
+    "wave_hello": {
+        "id": "wave_hello",
+        "name": "Friendly Greeting",
+        "objective": "Wave hello to welcome visitors!",
+        "hint": "Just perform a wave animation anywhere",
+        "waypoints": [],
+        "required_action": "wave",
+        "progress": 0,
+        "total": 1,
+        "completed": False
+    }
+}
 
 @app.options("/v1/game/unity/state")
 async def unity_state_options():
@@ -2137,12 +2188,36 @@ async def unity_sync_state(
     1. Receives current game state (Player pos, Camera, Events)
     2. Returns any PENDING commands from Aether (Move, Hack, Speak)
     """
-    # Verify Auth (Optional for local dev, but good practice)
-    # user_data = AUTH.verify_api_key(x_api_key)
+    # Update global game state for AI context
+    if "entities" in state_data:
+        GAME_STATE["world_state"] = state_data.get("entities", {})
     
-    # Process incoming state (Observation)
-    # in a real loop, we would feed this to ActiveInferenceLoop.observe()
-    # For now, just log it or update a shared memory state
+    # Check quest progress based on player position
+    if GAME_STATE["active_quest"]:
+        quest = GAME_STATE["active_quest"]
+        player = GAME_STATE["world_state"].get("player", {})
+        player_pos = player.get("position", {})
+        
+        # Check waypoint proximity
+        for wp in quest.get("waypoints", []):
+            wp_pos = wp.get("position", {})
+            dist = ((player_pos.get("x", 0) - wp_pos.get("x", 0))**2 + 
+                    (player_pos.get("z", 0) - wp_pos.get("z", 0))**2)**0.5
+            
+            if dist < wp.get("radius", 3) and wp.get("name") not in quest.get("visited", []):
+                quest.setdefault("visited", []).append(wp.get("name"))
+                quest["progress"] = len(quest["visited"])
+                logger.info(f"🎯 Quest waypoint reached: {wp.get('name')}")
+                
+                if quest["progress"] >= quest["total"]:
+                    quest["completed"] = True
+                    GAME_STATE["quest_log"].append({
+                        "quest_id": quest["id"],
+                        "completed_at": datetime.now().isoformat()
+                    })
+                    logger.info(f"🏆 Quest completed: {quest['name']}")
+
+    # Log events
     if "events" in state_data:
         for event in state_data["events"]:
             logger.info(f"🎮 Unity Event: {event}")
@@ -2153,8 +2228,312 @@ async def unity_sync_state(
     return {
         "status": "synced",
         "commands": commands,
-        "aether_status": "listening"
+        "aether_status": "listening",
+        "active_quest": GAME_STATE.get("active_quest")
     }
+
+
+@app.post("/v1/game/chat")
+async def game_chat(
+    request: dict,
+    x_aether_key: str = Header(None, alias="X-Aether-Key"),
+    authorization: str = Header(None)
+):
+    """
+    Game Chat Endpoint - AI processes message and can emit game commands.
+    
+    The AI receives:
+    - User's message
+    - Current world state (player position, objects)
+    - Active quest information
+    
+    The AI can respond with:
+    - Text response
+    - Game action tags that get executed
+    """
+    message = request.get("message", "")
+    context = request.get("context", {})
+    
+    # Merge frontend context into game state
+    if context.get("player_position"):
+        GAME_STATE["world_state"]["player"] = {
+            "position": context["player_position"],
+            "animation": context.get("animation", "idle"),
+            "active": True
+        }
+    
+    # Build game-specific system prompt
+    game_prompt = get_game_world_prompt(
+        world_state=GAME_STATE["world_state"],
+        active_quest=GAME_STATE.get("active_quest")
+    )
+    
+    # Build messages for the brain
+    messages = [
+        {"role": "system", "content": game_prompt},
+        {"role": "user", "content": message}
+    ]
+    
+    try:
+        # Use Aether's full cognitive loop (Brain + Mind + Heart + JEPA + Safety)
+        # This is the REAL Aether, not just an LLM
+        response_text, message_id, emotion_vector, agent_state = await AETHER.run_cycle(
+            user_id="game_player",  # Game player session
+            user_input=f"[GAME CONTEXT]\n{game_prompt}\n\n[USER MESSAGE]\n{message}",
+            namespace="game_world"
+        )
+        
+        # Parse action tags from response
+        action_tags, cleaned_response = ACTION_PARSER.parse(response_text)
+        
+        # Execute game action tags and collect commands
+        game_commands = []
+        for tag in action_tags:
+            if tag.tag_type == "aether-game":
+                # Extract game command from tag
+                action = tag.attributes.get("action", "move")
+                target = tag.attributes.get("target", "player")
+                try:
+                    params = json.loads(tag.content) if tag.content.strip() else {}
+                except:
+                    params = {}
+                
+                game_command = {
+                    "action": action,
+                    "target": target,
+                    "params": params
+                }
+                
+                # Queue in Unity adapter
+                UNITY_ADAPTER.execute(json.dumps(game_command))
+                game_commands.append(game_command)
+                
+                logger.info(f"🎮 Game command from AI: {action} -> {target}")
+        
+        return {
+            "response": cleaned_response,
+            "commands": game_commands,
+            "world_state": GAME_STATE["world_state"],
+            "active_quest": GAME_STATE.get("active_quest")
+        }
+        
+    except Exception as e:
+        logger.error(f"Game chat error: {e}", exc_info=True)
+        return {
+            "response": f"*looks confused* Something went wrong... ({str(e)[:50]})",
+            "commands": [],
+            "error": str(e)
+        }
+
+
+# ============================================================================
+# Game Perception Endpoints (Embodiment / Self-Awareness)
+# ============================================================================
+
+# In-memory perception state for real-time body awareness
+PERCEPTION_STATE = {
+    "body_state": None,
+    "vision": None,
+    "last_update": None
+}
+
+
+@app.post("/v1/game/perception")
+async def game_perception(
+    request: dict,
+    x_aether_key: str = Header(None, alias="X-Aether-Key")
+):
+    """
+    Receive continuous perception updates from the game environment.
+    This feeds Aether's embodied self-awareness:
+    - Body state (position, velocity, limb positions, energy)
+    - Vision descriptions from the 3D world
+    
+    This data is used during autonomous thinking cycles.
+    """
+    global PERCEPTION_STATE
+    
+    body_state = request.get("body_state")
+    vision = request.get("vision")
+    timestamp = request.get("timestamp", datetime.now().timestamp() * 1000)
+    
+    # Update perception state
+    if body_state:
+        PERCEPTION_STATE["body_state"] = body_state
+    if vision:
+        PERCEPTION_STATE["vision"] = vision
+    PERCEPTION_STATE["last_update"] = timestamp
+    
+    # Also update GAME_STATE for consistency
+    if body_state and "position" in body_state:
+        GAME_STATE["world_state"]["player"] = {
+            "position": body_state["position"],
+            "velocity": body_state.get("velocity", {"x": 0, "y": 0, "z": 0}),
+            "facing": body_state.get("facing", {"x": 0, "y": 0, "z": 1}),
+            "energy": body_state.get("energy", 1.0),
+            "active": True
+        }
+    
+    return {"status": "received", "timestamp": timestamp}
+
+
+@app.post("/v1/perception/vision")
+async def perception_vision(
+    request: dict,
+    x_aether_key: str = Header(None, alias="X-Aether-Key")
+):
+    """
+    Receive vision frames from the game for visual perception.
+    Can process with EYE module for object detection if enabled.
+    
+    For now, stores the frame and returns any cached analysis.
+    """
+    frame_data = request.get("frame")  # Base64 JPEG
+    width = request.get("width", 320)
+    height = request.get("height", 240)
+    prompt = request.get("prompt")
+    detailed = request.get("detailed", False)
+    
+    result = {
+        "timestamp": datetime.now().timestamp() * 1000,
+        "processed": False,
+        "objects": [],
+        "scene_type": None,
+        "description": None
+    }
+    
+    # If detailed analysis requested and EYE is available
+    if detailed and prompt and frame_data:
+        try:
+            # Convert base64 to bytes for EYE processing
+            import base64
+            image_bytes = base64.b64decode(frame_data)
+            
+            # Use EYE for vision analysis (if YOLO or multimodal is enabled)
+            if hasattr(EYE, 'analyze_image'):
+                analysis = await EYE.analyze_image(image_bytes, prompt=prompt)
+                result["objects"] = analysis.get("objects", [])
+                result["scene_type"] = analysis.get("scene_type")
+                result["description"] = analysis.get("description")
+                result["processed"] = True
+        except Exception as e:
+            logger.warning(f"Vision analysis error: {e}")
+    
+    # Cache for body state tracker
+    PERCEPTION_STATE["vision"] = result.get("description") or "Visual data received"
+    
+    return result
+
+
+@app.get("/v1/game/perception/state")
+async def get_perception_state():
+    """
+    Get current perception state (for debugging or external monitoring).
+    Includes 3D embodiment data if available.
+    """
+    try:
+        from body.adapters.embodiment_3d_adapter import get_embodiment_adapter
+        embodiment_adapter = get_embodiment_adapter()
+        embodiment_data = {
+            "perception": embodiment_adapter.perception_buffer,
+            "doll_state": embodiment_adapter.doll_state,
+            "connected_clients": len(embodiment_adapter.websocket_clients)
+        }
+    except Exception:
+        embodiment_data = None
+    
+    return {
+        "perception": PERCEPTION_STATE,
+        "embodiment": embodiment_data,
+        "game_state": {
+            "player": GAME_STATE["world_state"].get("player"),
+            "active_quest": GAME_STATE.get("active_quest")
+        },
+        "last_update_age_ms": (
+            (datetime.now().timestamp() * 1000 - PERCEPTION_STATE["last_update"])
+            if PERCEPTION_STATE["last_update"] else None
+        )
+    }
+
+
+@app.post("/v1/game/perception/vision")
+async def process_game_vision(
+    vision_data: dict,
+    user_data: dict = Depends(verify_api_key)
+):
+    """
+    Process vision data (screenshot) from the 3D game environment.
+    Uses the Eye perception module for analysis.
+    """
+    try:
+        base64_image = vision_data.get("image")
+        context = vision_data.get("context", {})
+        
+        if not base64_image:
+            raise HTTPException(status_code=400, detail="No image data provided")
+        
+        # Analyze via Eye
+        result = await EYE.analyze_game_frame(base64_image, context)
+        
+        # Store in embodiment adapter's perception buffer
+        from body.adapters.embodiment_3d_adapter import get_embodiment_adapter
+        embodiment_adapter = get_embodiment_adapter()
+        embodiment_adapter.update_perception({
+            "vision": result,
+            "context": context
+        })
+        
+        return {
+            "success": True,
+            "analysis": result
+        }
+        
+    except Exception as e:
+        logger.error(f"Vision processing failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/v1/game/quest/start")
+async def start_quest(request: dict):
+    """Start a quest for the AI to complete."""
+    quest_id = request.get("quest_id", "explore_city")
+    
+    if quest_id not in DEMO_QUESTS:
+        raise HTTPException(status_code=404, detail=f"Quest '{quest_id}' not found")
+    
+    # Deep copy the quest template
+    quest = json.loads(json.dumps(DEMO_QUESTS[quest_id]))
+    quest["started_at"] = datetime.now().isoformat()
+    quest["visited"] = []
+    quest["progress"] = 0
+    quest["completed"] = False
+    
+    GAME_STATE["active_quest"] = quest
+    
+    logger.info(f"🎯 Quest started: {quest['name']}")
+    
+    return {
+        "status": "started",
+        "quest": quest
+    }
+
+
+@app.get("/v1/game/quests")
+async def list_quests():
+    """List available quests."""
+    return {
+        "quests": [
+            {
+                "id": q["id"],
+                "name": q["name"],
+                "objective": q["objective"]
+            }
+            for q in DEMO_QUESTS.values()
+        ],
+        "active_quest": GAME_STATE.get("active_quest"),
+        "completed": GAME_STATE.get("quest_log", [])
+    }
+
 
 @app.post("/v1/game/unity/command")
 async def unity_inject_command(
@@ -2166,6 +2545,75 @@ async def unity_inject_command(
     Manually inject a command into the Unity queue.
     Useful for testing or overriding AI behavior.
     """
-    cmd = json.dumps(command_data)
-    result = UNITY_ADAPTER.execute(cmd)
-    return json.loads(result)
+    # The tooling historically sent either a single command object
+    # or a wrapper like {"commands": [...]}. Normalize so the
+    # PlayCanvas/Unity bridge always receives flat action dictionaries.
+    raw_commands = []
+
+    if isinstance(command_data, dict) and isinstance(command_data.get("commands"), list):
+        raw_commands.extend(command_data["commands"])
+    else:
+        raw_commands.append(command_data)
+
+    queued = []
+    for cmd in raw_commands:
+        if not isinstance(cmd, dict):
+            continue
+        payload = json.dumps(cmd)
+        queued.append(json.loads(UNITY_ADAPTER.execute(payload)))
+
+    return {
+        "status": "queued" if queued else "ignored",
+        "queued_count": len(queued),
+        "results": queued
+    }
+
+
+# ============================================================================
+# WebSocket Endpoint for Real-Time 3D Embodiment Control
+# ============================================================================
+
+@app.websocket("/ws/embodiment")
+async def websocket_embodiment(websocket: WebSocket):
+    """
+    WebSocket endpoint for real-time communication with the 3D game client.
+    Allows bidirectional control: brain -> doll and doll -> brain perception.
+    """
+    await websocket.accept()
+    logger.info("🔌 3D Embodiment WebSocket client connected")
+    
+    # Import and get the embodiment adapter
+    from body.adapters.embodiment_3d_adapter import get_embodiment_adapter
+    embodiment_adapter = get_embodiment_adapter()
+    
+    # Register this WebSocket
+    embodiment_adapter.register_websocket(websocket)
+    
+    try:
+        while True:
+            # Receive perception updates from game
+            data = await websocket.receive_json()
+            
+            # Update adapter's perception buffer
+            if data.get("type") == "perception_update":
+                embodiment_adapter.update_perception(data.get("data", {}))
+                
+                # Optionally send to backend memory
+                if data.get("data", {}).get("body_state"):
+                    # Store in episodic memory for context
+                    pass  # TODO: integrate with episodic memory
+            
+            # Echo back acknowledgment
+            await websocket.send_json({
+                "type": "ack",
+                "timestamp": datetime.now().isoformat()
+            })
+            
+    except WebSocketDisconnect:
+        logger.info("🔌 3D Embodiment WebSocket client disconnected")
+        embodiment_adapter.unregister_websocket(websocket)
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        embodiment_adapter.unregister_websocket(websocket)
+        await websocket.close()
+

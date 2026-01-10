@@ -7,6 +7,7 @@ pinecone
 numpy==1.26.4
 loguru
 firecrawl-py
+datasets
 pydantic
 anthropic
 openai

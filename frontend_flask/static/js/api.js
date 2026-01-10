@@ -10,6 +10,14 @@ export function setApiKeyModal(modal) {
     apiKeyModal = modal;
 }
 
+function handleAuthFailure(status) {
+    if (status === 401 || status === 403) {
+        console.warn(`⚠️ [API] Auth failure (${status}). Clearing cache and redirecting to reset.`);
+        // Redirect to logout endpoint which clears session and localStorage
+        window.location.href = "/logout";
+    }
+}
+
 export const api = {
     // Use Flask proxy for local dev, direct for production
     // Flask proxy handles forwarding to backend on port 8000
@@ -99,6 +107,7 @@ export const api = {
             console.log('📊 [API] Response status:', response.status, response.statusText);
 
             if (!response.ok) {
+                handleAuthFailure(response.status);
                 const errorText = await response.text();
                 console.error('❌ [API] Request failed:', response.status, errorText);
                 throw new Error(`API Error: ${response.status} - ${errorText}`);
@@ -142,6 +151,7 @@ export const api = {
             });
 
             if (!response.ok) {
+                handleAuthFailure(response.status);
                 const errorText = await response.text();
                 console.error('❌ [API] Chat failed:', response.status, errorText);
                 throw new Error(`API Error: ${response.status} - ${errorText}`);
@@ -192,6 +202,7 @@ export const api = {
                     console.warn('⚠️ [API] Service unavailable (503) - Model warming up');
                     throw new Error("Perception model warming up, please try again.");
                 }
+                handleAuthFailure(response.status);
                 const errorText = await response.text();
                 console.error('❌ [API] Upload failed:', response.status, errorText);
                 throw new Error(`Upload Error: ${response.status} - ${errorText}`);
@@ -226,6 +237,7 @@ export const api = {
             });
 
             if (!response.ok) {
+                handleAuthFailure(response.status);
                 console.warn('⚠️ [API] Failed to get user profile');
                 return null;
             }
@@ -243,7 +255,13 @@ export const api = {
         console.log('💾 [API] saveUserProfile called');
         
         const apiKey = this.getApiKey();
-        if (!apiKey) throw new Error("API Key required");
+        if (!apiKey) {
+            console.warn('⚠️ [API] synthesizeVoice aborted: missing API key');
+            if (apiKeyModal) {
+                apiKeyModal.show();
+            }
+            throw new Error("API Key required for voice synthesis");
+        }
 
         try {
             const response = await fetch(`${this.rootUrl}/v1/user/profile`, {
@@ -256,6 +274,7 @@ export const api = {
             });
 
             if (!response.ok) {
+                handleAuthFailure(response.status);
                 throw new Error(`Failed to save profile: ${response.status}`);
             }
 
@@ -300,7 +319,13 @@ export const api = {
         console.log('➕ [API] createTask called');
         
         const apiKey = this.getApiKey();
-        if (!apiKey) throw new Error("API Key required");
+        if (!apiKey) {
+            console.warn('⚠️ [API] synthesizeVoice aborted: missing API key');
+            if (apiKeyModal) {
+                apiKeyModal.show();
+            }
+            throw new Error("API Key required");
+        }
 
         try {
             const response = await fetch(`${this.rootUrl}/v1/tasks/create`, {
@@ -488,7 +513,7 @@ export const api = {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Api-Key': apiKey
+                    'X-Aether-Key': apiKey
                 },
                 body: JSON.stringify({
                     text: text,
@@ -500,6 +525,7 @@ export const api = {
             });
 
             if (!response.ok) {
+                handleAuthFailure(response.status);
                 throw new Error(`Voice synthesis failed: ${response.status}`);
             }
 
@@ -516,11 +542,17 @@ export const api = {
         console.log('🔊 [API] listVoices called');
         
         const apiKey = this.getApiKey();
-        if (!apiKey) return { voices: [], profiles: {} };
+        if (!apiKey) {
+            console.warn('⚠️ [API] listVoices aborted: missing API key');
+            if (apiKeyModal) {
+                apiKeyModal.show();
+            }
+            return { voices: [], profiles: {} };
+        }
 
         try {
             const response = await fetch(`${this.rootUrl}/v1/voice/voices?language=${language}`, {
-                headers: { 'X-Api-Key': apiKey }
+                headers: { 'X-Aether-Key': apiKey }
             });
 
             if (!response.ok) return { voices: [], profiles: {} };
