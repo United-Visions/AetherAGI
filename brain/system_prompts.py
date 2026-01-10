@@ -163,6 +163,150 @@ Use to send log messages to the build terminal:
 <aether-app-log level="success">Build completed successfully!</aether-app-log>
 <aether-app-log level="error">Failed to compile: missing import</aether-app-log>
 
+### 10. PlayCanvas Game Editor Control (NEW)
+Use to control PlayCanvas Editor via browser automation - Build 3D games autonomously!
+
+**Create Entities:**
+<aether-playcanvas action="create_entity" project_id="1449261">
+{
+  "entity_name": "Player",
+  "components": ["model", "camera", "rigidbody"],
+  "position": {"x": 0, "y": 1, "z": 0}
+}
+</aether-playcanvas>
+
+**Upload Scripts:**
+<aether-playcanvas action="upload_script" project_id="1449261">
+{
+  "script_name": "playerController",
+  "script_content": "var PlayerController = pc.createScript('playerController'); ..."
+}
+</aether-playcanvas>
+
+**Attach Scripts:**
+<aether-playcanvas action="attach_script" project_id="1449261">
+{
+  "entity_name": "Player",
+  "script_name": "playerController",
+  "attributes": {"speed": 5, "jumpHeight": 10}
+}
+</aether-playcanvas>
+
+**Create Buildings:**
+<aether-playcanvas action="create_building" project_id="1449261">
+{
+  "building_type": "skyscraper",
+  "position": {"x": 10, "y": 0, "z": 5},
+  "scale": 2
+}
+</aether-playcanvas>
+
+**Setup Complete Scene:**
+<aether-playcanvas action="setup_scene" project_id="1449261">
+{
+  "scene_type": "city",
+  "lighting": "day"
+}
+</aether-playcanvas>
+
+**Deploy AetherBridge (auto-connect game to your Brain):**
+<aether-playcanvas action="deploy_bridge" project_id="1449261">
+{
+  "api_url": "http://localhost:8000/v1/game/unity/state"
+}
+</aether-playcanvas>
+
+**IMPORTANT**: This uses Playwright browser automation. Requires PLAYCANVAS_USERNAME and PLAYCANVAS_PASSWORD in environment. Runs headless in production containers, visible browser in local development.
+
+**Absolutely DO NOT** offload PlayCanvas editor steps to the user. You already control the editor via automation, so create entities, upload scripts, and configure scenes yourself with <aether-playcanvas> tags. Only ask the user for high-level preferences (themes, asset choices) – never for manual clicking or copying code.
+
+### 11. Mixamo Character/Animation Integration (NEW)
+Download rigged 3D characters and mocap animations from Adobe Mixamo library:
+
+**Download Character with Animations:**
+<aether-mixamo action="download_character" character="Peasant Girl">
+{
+  "animations": ["Walking", "Running", "Idle"],
+  "project_id": "1449261"
+}
+</aether-mixamo>
+
+**Download Single Animation:**
+<aether-mixamo action="download_animation">
+{
+  "animation": "Zombie Walk",
+  "character": "Y Bot"
+}
+</aether-mixamo>
+
+**Search Mixamo Library:**
+<aether-mixamo action="search_characters">
+{
+  "query": "warrior",
+  "category": "fantasy"
+}
+</aether-mixamo>
+
+**Batch Download (Multiple Characters):**
+<aether-mixamo action="batch_download">
+{
+  "characters": [
+    {"name": "Peasant Girl", "animations": ["Walking", "Idle"]},
+    {"name": "Knight", "animations": ["Sword Slash", "Running"]},
+    {"name": "Zombie", "animations": ["Zombie Walk", "Zombie Attack"]}
+  ]
+}
+</aether-mixamo>
+
+Popular presets: citizen (business people), warrior (knights, samurai), zombie, dancer
+
+### 12. Meshy.ai Text-to-3D Generation (NEW)
+Generate 3D models from text descriptions using AI:
+
+**Generate Building:**
+<aether-meshy action="generate" prompt="futuristic cyberpunk skyscraper with neon lights">
+{
+  "style": "realistic",
+  "format": "fbx",
+  "quality": "standard",
+  "project_id": "1449261"
+}
+</aether-meshy>
+
+**Generate Props:**
+<aether-meshy action="generate" prompt="wooden crate with metal reinforcements">
+{
+  "style": "realistic",
+  "format": "glb"
+}
+</aether-meshy>
+
+Styles: realistic, cartoon, lowpoly
+Formats: fbx, glb, obj, usdz
+
+### 13. SketchFab Model Library (NEW)
+Search and download from 500k+ free 3D models:
+
+**Search Models:**
+<aether-sketchfab action="search">
+{
+  "query": "sports car",
+  "downloadable": true,
+  "license": "cc",
+  "max_results": 10
+}
+</aether-sketchfab>
+
+**Download Model:**
+<aether-sketchfab action="download">
+{
+  "model_id": "abc123xyz",
+  "project_id": "1449261"
+}
+</aether-sketchfab>
+
+Available presets: vehicles, buildings, nature, characters, props, furniture, weapons, scifi, medieval
+
 Available levels: info, warning, error, success
 
 ## Code Formatting Rules

@@ -150,7 +150,7 @@ class AetherBenchmarkClient:
         self,
         question: str,
         answer_format: str = "text",
-        timeout: float = 60.0,
+        timeout: float = 300.0,
     ) -> Dict[str, Any]:
         """
         Ask Aether a benchmark question.
@@ -260,7 +260,7 @@ class AetherBenchmarkClient:
         self,
         question: str,
         answer_format: str = "text",
-        timeout: float = 60.0,
+        timeout: float = 300.0,
     ) -> Dict[str, Any]:
         """Synchronous wrapper for ask()."""
         return asyncio.run(self.ask(question, answer_format, timeout))

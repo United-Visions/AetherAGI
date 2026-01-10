@@ -14,11 +14,12 @@ from benchmarks.progressive_runner import ProgressiveRunner
 from benchmarks.dataset_progression import get_available_families, get_family_info
 
 class BenchmarkService:
-    def __init__(self, store=None, memory=None):
+    def __init__(self, store=None, memory=None, background_tasks_dict=None):
         self.store = store
         self.memory = memory
         self.active_benchmarks: Dict[str, Dict] = {}
         self.results_cache: Dict[str, Any] = {}
+        self.background_tasks = background_tasks_dict  # Reference to BACKGROUND_TASKS
         
         # Load existing results from disk
         self._load_cached_results()
@@ -114,13 +115,18 @@ class BenchmarkService:
                     completed_chunks += 1
                     runner.loader.record_chunk_score(chunk_result["score"])
                     
-                    self.active_benchmarks[benchmark_id].update({
+                    progress_data = {
                         "progress": (completed_chunks / 100) * 100, # Approximation
                         "current_chunk": completed_chunks,
                         "score": sum(runner.loader.config.scores_by_variant.get(runner.loader.current_variant.name, [0])) / 
                                  max(1, len(runner.loader.config.scores_by_variant.get(runner.loader.current_variant.name, []))),
                         "last_activity": chunk_result.get("activity_events", [])
-                    })
+                    }
+                    self.active_benchmarks[benchmark_id].update(progress_data)
+                    
+                    # Sync to BACKGROUND_TASKS if available
+                    if self.background_tasks and benchmark_id in self.background_tasks:
+                        self.background_tasks[benchmark_id].update(progress_data)
                     
                     runner.loader.advance_chunk()
                     runner._save_checkpoint(chunk_result)
@@ -131,20 +137,30 @@ class BenchmarkService:
             # Finalize
             report = runner._generate_final_report()
             self.results_cache[family] = report
-            self.active_benchmarks[benchmark_id].update({
+            completion_data = {
                 "status": "completed",
                 "progress": 100,
                 "final_report": report
-            })
+            }
+            self.active_benchmarks[benchmark_id].update(completion_data)
+            
+            # Sync to BACKGROUND_TASKS if available
+            if self.background_tasks and benchmark_id in self.background_tasks:
+                self.background_tasks[benchmark_id].update(completion_data)
             
             logger.info(f"Benchmark task {benchmark_id} completed successfully")
             
         except Exception as e:
             logger.error(f"Benchmark task {benchmark_id} failed: {e}")
-            self.active_benchmarks[benchmark_id].update({
+            error_data = {
                 "status": "failed",
                 "error": str(e)
-            })
+            }
+            self.active_benchmarks[benchmark_id].update(error_data)
+            
+            # Sync to BACKGROUND_TASKS if available
+            if self.background_tasks and benchmark_id in self.background_tasks:
+                self.background_tasks[benchmark_id].update(error_data)
 
     async def get_status(self, benchmark_id: str) -> Dict:
         """Get the status of an active or recent benchmark."""

@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AetherMind Benchmarks</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        :root {
+            --bg: #020512;
+            --panel: rgba(9, 13, 32, 0.9);
+            --primary: #1fe0c2;
+            --accent: #ff9a3c;
+            --muted: #7c8aa6;
+            --grid-line: rgba(255, 255, 255, 0.08);
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Space Grotesk', sans-serif;
+            background: radial-gradient(circle at top, #091132 0%, #030615 55%, #01030b 100%);
+            color: #f4f6fb;
+            min-height: 100vh;
+        }
+        .nebula {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px 64px;
+        }
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--grid-line);
+            border-radius: 16px;
+            padding: 14px 20px;
+            margin-bottom: 32px;
+            background: rgba(4, 8, 22, 0.8);
+            backdrop-filter: blur(18px);
+        }
+        .brand {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.1;
+        }
+        .brand span:first-child {
+            font-weight: 600;
+            letter-spacing: 0.08em;
+        }
+        .brand span:last-child {
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .nav-links {
+            display: flex;
+            gap: 16px;
+        }
+        .nav-links a {
+            color: #cfd5ed;
+            text-decoration: none;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .nav-links a.active {
+            color: var(--primary);
+        }
+        .dataset-switcher {
+            margin-bottom: 24px;
+            border: 1px solid var(--grid-line);
+            border-radius: 16px;
+            padding: 16px 20px;
+            background: rgba(5, 9, 25, 0.85);
+        }
+        .tabs {
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid var(--grid-line);
+            margin-bottom: 16px;
+        }
+        .tab-link {
+            padding: 10px 20px;
+            color: var(--muted);
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .tab-link.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .day-tabs {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            padding-left: 20px;
+        }
+        .day-tab-link {
+            padding: 6px 14px;
+            border-radius: 999px;
+            text-decoration: none;
+            color: var(--muted);
+            background: rgba(255,255,255,0.05);
+            transition: all 0.2s ease;
+        }
+        .day-tab-link.active {
+            background: var(--primary);
+            color: var(--bg);
+            font-weight: 600;
+        }
+        .dataset-meta {
+            font-size: 13px;
+            color: var(--muted);
+            margin-left: auto;
+        }
+        .error-banner {
+            border: 1px solid rgba(255, 99, 71, 0.4);
+            background: rgba(255, 99, 71, 0.1);
+            color: #ff9a8b;
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .hero {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            padding: 32px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(31, 224, 194, 0.12), rgba(4, 8, 22, 0.9));
+            border: 1px solid var(--grid-line);
+        }
+        .hero-text {
+            flex: 2;
+            min-width: 280px;
+        }
+        .hero-text .eyebrow {
+            text-transform: uppercase;
+            letter-spacing: 0.4em;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .hero-text h1 {
+            margin: 12px 0 16px;
+            font-size: 42px;
+            line-height: 1.05;
+        }
+        .hero-text p {
+            color: #d6d9ee;
+            max-width: 560px;
+        }
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            margin-top: 28px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .hero-meta span {
+            display: flex;
+            flex-direction: column;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .hero-meta strong {
+            color: #fefefe;
+            font-size: 20px;
+        }
+        .hero-card {
+            flex: 1;
+            min-width: 240px;
+            background: rgba(2, 3, 8, 0.6);
+            border-radius: 20px;
+            border: 1px solid var(--grid-line);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .hero-card .label {
+            font-size: 12px;
+            letter-spacing: 0.2em;
+            color: var(--muted);
+        }
+        .hero-card .value {
+            font-size: 36px;
+            font-weight: 600;
+        }
+        .hero-card small {
+            color: var(--muted);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+            margin: 36px 0;
+        }
+        .stat-card {
+            border: 1px solid var(--grid-line);
+            border-radius: 18px;
+            padding: 20px;
+            background: var(--panel);
+        }
+        .stat-card header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.3em;
+        }
+        .stat-card .stat-value {
+            font-size: 28px;
+            margin-top: 16px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .stat-card .stat-subtext {
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .chart-panel {
+            border: 1px solid var(--grid-line);
+            border-radius: 24px;
+            background: var(--panel);
+            padding: 28px;
+        }
+        .panel-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .panel-header h2 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .panel-header span {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--muted);
+        }
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 18px;
+            margin: 32px 0;
+        }
+        .insight-card {
+            border: 1px solid var(--grid-line);
+            border-radius: 18px;
+            padding: 20px;
+            background: rgba(5, 9, 24, 0.85);
+        }
+        .insight-card h3 {
+            margin-top: 0;
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 0.3em;
+            color: var(--muted);
+        }
+        .insight-card .metric {
+            font-size: 32px;
+            margin: 8px 0;
+        }
+        .insight-card p {
+            margin: 0;
+            color: #cfd3eb;
+        }
+        .table-panel {
+            border: 1px solid var(--grid-line);
+            border-radius: 20px;
+            overflow: hidden;
+            background: rgba(2, 6, 20, 0.9);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        thead {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        th, td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 14px;
+        }
+        th {
+            font-size: 12px;
+            letter-spacing: 0.2em;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+        tbody tr:hover {
+            background: rgba(31, 224, 194, 0.05);
+        }
+        .badge {
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .badge.up { background: rgba(31, 224, 194, 0.12); color: var(--primary); }
+        .badge.down { background: rgba(255, 99, 71, 0.12); color: #ff6347; }
+        .badge.flat { background: rgba(255, 255, 255, 0.08); color: var(--muted); }
+        .timestamp {
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--muted);
+            text-align: right;
+        }
+        @media (max-width: 768px) {
+            .hero {
+                padding: 24px;
+            }
+            .hero-text h1 {
+                font-size: 32px;
+            }
+            .hero-meta {
+                flex-direction: column;
+            }
+            .top-nav {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="nebula">
+        <nav class="top-nav">
+            <div class="brand">
+                <span>AETHERMIND</span>
+                <span>Continuous Evaluation Stack</span>
+            </div>
+            <div class="nav-links">
+                <a href="{{ url_for('home') }}">Home</a>
+                <a href="{{ url_for('pricing') }}">Pricing</a>
+                <a href="{{ url_for('documentation') }}">Docs</a>
+                <a href="{{ url_for('whitepaper') }}">Whitepaper</a>
+                <a href="{{ url_for('index') }}">Chat</a>
+                <a href="{{ url_for('benchmarks') }}" class="active">Benchmarks</a>
+            </div>
+        </nav>
+
+        {% if error_message %}
+        <div class="error-banner">
+            <strong>Warning:</strong> {{ error_message }}
+        </div>
+        {% endif %}
+
+        {% if datasets %}
+        <div class="dataset-switcher">
+            <div class="tabs">
+                {% for family_key, family_data in datasets.items() %}
+                    <a href="?family={{ family_key }}" class="tab-link {% if family_key == selected_family %}active{% endif %}">
+                        {{ family_data.display_name }}
+                    </a>
+                {% endfor %}
+            </div>
+            
+            {% if selected_family and datasets[selected_family] %}
+            <div class="day-tabs">
+                <span>Runs:</span>
+                {% for run in datasets[selected_family].runs %}
+                    <a href="?family={{ selected_family }}&day={{ run.id }}" class="day-tab-link {% if run.id == selected_day %}active{% endif %}">
+                        {% if run.id == 'local' or run.day == 'local' %}
+                            Local Session
+                        {% elif run.day %}
+                            Day {{ run.day }}
+                        {% else %}
+                            {{ run.id }}
+                        {% endif %}
+                    </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="control-panel stat-card" style="margin-bottom: 24px; border: 1px solid var(--primary); background: rgba(31, 224, 194, 0.05);">
+            <header style="margin-bottom: 16px;">
+                <span>🚀 Mission Control</span>
+                <div id="connection-status" class="badge flat">Offline</div>
+            </header>
+            <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                <div>
+                    <label style="font-size: 12px; color: var(--muted); text-transform: uppercase;">Sequence</label>
+                    <select id="daySelect" style="background: rgba(0,0,0,0.3); border: 1px solid var(--grid-line); color: white; padding: 8px 12px; border-radius: 8px; font-family: inherit;">
+                        {% if datasets and selected_family and datasets[selected_family] %}
+                            <!-- Dynamic options based on history -->
+                            {% for run in datasets[selected_family].runs %}
+                                <option value="{{ run.id }}" {% if run.id == selected_day %}selected{% endif %}>
+                                    {% if run.id == 'local' %}Local Session{% else %}Day {{ run.day }}{% endif %}
+                                </option>
+                            {% endfor %}
+                            <!-- Always allow Day 1 if not present (for new runs) -->
+                            {% if 'day_1' not in datasets[selected_family].runs|map(attribute='id')|list %}
+                                <option value="day_1">Day 1 (New)</option>
+                            {% endif %}
+                        {% else %}
+                             <!-- Fallback -->
+                             <option value="day_1" selected>Day 1 (Initiation)</option>
+                        {% endif %}
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 12px; color: var(--muted); text-transform: uppercase;">Protocol</label>
+                    <select id="variantSelect" style="background: rgba(0,0,0,0.3); border: 1px solid var(--grid-line); color: white; padding: 8px 12px; border-radius: 8px; font-family: inherit;">
+                        <option value="all">⚡ Run Gauntlet (All Concurrent)</option>
+                        <option value="gsm8k">GSM-8K (Standard)</option>
+                        <option value="gsm_hard">GSM-Hard (Reasoning)</option>
+                        <option value="gsm_symbolic">GSM-Symbolic (robustness)</option>
+                        <option value="gsm_plus">GSM-Plus (Adversarial)</option>
+                    </select>
+                </div>
+                <div>
+                        <label style="font-size: 12px; color: var(--muted); text-transform: uppercase;">Model</label>
+                        <select id="modelSelect" style="background: rgba(0,0,0,0.3); border: 1px solid var(--grid-line); color: white; padding: 8px 12px; border-radius: 8px; font-family: inherit;">
+                            <option value="gemini/gemini-2.5-pro">Gemini 2.5 Pro (Thinking)</option>
+                            <option value="gemini/gemini-2.5-flash">Gemini 2.5 Flash</option>
+                            <option value="gemini/gemini-3.0-flash-preview">Gemini 3.0 Flash (Preview)</option>
+                            <option value="gemini/gemini-3.0-pro-preview">Gemini 3.0 Pro (Agentic)</option>
+                        </select>
+                </div>
+                <div style="margin-left: auto; display: flex; gap: 12px;">
+                    <button onclick="startRun()" class="btn" style="background: var(--primary); color: #000; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        <i class="fas fa-play"></i> Initialize
+                    </button>
+                    <button onclick="openAbortModal()" class="btn" style="background: rgba(255, 99, 71, 0.2); color: #ff6347; border: 1px solid rgba(255, 99, 71, 0.4); padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        <i class="fas fa-stop"></i> Abort / Manage
+                    </button>
+                    <button onclick="clearData()" class="btn" style="background: rgba(255, 255, 255, 0.05); color: var(--muted); border: 1px solid var(--grid-line); padding: 10px 12px; border-radius: 8px; cursor: pointer;" title="Clear Data Only">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="live-log" style="margin-top: 16px; height: 100px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; font-family: 'JetBrains Mono'; font-size: 12px; color: #a0aec0;">
+                <div style="color: var(--muted);">Waiting for mission start...</div>
+            </div>
+        </div>
+
+        <header class="hero">
+            <div class="hero-text">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                    <p class="eyebrow" style="margin: 0;">Live Evaluation • {{ family|upper }}</p>
+                    <span style="color: var(--muted); font-size: 10px;">/</span>
+                    <form action="{{ url_for('benchmarks') }}" method="get" style="display: inline-block;">
+                        <input type="hidden" name="family" value="{{ selected_family }}">
+                        <input type="hidden" name="day" value="{{ selected_day }}">
+                        {% if available_variants %}
+                        <select name="view_variant" onchange="this.form.submit()" style="background: rgba(31, 224, 194, 0.1); border: 1px solid rgba(31, 224, 194, 0.3); color: var(--primary); padding: 4px 8px; border-radius: 6px; font-size: 11px; text-transform: uppercase; font-family: 'Space Grotesk'; cursor: pointer; outline: none;">
+                            <option value="all" {% if variant == 'all' %}selected{% endif %}>All Variants</option>
+                            {% for v in available_variants|sort %}
+                                <option value="{{ v }}" {% if variant == v %}selected{% endif %}>{{ v }}</option>
+                            {% endfor %}
+                            {% if not available_variants and variant != 'all' and variant != 'Unknown Variant' %}
+                                <option value="{{ variant }}" selected>{{ variant }}</option>
+                            {% endif %}
+                        </select>
+                        {% else %}
+                             <span class="eyebrow" style="color: var(--primary);">{{ variant }}</span>
+                        {% endif %}
+                    </form>
+                </div>
+                <h1>Benchmark Control Room</h1>
+                <p>Track Aether's GSM-8K progression with real-time chunk analytics, accuracy drift, and confidence telemetry pulled directly from the benchmark logs.</p>
+                <div class="hero-meta">
+                    <span>
+                        Completion
+                        <strong>{{ (completion_pct or 0) | round(1) }}%</strong>
+                    </span>
+                    <span>
+                        Overall Avg
+                        <strong>{{ (((overall_average or 0) * 100) | round(2)) }}%</strong>
+                    </span>
+                    <span>
+                        Trend
+                        <strong>{{ (trend.slope * 100) | round(2) }} pts/chunk</strong>
+                    </span>
+                </div>
+            </div>
+            <div class="hero-card">
+                <span class="label">Last Chunk</span>
+                <div class="value">{{ ((last_chunk.get('score', 0) or 0) * 100) | round(2) }}%</div>
+                <small>Chunk {{ last_chunk.get('chunk', '-') }} of {{ total_chunks or last_chunk.get('total_chunks', '?') }}</small>
+                <small>Recorded {{ last_chunk.get('timestamp', 'N/A') }}</small>
+            </div>
+        </header>
+
+        <!-- Abort/Clear Modal -->
+        <dialog id="abortModal" style="background: var(--panel); color: white; border: 1px solid var(--grid-line); border-radius: 12px; padding: 24px; max-width: 500px; width: 90%; backdrop-filter: blur(10px);">
+            <h3 style="margin-top: 0; color: #ff6347"><i class="fas fa-exclamation-triangle"></i> Manage Benchmark</h3>
+            <p>Select an action for the current session.</p>
+            
+            <div id="runningProcessList" style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-bottom: 20px; max-height: 150px; overflow-y: auto; font-size: 13px;">
+                Loading status...
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="confirmAbort(false)" style="padding: 12px; background: rgba(255, 99, 71, 0.2); border: 1px solid #ff6347; color: #ff6347; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                   🛑 Abort Running Processes (Keep Data)
+                </button>
+                <button onclick="confirmAbort(true)" style="padding: 12px; background: #ff6347; border: none; color: white; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                   🗑️ Abort & Delete All Data
+                </button>
+                <button onclick="document.getElementById('abortModal').close()" style="padding: 12px; background: transparent; border: 1px solid var(--muted); color: var(--muted); border-radius: 6px; cursor: pointer;">
+                   Cancel
+                </button>
+            </div>
+        </dialog>
+
+        <!-- Stats Grid Removed -->
+
+
+        {% if model_leaderboard %}
+            <!-- Old Leaderboard Removed -->
+        {% endif %}
+
+        <section class="chart-panel">
+            <div class="panel-header">
+                <h2>Score Trajectory</h2>
+                <span>{{ trend.equation }}</span>
+            </div>
+            <canvas id="scoreChart" height="120"></canvas>
+            <div class="timestamp">Last updated {{ timestamp or last_chunk.get('timestamp', 'recently') }}</div>
+        </section>
+
+        <section class="insights-grid">
+            <article class="insight-card">
+                <h3>Momentum</h3>
+                <div class="metric">{{ (trend.slope * 100) | round(2) }} pts</div>
+                <p>Slope per chunk • <span class="badge {{ trend.direction }}">{{ trend.direction|title }}</span></p>
+            </article>
+            <article class="insight-card">
+                <h3>Projected Accuracy</h3>
+                <div class="metric">{{ ((trend.latest_prediction or 0) * 100) | round(2) }}%</div>
+                <p>Based on current linear trend</p>
+            </article>
+            <article class="insight-card">
+                <h3>Last Chunk Yield</h3>
+                <div class="metric">{{ last_chunk.get('correct', 0) }}/{{ last_chunk.get('total', 0) }}</div>
+                <p>Correct answers at {{ ((last_chunk.get('correct', 0) / (last_chunk.get('total', 1) or 1)) * 100) | round(2) if last_chunk.get('total') else 0 }}% precision</p>
+            </article>
+        </section>
+
+        <section class="chart-panel" style="margin-bottom: 32px;">
+            <div class="panel-header">
+               <h2 style="font-size: 20px; display: flex; align-items: center; gap: 10px;">
+                   <i class="fas fa-server" style="color: var(--primary);"></i> 
+                   Active Models
+               </h2>
+               <span>Real-time Telemetry</span>
+            </div>
+
+            <div id="model-container" style="display: flex; flex-direction: column; gap: 24px;">
+                {% if results_by_model %}
+                    {% for model_name, model_data in results_by_model.items() %}
+                    <div class="model-group" id="group-{{ model_name|replace('/','-')|replace('.','-')|replace(' ','-') }}" style="border: 1px solid var(--grid-line); border-radius: 16px; background: rgba(255,255,255,0.02); overflow: hidden;">
+                        
+                        <!-- Model Header -->
+                        <div class="model-header" onclick="toggleModel('{{ model_name|replace('/','-')|replace('.','-')|replace(' ','-') }}')" style="padding: 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: rgba(5, 9, 24, 0.6); hover: background: rgba(255,255,255,0.05);">
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <div style="background: rgba(31, 224, 194, 0.1); width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                                    <i class="fas fa-robot fa-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 style="margin: 0; font-size: 16px; color: white;">{{ model_name or 'Unknown Model' }}</h3>
+                                    <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">running {{ model_data.variants|length }} variants</div>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; align-items: center; gap: 32px;">
+                                <div style="text-align: right;">
+                                    <div style="font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.1em;">Accuracy</div>
+                                    <div class="model-score-display" style="font-size: 24px; font-weight: 600; color: white; font-family: 'JetBrains Mono';">
+                                        {{ ((model_data.overall_score or 0) * 100) | round(2) }}%
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.1em;">Chunks</div>
+                                    <div class="model-chunks" style="font-size: 24px; font-weight: 600; color: white; font-family: 'JetBrains Mono';">
+                                        {{ model_data.total_chunks }}
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-down" style="color: var(--muted); transition: transform 0.3s;"></i>
+                            </div>
+                        </div>
+
+                        <!-- Variant List (Accordion Body) -->
+                        <div class="variant-list" id="body-{{ model_name|replace('/','-')|replace('.','-')|replace(' ','-') }}" style="background: rgba(0,0,0,0.2); border-top: 1px solid var(--grid-line);">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead style="background: rgba(255,255,255,0.02); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);">
+                                    <tr>
+                                        <th style="padding: 12px 24px; text-align: left;">Variant Protocol</th>
+                                        <th style="padding: 12px 24px; text-align: left;">Progress</th>
+                                        <th style="padding: 12px 24px; text-align: left;">Current Score</th>
+                                        <th style="padding: 12px 24px; text-align: left;">Last Result</th>
+                                        <th style="padding: 12px 24px; text-align: right;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for v_name, v_data in model_data.variants.items() %}
+                                    <tr id="row-{{ model_name|replace('/','-')|replace('.','-')|replace(' ','-') }}-{{ v_name|replace(' ','-') }}">
+                                        <td style="padding: 16px 24px;">
+                                            <span class="badge flat" style="font-size: 13px;">{{ v_name }}</span>
+                                        </td>
+                                        <td style="padding: 16px 24px;">
+                                            {% set latest = v_data.latest_chunk %}
+                                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                                <div style="font-family: 'JetBrains Mono'; font-size: 13px;">
+                                                    <span class="chunk-index">{{ latest.get('chunk_index', 0) }}</span> / <span class="chunk-total">{{ latest.get('total_chunks', 0) }}</span>
+                                                </div>
+                                                <div style="width: 100px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
+                                                    {% set pct = (latest.get('chunk_index', 0) / (latest.get('total_chunks', 1) or 1)) * 100 %}
+                                                    <div class="progress-bar" style="width: {{ pct }}%; height: 100%; background: var(--primary);"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td style="padding: 16px 24px;">
+                                            <span class="variant-score" style="font-family: 'JetBrains Mono'; font-size: 16px; color: {% if v_data.average > 0.9 %}var(--primary){% elif v_data.average > 0.8 %}var(--accent){% else %}#ff6347{% endif %};">
+                                                {{ ((v_data.average or 0) * 100) | round(2) }}%
+                                            </span>
+                                        </td>
+                                        <td style="padding: 16px 24px; color: var(--muted); font-size: 13px;">
+                                            <span class="last-correct">{{ latest.get('correct_count') }}</span>/<span class="last-total">{{ latest.get('total_questions') }}</span> correct
+                                            <div style="font-size: 11px; opacity: 0.6; margin-top: 2px;" class="last-time">{{ latest.get('timestamp')|truncate(19, True, '') }}</div>
+                                        </td>
+                                        <td style="padding: 16px 24px; text-align: right;">
+                                             <span class="badge up pulse-dot"><i class="fas fa-circle" style="font-size: 8px;"></i> Active</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="padding: 40px; text-align: center; color: var(--muted); border: 1px dashed var(--grid-line); border-radius: 16px;">
+                        No model telemetry available yet. Start a benchmark run.
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Legacy table hidden but kept for raw log if needed (or we can remove it) 
+             User requested "INSTEAD SHOWING CHUCK 1, 2,3 BELOW" -> Implies replacement. 
+             I will remove the old list-based table. -->
+        
+        <!-- Styling for pulse dot -->
+        <style>
+            .pulse-dot i {
+                animation: pulse-animation 2s infinite;
+            }
+            @keyframes pulse-animation {
+                0% { opacity: 1; }
+                50% { opacity: 0.3; }
+                100% { opacity: 1; }
+            }
+        </style>
+
+        <script>
+            function toggleModel(id) {
+                const body = document.getElementById('body-' + id);
+                const icon = document.querySelector('#group-' + id + ' .fa-chevron-down');
+                
+                // Toggle logic assuming initial state might be based on CSS or previous JS
+                // We'll use a class toggle or direct style check
+                const isHidden = body.style.display === 'none';
+                
+                if (isHidden) {
+                    body.style.display = 'block';
+                    icon.style.transform = 'rotate(180deg)';
+                } else {
+                    body.style.display = 'none';
+                    icon.style.transform = 'rotate(0deg)';
+                }
+            }
+
+            function handleLiveUpdate(data) {
+                // sanitize IDs
+                const modelKey = (data.metadata?.model || 'Unknown Model').replace(/\//g,'-').replace(/\./g,'-').replace(/ /g,'-');
+                const variantKey = data.variant.replace(/ /g,'-');
+                
+                const groupID = 'group-' + modelKey;
+                const rowID = 'row-' + modelKey + '-' + variantKey;
+                
+                // Does model group exist?
+                let group = document.getElementById(groupID);
+                if (!group) {
+                    // If not, we should ideally reload page or create DOM dynamically. 
+                    // Creating complex DOM dynamically is error prone without a framework.
+                    // Simple fallback: Reload quietly to get new structure
+                    // window.location.reload(); 
+                    // BUT user asked for "update the single record", implying smoothness.
+                    // Let's assume the model group exists if the run started.
+                    // If not, we'll log it.
+                    console.log("New model detected, reloading for structure...");
+                    // Reload after short delay to let DB settle
+                    setTimeout(() => window.location.reload(), 1000);
+                    return;
+                }
+                
+                // Does variant row exist?
+                const row = document.getElementById(rowID);
+                if (row) {
+                    // UPDATE EXISTING ROW
+                    row.querySelector('.chunk-index').innerText = data.chunk_index;
+                    row.querySelector('.chunk-total').innerText = data.total_chunks;
+                    
+                    const pct = (data.chunk_index / (data.total_chunks || 1)) * 100;
+                    row.querySelector('.progress-bar').style.width = pct + '%';
+                    
+                    row.querySelector('.variant-score').innerText = (data.score * 100).toFixed(2) + '%';
+                    
+                    // Update avg color based on score
+                    const score = data.score;
+                    const scoreEl = row.querySelector('.variant-score');
+                    if(score > 0.9) scoreEl.style.color = 'var(--primary)';
+                    else if(score > 0.8) scoreEl.style.color = 'var(--accent)';
+                    else scoreEl.style.color = '#ff6347';
+
+                    row.querySelector('.last-correct').innerText = data.correct_count;
+                    row.querySelector('.last-total').innerText = data.total_questions;
+                    row.querySelector('.last-time').innerText = new Date().toISOString().substring(0, 19).replace('T',' ');
+                    
+                    // Also update Top Level Model Stats?
+                    // We'd need to track accumulated state. Harder without reloading.
+                    // For now, updating the row is the critical part "INSTEAD SHOWING CHUCK 1, 2,3 BELOW".
+                } else {
+                    // New variant for existing model -> reload
+                     setTimeout(() => window.location.reload(), 1000);
+                }
+            }
+
+            // Init: Open first model by default?
+            document.addEventListener('DOMContentLoaded', () => {
+                const firstBody = document.querySelector('.variant-list');
+                const firstIcon = document.querySelector('.model-header .fa-chevron-down');
+                if (firstBody) firstBody.style.display = 'block';
+                if (firstIcon) firstIcon.style.transform = 'rotate(180deg)';
+                
+                // Hide others
+                const allBodies = document.querySelectorAll('.variant-list');
+                allBodies.forEach((b, i) => {
+                    if (i > 0) b.style.display = 'none';
+                });
+            });
+        </script>
+
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        // Supabase Client
+        // Note: Global 'supabase' object provided by CDN script
+        // We use a try-catch block because sometimes the CDN script might load slightly later depending on network conditions
+        let sbClient = null;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+             const SUPABASE_URL = "{{ supabase_url }}";
+             const SUPABASE_KEY = "{{ supabase_key }}";
+             
+             if (typeof supabase !== 'undefined' && SUPABASE_URL && SUPABASE_KEY && SUPABASE_URL !== "None") {
+                const { createClient } = supabase;
+                sbClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+                document.getElementById('connection-status').innerText = 'Connected';
+                document.getElementById('connection-status').classList.remove('flat');
+                document.getElementById('connection-status').classList.add('up');
+                
+                // Subscribe to live benchmark updates
+                const channel = sbClient
+                    .channel('benchmark_updates')
+                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'benchmark_results' }, payload => {
+                        handleLiveUpdate(payload.new);
+                    })
+                    .subscribe();
+                
+                // Fetch initial status via REST to ensure we check running processes
+                fetch('/api/benchmarks/status')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === "running") {
+                            document.querySelector('button[onclick="startRun()"]').disabled = true;
+                            document.getElementById('live-log').innerHTML = "<div style='color: var(--primary)'>⚡ Benchmark running in background...</div>" + document.getElementById('live-log').innerHTML;
+                        }
+                    });
+             } else {
+                 if (SUPABASE_URL && SUPABASE_KEY && SUPABASE_URL !== "None") {
+                      // CDN failed to load
+                      console.error("Supabase CDN not loaded");
+                      document.getElementById('live-log').innerHTML += '<div style="color: #ff6347">⚠️ Network Error: Supabase client unavailable.</div>';
+                 } else {
+                      document.getElementById('live-log').innerHTML += '<div style="color: #ff6347">⚠️ Supabase not configured. Live updates disabled.</div>';
+                 }
+             }
+        });
+
+        function handleLiveUpdate(data) {
+            const log = document.getElementById('live-log');
+            const entry = document.createElement('div');
+            const time = new Date().toLocaleTimeString();
+            entry.innerHTML = `<span style="color: var(--muted)">[${time}]</span> <strong>${data.variant}</strong>: Chunk ${data.chunk_index} completed. Score: ${(data.score * 100).toFixed(1)}%`;
+            log.prepend(entry);
+            
+            // UPDATE: Realtime refresh of charts/stats
+            // Since we can't easily recompute everything client-side without full history,
+            // we will push the new point to the chart and update basic stats.
+            // OR simply reload the page content via AJAX if we wanted perfect consistency.
+            // For now, let's push to chart if it matches current view.
+            
+            const currentVariant = "{{ variant }}";
+            if (currentVariant === 'all' || currentVariant === data.variant || currentVariant === 'Unknown Variant') {
+                // Update big numbers
+                // We'd need to select elements by ID, but they use template variables. 
+                // Let's reload via fetch to get updated HTML or JSON.
+                // Reloading page is disruptive. Let's do a quiet background fetch for JSON results.
+                // Assuming we implemented json response mode... which we haven't fully. 
+                // Let's implement client-side push for immediate feedback.
+                
+                // Add to chart
+                if (window.scoreChart) {
+                    const newLabel = `Chunk ${data.chunk_index}`;
+                    const newScore = (data.score * 100);
+                    
+                    window.scoreChart.data.labels.push(newLabel);
+                    window.scoreChart.data.datasets[0].data.push(newScore);
+                    
+                    // Update Trend (simple moving avg or just linear line extension)
+                    // Re-render
+                    window.scoreChart.update();
+                }
+                
+                // Add to Table
+                const tbody = document.querySelector('table tbody');
+                if (tbody) {
+                    const row = document.createElement('tr');
+                    // Extract model safely from metadata if available
+                    let modelName = 'Unknown';
+                    if (data.metadata && data.metadata.model) {
+                        modelName = data.metadata.model;
+                    }
+                    
+                    row.innerHTML = `
+                        <td>Chunk ${data.chunk_index} / ${data.total_chunks}</td>
+                        <td><span class="badge flat">${data.variant}</span></td>
+                        <td style="font-family: 'JetBrains Mono'; font-size: 12px; color: #a0aec0;">${modelName}</td>
+                        <td>${(data.score * 100).toFixed(2)}%</td>
+                        <td>${data.correct_count} / ${data.total_questions}</td>
+                        <td>${data.timestamp || new Date().toISOString()}</td>
+                    `;
+                    tbody.prepend(row);
+                }
+                
+                // Update "Last Chunk" card
+                const lastChunkVal = document.querySelector('.hero-card .value');
+                if (lastChunkVal) lastChunkVal.innerText = (data.score * 100).toFixed(2) + "%";
+            }
+        }
+
+        async function openAbortModal() {
+            const modal = document.getElementById('abortModal');
+            const list = document.getElementById('runningProcessList');
+            
+            modal.showModal();
+            list.innerHTML = "Fetching status...";
+            
+            try {
+                const res = await fetch('/api/benchmarks/status');
+                const data = await res.json();
+                
+                if (data.active_count === 0) {
+                    list.innerHTML = "<span style='color: var(--muted)'>No active processes found.</span>";
+                } else {
+                    let html = `<div style="margin-bottom: 8px;"><strong>${data.active_count} Active Process(es):</strong></div>`;
+                    html += `<ul style="margin: 0; padding-left: 20px;">`;
+                    data.details.forEach(run => {
+                        html += `<li>${run.run_id}</li>`;
+                    });
+                    html += `</ul>`;
+                    list.innerHTML = html;
+                }
+            } catch (e) {
+                list.innerHTML = "Error fetching status.";
+            }
+        }
+
+        async function confirmAbort(clearData) {
+             const dayId = document.getElementById('daySelect').value;
+             // Close modal
+             document.getElementById('abortModal').close();
+             
+             const btn = document.querySelector('button[onclick="openAbortModal()"]');
+             btn.disabled = true;
+             btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Processing...';
+             
+             try {
+                const response = await fetch('/api/benchmarks/stop', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        day_id: dayId,
+                        clear_data: clearData
+                    })
+                });
+                const res = await response.json();
+                let msg = `<div style="color: #ff6347">🛑 Aborted ${res.stopped_runs.length} processes.</div>`;
+                if (res.data_cleared) {
+                    msg += `<div style="color: #ff6347">🗑️ Data deleted for ${dayId}. Reloading...</div>`;
+                    setTimeout(() => window.location.reload(), 1500);
+                }
+                document.getElementById('live-log').innerHTML = msg + document.getElementById('live-log').innerHTML;
+             } catch (e) {
+                 console.error(e);
+                 alert("Error aborting/clearing: " + e);
+             } finally {
+                 btn.disabled = false;
+                 btn.innerHTML = '<i class="fas fa-stop"></i> Abort / Manage';
+             }
+        }
+        
+        async function clearData() {
+            const dayId = document.getElementById('daySelect').value;
+            if (!confirm(`Are you sure you want to DELETE ALL RESULTS for ${dayId}? This cannot be undone.`)) return;
+            
+            try {
+                const response = await fetch('/api/benchmarks/clear', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ day_id: dayId })
+                });
+                const res = await response.json();
+                if (res.status === 'cleared') {
+                     alert("Data cleared.");
+                     window.location.reload();
+                } else {
+                    alert("Error: " + (res.error || "Unknown"));
+                }
+            } catch(e) {
+                alert("Error: " + e);
+            }
+        }
+
+        async function startRun() {
+            const dayId = document.getElementById('daySelect').value;
+            const variant = document.getElementById('variantSelect').value;
+            const model = document.getElementById('modelSelect').value;
+            const btn = document.querySelector('button[onclick="startRun()"]');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Initializing...';
+            
+            try {
+                // Call local API to spawn processes
+                const response = await fetch('/api/benchmarks/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Aether-Key': localStorage.getItem('aethermind_api_key')
+                    },
+                    body: JSON.stringify({
+                        day_id: dayId,
+                        family: 'gsm', 
+                        variants: [variant], // Or multiple if needed
+                        model: model
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'started') {
+                     document.getElementById('live-log').innerHTML = `<div style="color: var(--primary)">🚀 Started ${result.processes.length} process(es) for ${dayId}...</div>` + document.getElementById('live-log').innerHTML;
+                } else {
+                    alert('Failed to start: ' + JSON.stringify(result));
+                }
+            } catch (e) {
+                alert('Error starting benchmark: ' + e);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-play"></i> Initialize';
+            }
+        }
+
+        // stopRun removed in favor of openAbortModal/confirmAbort
+
+        const chunkLabels = {{ chunk_labels | tojson }};
+        const chunkScores = {{ chunk_scores | tojson }};
+        const trendLine = {{ trend_line | tojson }};
+        const movingAverage = {{ moving_average | tojson }};
+
+        const ctx = document.getElementById('scoreChart').getContext('2d');
+        const scoreChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chunkLabels,
+                datasets: [
+                    {
+                        label: 'Score',
+                        data: chunkScores.map(val => (val || 0) * 100),
+                        borderColor: 'rgba(31, 224, 194, 0.6)',
+                        backgroundColor: 'rgba(31, 224, 194, 0.1)',
+                        tension: 0.4,
+                        borderWidth: 2,
+                        fill: true,
+                        pointRadius: 0,
+                        pointHoverRadius: 5,
+                    },
+                    {
+                        label: 'Trend',
+                        data: trendLine.map(val => (val || 0) * 100),
+                        borderColor: '#ff9a3c',
+                        borderWidth: 2,
+                        borderDash: [8, 8],
+                        tension: 0,
+                        fill: false,
+                        pointRadius: 0,
+                    },
+                    {
+                        label: 'Moving Avg (10 chunks)',
+                        data: movingAverage.map(val => (val || 0) * 100),
+                        borderColor: '#a855f7',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: false,
+                        pointRadius: 0,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        suggestedMin: Math.min(...chunkScores.map(s => s*100)) - 5,
+                        suggestedMax: 105,
+                        ticks: {
+                            callback: value => value.toFixed(0) + '%'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.05)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxTicksLimit: 15
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#f4f6fb',
+                            font: { family: 'Space Grotesk' },
+                            usePointStyle: true,
+                            boxWidth: 8
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y.toFixed(2) + '%';
+                                }
+                                // Add variant info from raw data if available
+                                const raw = chunkResults[context.dataIndex];
+                                if (raw && raw.variant) {
+                                    label += ` (${raw.variant})`;
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest', // Changed from index to handle interleaved points better
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+        });
+        
+        // Expose raw results for tooltip
+        const chunkResults = {{ chunk_results | tojson }};
+    </script>
+</body>
+</html>

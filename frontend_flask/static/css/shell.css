@@ -221,6 +221,148 @@ body {
     padding: 0;
 }
 
+/* Activity timeline inside assistant messages */
+.activity-timeline {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.timeline-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.timeline-header i {
+    color: var(--accent-purple);
+}
+
+.activity-event {
+    position: relative;
+    padding: 12px 16px 12px 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    background: rgba(22, 27, 34, 0.75);
+    box-shadow: var(--shadow-sm);
+}
+
+.activity-event::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    position: absolute;
+    left: -4px;
+    top: 20px;
+    background: var(--accent-blue);
+}
+
+.activity-event.completed::before { background: var(--accent-green); }
+.activity-event.error::before { background: var(--accent-red); }
+.activity-event.in_progress::before { background: var(--accent-amber); }
+.activity-event.pending::before { background: var(--text-muted); }
+
+.event-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.event-status .fa-spinner {
+    animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.event-status .event-timestamp {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.event-title {
+    margin-top: 6px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.event-details {
+    margin-top: 4px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.event-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.event-chips span {
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.event-actions {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.event-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--accent-blue);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.event-link:hover {
+    color: var(--accent-green);
+}
+
+.event-files code {
+    display: inline-block;
+    margin-right: 6px;
+    margin-bottom: 4px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 2px 6px;
+    font-size: 0.8rem;
+    font-family: 'Fira Code', monospace;
+}
+
+.event-output {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    max-height: 200px;
+    overflow: auto;
+}
+
 /* Typing Indicator */
 .typing-indicator {
     display: flex;
@@ -859,4 +1001,42 @@ body {
 
 .skip-link:hover {
     color: var(--text-secondary);
+}
+
+/* Typing cursor animation */
+.typing-cursor {
+    display: inline-block;
+    color: var(--accent-blue);
+    animation: blink 1s infinite;
+    margin-left: 2px;
+    font-weight: bold;
+}
+
+@keyframes blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+}
+
+/* Thinking section styling */
+.thinking-section {
+    background: var(--bg-tertiary);
+    border-left: 3px solid var(--accent-purple);
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 4px;
+    font-style: italic;
+    color: var(--text-muted);
+    font-size: 0.9em;
+}
+
+.thinking-section::before {
+    content: "💭 Thinking: ";
+    font-weight: bold;
+    color: var(--accent-purple);
+    font-style: normal;
+}
+
+/* Response section (final answer) */
+.response-section {
+    margin-top: 12px;
 }

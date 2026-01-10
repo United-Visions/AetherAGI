@@ -8,6 +8,9 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - KILL_SECRET=${KILL_SECRET}
+      - PLAYCANVAS_HEADLESS=true
+      - PLAYCANVAS_USERNAME=${PLAYCANVAS_USERNAME}
+      - PLAYCANVAS_PASSWORD=${PLAYCANVAS_PASSWORD}
     depends_on:
       - redis
     volumes:

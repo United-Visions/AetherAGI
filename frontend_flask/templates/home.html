@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AetherMind</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        :root {
+            --bg: #020512;
+            --panel: rgba(9, 13, 32, 0.9);
+            --primary: #1fe0c2;
+            --accent: #ff9a3c;
+            --muted: #7c8aa6;
+            --grid-line: rgba(255, 255, 255, 0.08);
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Space Grotesk', sans-serif;
+            background: radial-gradient(circle at top, #091132 0%, #030615 55%, #01030b 100%);
+            color: #f4f6fb;
+            min-height: 100vh;
+        }
+        .nebula {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px 64px;
+        }
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--grid-line);
+            border-radius: 16px;
+            padding: 14px 20px;
+            margin-bottom: 32px;
+            background: rgba(4, 8, 22, 0.8);
+            backdrop-filter: blur(18px);
+        }
+        .brand {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.1;
+        }
+        .brand span:first-child {
+            font-weight: 600;
+            letter-spacing: 0.08em;
+        }
+        .brand span:last-child {
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .nav-links {
+            display: flex;
+            gap: 16px;
+        }
+        .nav-links a {
+            color: #cfd5ed;
+            text-decoration: none;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .nav-links a.active {
+            color: var(--primary);
+        }
+        .hero {
+            padding: 64px 32px;
+            text-align: center;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(31, 224, 194, 0.12), rgba(4, 8, 22, 0.9));
+            border: 1px solid var(--grid-line);
+            margin-bottom: 48px;
+        }
+        .hero h1 {
+            margin: 0 0 16px;
+            font-size: 52px;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+        .hero p {
+            color: #d6d9ee;
+            max-width: 640px;
+            margin: 0 auto 24px;
+            font-size: 18px;
+        }
+        .hero .cta-button {
+            display: inline-block;
+            padding: 14px 32px;
+            background: var(--primary);
+            color: var(--bg);
+            text-decoration: none;
+            border-radius: 999px;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+        .hero .cta-button:hover {
+            transform: scale(1.05);
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        .feature-card {
+            border: 1px solid var(--grid-line);
+            border-radius: 18px;
+            padding: 28px;
+            background: var(--panel);
+            text-decoration: none;
+            color: #f4f6fb;
+            transition: all 0.2s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+        }
+        .feature-card .icon {
+            font-size: 24px;
+            color: var(--primary);
+            margin-bottom: 16px;
+        }
+        .feature-card h3 {
+            margin: 0 0 8px;
+            font-size: 20px;
+        }
+        .feature-card p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="nebula">
+        <nav class="top-nav">
+            <div class="brand">
+                <span>AETHERMIND</span>
+                <span>Cognitive Architecture</span>
+            </div>
+            <div class="nav-links">
+                <a href="{{ url_for('home') }}" class="active">Home</a>
+                <a href="{{ url_for('pricing') }}">Pricing</a>
+                <a href="{{ url_for('documentation') }}">Docs</a>
+                <a href="{{ url_for('whitepaper') }}">Whitepaper</a>
+                <a href="{{ url_for('benchmarks') }}">Benchmarks</a>
+                <a href="{{ url_for('index') }}">Chat</a>
+            </div>
+        </nav>
+
+        <header class="hero">
+            <h1>The Cognitive OS for All AI Agents</h1>
+            <p>AetherMind is a unified cognitive architecture that transforms any LLM into an autonomous, continuously learning, self-improving system.</p>
+            <a href="{{ url_for('index') }}" class="cta-button">Enter the Shell</a>
+        </header>
+
+        <main class="features-grid">
+            <a href="{{ url_for('benchmarks') }}" class="feature-card">
+                <div class="icon"><i class="fas fa-chart-line"></i></div>
+                <h3>Live Benchmarks</h3>
+                <p>Track our real-time performance on industry-standard tests like GSM-8K.</p>
+            </a>
+            <a href="{{ url_for('documentation') }}" class="feature-card">
+                <div class="icon"><i class="fas fa-book-open"></i></div>
+                <h3>Documentation</h3>
+                <p>Explore the architecture, API, and SDKs to build on AetherMind.</p>
+            </a>
+            <a href="{{ url_for('pricing') }}" class="feature-card">
+                <div class="icon"><i class="fas fa-credit-card"></i></div>
+                <h3>Pricing & Tiers</h3>
+                <p>Find the right plan for your needs, from hobbyist to enterprise.</p>
+            </a>
+             <a href="{{ url_for('whitepaper') }}" class="feature-card">
+                <div class="icon"><i class="fas fa-file-alt"></i></div>
+                <h3>Whitepaper</h3>
+                <p>Read the full whitepaper on our cognitive architecture and Reverse Training.</p>
+            </a>
+            <a href="{{ url_for('domain_legal') }}" class="feature-card">
+                <div class="icon"><i class="fas fa-gavel"></i></div>
+                <h3>Legal Domain</h3>
+                <p>Explore the specialized interface for legal research and analysis.</p>
+            </a>
+             <a href="{{ url_for('onboarding') }}" class="feature-card">
+                <div class="icon"><i class="fas fa-rocket"></i></div>
+                <h3>Onboarding</h3>
+                <p>Get started with AetherMind and create your API key.</p>
+            </a>
+        </main>
+    </div>
+</body>
+</html>

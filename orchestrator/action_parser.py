@@ -206,6 +206,64 @@ class ActionTag:
                 "message": self.content
             }
         
+        # NEW: PlayCanvas game editor control
+        elif self.tag_type == "aether-playcanvas":
+            try:
+                content_json = json.loads(self.content)
+            except:
+                content_json = {}
+            
+            project_id = self.attributes.get("project_id", "")
+            data = {
+                "action": self.attributes.get("action", "create_entity"),
+                "project_id": project_id,
+                "data": content_json
+            }
+
+            if project_id:
+                data["project_url"] = f"https://playcanvas.com/project/{project_id}/overview"
+            
+            return data
+        
+        # NEW: Mixamo character/animation integration
+        elif self.tag_type == "aether-mixamo":
+            try:
+                content_json = json.loads(self.content)
+            except:
+                content_json = {}
+            
+            return {
+                "action": self.attributes.get("action", "download_character"),
+                "character": self.attributes.get("character", ""),
+                "data": content_json
+            }
+        
+        # NEW: Meshy.ai text-to-3D generation
+        elif self.tag_type == "aether-meshy":
+            try:
+                content_json = json.loads(self.content)
+            except:
+                content_json = {}
+            
+            return {
+                "action": self.attributes.get("action", "generate"),
+                "prompt": self.attributes.get("prompt", ""),
+                "data": content_json
+            }
+        
+        # NEW: SketchFab model library
+        elif self.tag_type == "aether-sketchfab":
+            try:
+                content_json = json.loads(self.content)
+            except:
+                content_json = {}
+            
+            return {
+                "action": self.attributes.get("action", "search"),
+                "query": self.attributes.get("query", ""),
+                "data": content_json
+            }
+        
         return {}
     
     def _generate_title(self) -> str:
@@ -294,6 +352,30 @@ class ActionTag:
             level = self.attributes.get("level", "info")
             return f"[{level.upper()}] Build log"
         
+        # NEW: PlayCanvas game editor control
+        elif self.tag_type == "aether-playcanvas":
+            action = self.attributes.get("action", "unknown")
+            project_id = self.attributes.get("project_id", "?")
+            return f"PlayCanvas: {action} (project {project_id})"
+        
+        # NEW: Mixamo character/animation integration
+        elif self.tag_type == "aether-mixamo":
+            action = self.attributes.get("action", "unknown")
+            character = self.attributes.get("character", "character")
+            return f"Mixamo: {action} ({character})"
+        
+        # NEW: Meshy.ai text-to-3D generation
+        elif self.tag_type == "aether-meshy":
+            action = self.attributes.get("action", "unknown")
+            prompt = self.attributes.get("prompt", "model")
+            return f"Meshy: Generating 3D model ({prompt[:30]}...)"
+        
+        # NEW: SketchFab model library
+        elif self.tag_type == "aether-sketchfab":
+            action = self.attributes.get("action", "unknown")
+            query = self.attributes.get("query", "models")
+            return f"SketchFab: {action} ({query})"
+        
         return "Processing action"
 
 
@@ -323,6 +405,14 @@ class ActionParser:
         "aether-app-mode": r'<aether-app-mode\s*(.*?)>(.*?)</aether-app-mode>',
         "aether-app-preview": r'<aether-app-preview\s*(.*?)>(.*?)</aether-app-preview>',
         "aether-app-log": r'<aether-app-log\s*(.*?)>(.*?)</aether-app-log>',
+        # NEW: PlayCanvas game editor control
+        "aether-playcanvas": r'<aether-playcanvas\s+(.*?)>(.*?)</aether-playcanvas>',
+        # NEW: Mixamo character/animation integration
+        "aether-mixamo": r'<aether-mixamo\s+(.*?)>(.*?)</aether-mixamo>',
+        # NEW: Meshy.ai text-to-3D generation
+        "aether-meshy": r'<aether-meshy\s+(.*?)>(.*?)</aether-meshy>',
+        # NEW: SketchFab model library
+        "aether-sketchfab": r'<aether-sketchfab\s+(.*?)>(.*?)</aether-sketchfab>',
         "think": r'<think>(.*?)</think>',  # Thinking process visualization
         "aether-chat-summary": r'<aether-chat-summary>(.*?)</aether-chat-summary>',
     }
@@ -507,6 +597,18 @@ class ActionExecutor:
             elif action_tag.tag_type == "aether-command":
                 result = await self._execute_command(action_tag)
             
+            elif action_tag.tag_type == "aether-playcanvas":
+                result = await self._execute_playcanvas(action_tag)
+            
+            elif action_tag.tag_type == "aether-mixamo":
+                result = await self._execute_mixamo(action_tag)
+            
+            elif action_tag.tag_type == "aether-meshy":
+                result = await self._execute_meshy(action_tag)
+            
+            elif action_tag.tag_type == "aether-sketchfab":
+                result = await self._execute_sketchfab(action_tag)
+            
             else:
                 result = {
                     "success": False,
@@ -682,3 +784,178 @@ class ActionExecutor:
             "result": f"User should execute: {cmd_type}",
             "error": None
         }
+    
+    async def _execute_playcanvas(self, tag: ActionTag) -> Dict:
+        """Execute PlayCanvas editor automation via browser control."""
+        action = tag.attributes.get("action", "")
+        project_id = tag.attributes.get("project_id", "")
+        data = tag.data
+        
+        # Build intent JSON for PlayCanvasEditorAdapter
+        intent = json.dumps({
+            "action": action,
+            "project_id": project_id,
+            **data  # Merge additional data fields
+        })
+        
+        try:
+            # Forward to PlayCanvas adapter via router
+            if "playcanvas_editor" in self.router.adapters:
+                result = await self.router.adapters["playcanvas_editor"].execute(intent)
+                result_json = json.loads(result)
+                if project_id:
+                    result_json.setdefault("project_id", project_id)
+                    result_json.setdefault(
+                        "project_url",
+                        f"https://playcanvas.com/project/{project_id}/overview"
+                    )
+                
+                return {
+                    "success": result_json.get("status") == "success",
+                    "result": result_json.get("message", ""),
+                    "error": result_json.get("message") if result_json.get("status") == "error" else None,
+                    "metadata": result_json
+                }
+            else:
+                return {
+                    "success": False,
+                    "result": "",
+                    "error": "PlayCanvas adapter not enabled. Set ENABLE_PLAYCANVAS_EDITOR=true in config/settings.yaml"
+                }
+        except Exception as e:
+            logger.error(f"PlayCanvas execution failed: {e}", exc_info=True)
+            return {
+                "success": False,
+                "result": "",
+                "error": str(e)
+            }    
+    async def _execute_meshy(self, tag: ActionTag) -> Dict:
+        """Execute Meshy.ai text-to-3D generation."""
+        action = tag.attributes.get("action", "generate")
+        prompt = tag.attributes.get("prompt", "")
+        data = tag.data
+        
+        # Build intent JSON for MeshyAdapter
+        intent = json.dumps({
+            "action": action,
+            "prompt": prompt,
+            **data  # Merge additional data fields
+        })
+        
+        try:
+            # Forward to Meshy adapter via router
+            if "meshy" in self.router.adapters:
+                result = await self.router.adapters["meshy"].execute(intent)
+                result_json = json.loads(result)
+                
+                return {
+                    "success": result_json.get("status") == "success",
+                    "result": result_json.get("message", ""),
+                    "error": result_json.get("message") if result_json.get("status") == "error" else None,
+                    "files": [result_json.get("file")] if result_json.get("file") else [],
+                    "metadata": {
+                        "prompt": prompt,
+                        "format": result_json.get("format", ""),
+                        "task_id": result_json.get("task_id", "")
+                    }
+                }
+            else:
+                return {
+                    "success": False,
+                    "result": "",
+                    "error": "Meshy adapter not enabled"
+                }
+        except Exception as e:
+            logger.error(f"Meshy execution failed: {e}", exc_info=True)
+            return {
+                "success": False,
+                "result": "",
+                "error": str(e)
+            }
+    
+    async def _execute_sketchfab(self, tag: ActionTag) -> Dict:
+        """Execute SketchFab model search/download."""
+        action = tag.attributes.get("action", "search")
+        query = tag.attributes.get("query", "")
+        data = tag.data
+        
+        # Build intent JSON for SketchfabAdapter
+        intent = json.dumps({
+            "action": action,
+            "query": query,
+            **data  # Merge additional data fields
+        })
+        
+        try:
+            # Forward to SketchFab adapter via router
+            if "sketchfab" in self.router.adapters:
+                result = await self.router.adapters["sketchfab"].execute(intent)
+                result_json = json.loads(result)
+                
+                return {
+                    "success": result_json.get("status") == "success",
+                    "result": result_json.get("message", "") or json.dumps(result_json.get("models", []), indent=2),
+                    "error": result_json.get("message") if result_json.get("status") == "error" else None,
+                    "files": [result_json.get("file")] if result_json.get("file") else [],
+                    "metadata": {
+                        "query": query,
+                        "count": result_json.get("count", 0),
+                        "models": result_json.get("models", [])
+                    }
+                }
+            else:
+                return {
+                    "success": False,
+                    "result": "",
+                    "error": "SketchFab adapter not enabled"
+                }
+        except Exception as e:
+            logger.error(f"SketchFab execution failed: {e}", exc_info=True)
+            return {
+                "success": False,
+                "result": "",
+                "error": str(e)
+            }
+    
+    async def _execute_mixamo(self, tag: ActionTag) -> Dict:
+        """Execute Mixamo character/animation download."""
+        action = tag.attributes.get("action", "download_character")
+        character = tag.attributes.get("character", "")
+        data = tag.data
+        
+        # Build intent JSON for MixamoAdapter
+        intent = json.dumps({
+            "action": action,
+            "character": character,
+            **data  # Merge additional data fields
+        })
+        
+        try:
+            # Forward to Mixamo adapter via router
+            if "mixamo" in self.router.adapters:
+                result = await self.router.adapters["mixamo"].execute(intent)
+                result_json = json.loads(result)
+                
+                return {
+                    "success": result_json.get("status") == "success",
+                    "result": result_json.get("message", ""),
+                    "error": result_json.get("message") if result_json.get("status") == "error" else None,
+                    "files": result_json.get("files", []),
+                    "metadata": {
+                        "character": character,
+                        "animations": result_json.get("animations", []),
+                        "download_dir": result_json.get("download_dir", "")
+                    }
+                }
+            else:
+                return {
+                    "success": False,
+                    "result": "",
+                    "error": "Mixamo adapter not enabled"
+                }
+        except Exception as e:
+            return {
+                "success": False,
+                "result": "",
+                "error": f"PlayCanvas execution failed: {str(e)}"
+            }

@@ -34,7 +34,7 @@ class ActiveInferenceLoop:
         self.action_parser = ActionParser()  # Parse action tags from Brain
         self.action_executor = ActionExecutor(router, store, memory)  # Execute actions
 
-    async def run_cycle(self, user_id: str, user_input: str, namespace: str = "universal", override_prompt: str = None):
+    async def run_cycle(self, user_id: str, user_input: str, namespace: str = "universal", override_prompt: str = None, model: str = None, is_benchmark: bool = False):
         """
         Production Loop with Full Heart Integration + Domain-Aware Reasoning:
         Sense -> Reason (Domain-Focused) -> Embellish -> Act -> Learn
@@ -44,7 +44,10 @@ class ActiveInferenceLoop:
         domain_profile = user_profile["domain_profile"]
         domain = user_profile["domain"]
         
-        logger.info(f"User {user_id} active inference started ({domain_profile.display_name})")
+        logger.info(f"User {user_id} active inference started ({domain_profile.display_name}) [Benchmark Mode: {is_benchmark}]")
+
+        # Reset activity timeline for the new reasoning cycle
+        self.activity_events = []
 
         # Get session data to retrieve previous execution results (feedback loop)
         session_data = self.session_manager.get_session(user_id)
@@ -109,13 +112,22 @@ class ActiveInferenceLoop:
             domain_mega_prompt = self.session_manager.get_mega_prompt_prefix(user_id)
         
         # 4. REASON: Brain processes input with domain-aware context and personality
+        # Determine Robustness (System 1 vs System 2)
+        # If surprise is high or domain is strict logic, engage voting
+        robustness_level = 1
+        if agent_state["is_researching"] or domain in ["code", "legal", "finance"] or is_benchmark:
+            robustness_level = 3  # Triple-check critical domains/surprises
+            logger.info(f"Engaging robustness level {robustness_level} due to domain/surprise/benchmark")
+
         brain_response = await self.brain.generate_thought(
             user_input, 
             combined_context, 
             state_vec, 
             emotion_vector, # Pass the full vector
             predicted_flourishing,
-            domain_prompt=domain_mega_prompt  # NEW: Domain-specific instruction
+            domain_prompt=domain_mega_prompt,  # NEW: Domain-specific instruction
+            model_override=model,
+            robustness=robustness_level
         )
 
         # Check for actual error responses (not just the text "500" anywhere)
@@ -267,11 +279,14 @@ class ActiveInferenceLoop:
                     actual_namespace = namespace
                 
                 # Query this namespace
+                logger.debug(f"🔍 Querying namespace '{actual_namespace}' (weight={weight:.2f}, top_k={max(1, int(5 * weight))})")
                 contexts, state_vec = self.store.query_context(
                     user_input, 
                     namespace=actual_namespace,
                     top_k=max(1, int(5 * weight))  # More results for higher-weighted namespaces
                 )
+                
+                logger.debug(f"📊 Retrieved {len(contexts)} contexts from '{actual_namespace}', vector dim: {len(state_vec) if state_vec else 0}")
                 
                 # Weight the contexts
                 all_contexts.extend([f"[{namespace}] {ctx}" for ctx in contexts])
@@ -279,20 +294,26 @@ class ActiveInferenceLoop:
                 # Weight the state vector
                 if state_vec and len(state_vec) > 0:
                     weighted_vectors.append((np.array(state_vec), weight))
+                    logger.debug(f"✅ Added weighted vector from '{namespace}' (weight={weight:.2f})")
+                else:
+                    logger.warning(f"⚠️ Empty or invalid state vector from '{namespace}'")
                     
             except Exception as e:
-                logger.warning(f"Failed to retrieve from namespace {namespace}: {e}")
+                logger.error(f"❌ Failed to retrieve from namespace '{namespace}' (mapped to '{actual_namespace}'): {e}")
         
         # Combine weighted vectors
         if weighted_vectors:
+            logger.debug(f"🔢 Combining {len(weighted_vectors)} weighted vectors...")
             final_vec = sum(vec * w for vec, w in weighted_vectors) / sum(w for _, w in weighted_vectors)
             final_vec = final_vec.tolist()
+            logger.info(f"✅ Combined state vector: {len(final_vec)} dimensions from {len(weighted_vectors)} sources")
         else:
             # Fallback to core_universal if all else fails
-            logger.warning("No weighted vectors found, falling back to core_universal")
+            logger.warning(f"⚠️ No weighted vectors found, falling back to core_universal namespace")
             all_contexts, final_vec = self.store.query_context(user_input, namespace="core_universal")
+            logger.debug(f"📊 Fallback retrieved {len(all_contexts)} contexts, vector dim: {len(final_vec)}")
         
-        logger.debug(f"Retrieved {len(all_contexts)} contexts from {len(namespace_weights)} namespaces")
+        logger.info(f"📦 Domain-aware retrieval complete: {len(all_contexts)} contexts from {len(namespace_weights)} namespaces")
         return all_contexts, final_vec
 
     def close_feedback_loop(self, message_id: str, user_reaction_score: float):
@@ -325,8 +346,10 @@ class ActiveInferenceLoop:
         import datetime
         timestamp = datetime.datetime.now().isoformat()
         
-        # Clear previous activities
-        self.activity_events = []
+        # If we already captured explicit tool actions this cycle, skip fallback inference
+        if self.activity_events:
+            logger.debug("Activity events already recorded for this cycle; skipping fallback detection")
+            return
         
         # Detect tool creation patterns
         if "create tool" in brain_response.lower() or "forge" in brain_response.lower():

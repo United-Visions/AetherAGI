@@ -8,7 +8,14 @@ from body.adapters.chat_ui import ChatAdapter
 from body.adapters.practice_adapter import PracticeAdapter
 from body.adapters.smart_home import SmartHomeAdapter
 from body.adapters.automotive import AutomotiveAdapter
+from body.adapters.unity_adapter import UnityAdapter
+from body.adapters.playcanvas_adapter import PlayCanvasAdapter
+from body.adapters.playcanvas_editor_adapter import PlayCanvasEditorAdapter
+from body.adapters.mixamo_adapter import MixamoAdapter
+from body.adapters.meshy_adapter import MeshyAdapter
+from body.adapters.sketchfab_adapter import SketchfabAdapter
 import os, json, subprocess
+
 from body.adapters.toolforge_adapter import ToolForgeAdapter
 from config.settings import settings
 from loguru import logger
@@ -22,7 +29,13 @@ class Router:
         self.adapters = {
             "chat": ChatAdapter(),
             "smart_home": SmartHomeAdapter(),
-            "automotive": AutomotiveAdapter()
+            "automotive": AutomotiveAdapter(),
+            "unity": UnityAdapter(),
+            "playcanvas": PlayCanvasAdapter(),
+            "playcanvas_editor": PlayCanvasEditorAdapter(),
+            "mixamo": MixamoAdapter(),
+            "meshy": MeshyAdapter(),
+            "sketchfab": SketchfabAdapter()
         }
         if settings.practice_adapter:
             self.adapters["practice"] = PracticeAdapter()

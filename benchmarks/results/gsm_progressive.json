@@ -1,0 +1,225 @@
+{
+  "family": "gsm",
+  "completed_variants": [],
+  "scores_by_variant": {
+    "GSM-8K": {
+      "chunks_completed": 20,
+      "scores": [
+        0.96,
+        1.0,
+        1.0,
+        0.96,
+        0.96,
+        1.0,
+        0.92,
+        0.92,
+        1.0,
+        0.88,
+        0.96,
+        1.0,
+        0.96,
+        1.0,
+        1.0,
+        0.96,
+        0.92,
+        1.0,
+        0.76,
+        0.0
+      ],
+      "average": 0.908
+    }
+  },
+  "overall_average": 0.908,
+  "last_chunk": {
+    "variant": "GSM-8K",
+    "chunk": 20,
+    "total_chunks": 53,
+    "score": 0.0,
+    "correct": 0,
+    "total": 25,
+    "timestamp": "2026-01-09T23:26:45.490111+00:00"
+  },
+  "all_chunk_results": [
+    {
+      "variant": "GSM-8K",
+      "chunk": 1,
+      "total_chunks": 53,
+      "score": 0.96,
+      "correct": 24,
+      "total": 25,
+      "timestamp": "2026-01-09T13:28:13.711758+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 2,
+      "total_chunks": 53,
+      "score": 1.0,
+      "correct": 25,
+      "total": 25,
+      "timestamp": "2026-01-09T13:59:32.715775+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 3,
+      "total_chunks": 53,
+      "score": 1.0,
+      "correct": 25,
+      "total": 25,
+      "timestamp": "2026-01-09T14:28:20.998189+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 4,
+      "total_chunks": 53,
+      "score": 0.96,
+      "correct": 24,
+      "total": 25,
+      "timestamp": "2026-01-09T15:02:47.384038+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 5,
+      "total_chunks": 53,
+      "score": 0.96,
+      "correct": 24,
+      "total": 25,
+      "timestamp": "2026-01-09T15:38:02.351860+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 6,
+      "total_chunks": 53,
+      "score": 1.0,
+      "correct": 25,
+      "total": 25,
+      "timestamp": "2026-01-09T16:08:12.534288+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 7,
+      "total_chunks": 53,
+      "score": 0.92,
+      "correct": 23,
+      "total": 25,
+      "timestamp": "2026-01-09T16:40:53.162484+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 8,
+      "total_chunks": 53,
+      "score": 0.92,
+      "correct": 23,
+      "total": 25,
+      "timestamp": "2026-01-09T17:13:43.396430+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 9,
+      "total_chunks": 53,
+      "score": 1.0,
+      "correct": 25,
+      "total": 25,
+      "timestamp": "2026-01-09T17:42:09.207437+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 10,
+      "total_chunks": 53,
+      "score": 0.88,
+      "correct": 22,
+      "total": 25,
+      "timestamp": "2026-01-09T18:12:01.044864+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 11,
+      "total_chunks": 53,
+      "score": 0.96,
+      "correct": 24,
+      "total": 25,
+      "timestamp": "2026-01-09T18:45:03.900730+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 12,
+      "total_chunks": 53,
+      "score": 1.0,
+      "correct": 25,
+      "total": 25,
+      "timestamp": "2026-01-09T19:23:33.770194+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 13,
+      "total_chunks": 53,
+      "score": 0.96,
+      "correct": 24,
+      "total": 25,
+      "timestamp": "2026-01-09T19:55:07.730923+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 14,
+      "total_chunks": 53,
+      "score": 1.0,
+      "correct": 25,
+      "total": 25,
+      "timestamp": "2026-01-09T20:21:43.940247+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 15,
+      "total_chunks": 53,
+      "score": 1.0,
+      "correct": 25,
+      "total": 25,
+      "timestamp": "2026-01-09T20:46:39.357720+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 16,
+      "total_chunks": 53,
+      "score": 0.96,
+      "correct": 24,
+      "total": 25,
+      "timestamp": "2026-01-09T21:09:34.999809+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 17,
+      "total_chunks": 53,
+      "score": 0.92,
+      "correct": 23,
+      "total": 25,
+      "timestamp": "2026-01-09T21:39:02.192033+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 18,
+      "total_chunks": 53,
+      "score": 1.0,
+      "correct": 25,
+      "total": 25,
+      "timestamp": "2026-01-09T22:07:50.148568+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 19,
+      "total_chunks": 53,
+      "score": 0.76,
+      "correct": 19,
+      "total": 25,
+      "timestamp": "2026-01-09T22:35:01.879625+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 20,
+      "total_chunks": 53,
+      "score": 0.0,
+      "correct": 0,
+      "total": 25,
+      "timestamp": "2026-01-09T23:26:45.490111+00:00"
+    }
+  ],
+  "timestamp": "2026-01-09T23:26:47.003552+00:00"
+}

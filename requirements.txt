@@ -27,4 +27,4 @@ edge-tts
 supabase
 quart
 markdown
-
+playwright

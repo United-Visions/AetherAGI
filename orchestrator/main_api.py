@@ -139,6 +139,12 @@ set_background_worker(BACKGROUND_WORKER)
 # Also expose as AUTH_MANAGER for some endpoints that use that name
 AUTH_MANAGER = AUTH
 
+# Initialize BACKGROUND_TASKS tracking dictionary
+BACKGROUND_TASKS = {}
+
+# Connect BENCHMARK_SERVICE to BACKGROUND_TASKS for unified tracking
+BENCHMARK_SERVICE.background_tasks = BACKGROUND_TASKS
+
 logger.info("✅ All core services initialized")
 
 # Setup Security
@@ -210,6 +216,8 @@ class ChatCompletionRequest(BaseModel):
     reaction_score: Optional[float] = None
     # Context for special modes (onboarding, etc.)
     context: Optional[dict] = None
+    # Metadata for benchmark mode and other flags
+    metadata: Optional[dict] = None
 
 
 # --- Endpoints ---
@@ -317,9 +325,17 @@ async def chat_completions(
         override_system = persona_prompt
         logger.info(f"🎭 [PERSONA] Active: {active_persona}")
 
+    # Determine model to use (allow override for benchmarking)
+    target_model = request.model if request.model and request.model != "aethermind-v1" else None
+
+    # Check for benchmark mode in metadata
+    is_benchmark = False
+    if request.metadata and request.metadata.get("benchmark_mode"):
+        is_benchmark = True
+
     # Run the DCLA Logic Cycle
     response_text, message_id, emotion_vector, agent_state = await AETHER.run_cycle(
-        user_id, last_message, override_prompt=override_system
+        user_id, last_message, override_prompt=override_system, model=target_model, is_benchmark=is_benchmark
     )
     
     # Get activity events (tool creation, file changes, code execution)
@@ -976,9 +992,6 @@ async def delete_persona(
 class TaskStatusRequest(BaseModel):
     task_ids: list[str]
 
-# In-memory task storage
-BACKGROUND_TASKS = {}
-
 @app.post("/v1/tasks/status")
 async def get_tasks_status(
     request: TaskStatusRequest,
@@ -987,13 +1000,26 @@ async def get_tasks_status(
     """
     Get status of background tasks
     """
+    logger.debug(f"📋 Task status check for user '{user_id}': Requested {len(request.task_ids)} task IDs")
+    logger.debug(f"📦 Current BACKGROUND_TASKS keys: {list(BACKGROUND_TASKS.keys())}")
+    
     tasks = []
     for task_id in request.task_ids:
+        logger.debug(f"🔍 Checking task_id '{task_id}'...")
+        
         if task_id in BACKGROUND_TASKS:
             task = BACKGROUND_TASKS[task_id]
+            logger.debug(f"✅ Found task '{task_id}': status={task.get('status')}, user={task.get('user_id')}")
+            
             if task.get("user_id") == user_id:
                 tasks.append(task)
+                logger.debug(f"✅ Task '{task_id}' belongs to user, added to response")
+            else:
+                logger.warning(f"⚠️ Task '{task_id}' belongs to different user: {task.get('user_id')}")
+        else:
+            logger.warning(f"❌ Task '{task_id}' not found in BACKGROUND_TASKS")
     
+    logger.info(f"📤 Returning {len(tasks)} tasks for user '{user_id}'")
     return {"tasks": tasks}
 
 @app.post("/v1/tasks/create")
@@ -1494,6 +1520,21 @@ async def run_benchmark(
         mode="api",
         model=model
     )
+    
+    # Add to unified task tracking
+    BACKGROUND_TASKS[benchmark_id] = {
+        "id": benchmark_id,
+        "type": "benchmark",
+        "name": f"{family.upper()} Benchmark",
+        "status": "running",
+        "progress": 0,
+        "user_id": user_data["user_id"],
+        "family": family,
+        "model": model or "aethermind-v1",
+        "created_at": datetime.utcnow().isoformat()
+    }
+    logger.info(f"✅ Added benchmark {benchmark_id} to BACKGROUND_TASKS")
+    
     return {"benchmark_id": benchmark_id, "status": "started"}
 
 @app.get("/v1/benchmarks/{benchmark_id}/status")
@@ -2061,3 +2102,52 @@ async def list_voices(
     except Exception as e:
         logger.error(f"Error listing voices: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# UNITY GAME ENGINE INTEGRATION
+# ============================================================================
+from body.adapters.unity_adapter import UNITY_ADAPTER
+
+@app.post("/v1/game/unity/state")
+async def unity_sync_state(
+    state_data: dict,
+    x_api_key: str = Header(None)
+):
+    """
+    Unity --> AetherMind
+    Polled by Unity every frame (or every N seconds).
+    1. Receives current game state (Player pos, Camera, Events)
+    2. Returns any PENDING commands from Aether (Move, Hack, Speak)
+    """
+    # Verify Auth (Optional for local dev, but good practice)
+    # user_data = AUTH.verify_api_key(x_api_key)
+    
+    # Process incoming state (Observation)
+    # in a real loop, we would feed this to ActiveInferenceLoop.observe()
+    # For now, just log it or update a shared memory state
+    if "events" in state_data:
+        for event in state_data["events"]:
+            logger.info(f"🎮 Unity Event: {event}")
+
+    # Fetch pending commands for Unity to execute
+    commands = UNITY_ADAPTER.get_pending_commands()
+    
+    return {
+        "status": "synced",
+        "commands": commands,
+        "aether_status": "listening"
+    }
+
+@app.post("/v1/game/unity/command")
+async def unity_inject_command(
+    command_data: dict,
+    user_data: dict = Depends(verify_api_key)
+):
+    """
+    AetherMind (or Admin) --> Unity
+    Manually inject a command into the Unity queue.
+    Useful for testing or overriding AI behavior.
+    """
+    cmd = json.dumps(command_data)
+    result = UNITY_ADAPTER.execute(cmd)
+    return json.loads(result)

@@ -99,6 +99,25 @@ AETHER_AXIOMS = [
     {"subject": "AetherMind", "topic": "aether-body-switch",  "content": "Use <aether-body-switch adapter='chat|toolforge|practice|self_mod'>REASON</aether-body-switch> to explicitly switch Body adapter. Usually automatic via Router but can be manually controlled. Example: <aether-body-switch adapter='toolforge'>User needs new PDF parsing capability - switching to ToolForge adapter to generate, test, and hot-load PDFParserAdapter</aether-body-switch> Updates Router's active adapter. Creates activity event type='body_switch'."},
     
     # ==================================================
+    # IMMERSIVE CREATION TAGS (PlayCanvas + 3D pipeline)
+    # ==================================================
+    {"subject": "AetherMind", "topic": "aether-app-mode", "content": "Use <aether-app-mode action='open' app_name='my-app' template='react|nextjs|flask|blank'>DESCRIPTION</aether-app-mode> to launch the live App Creation workspace. Close it with action='close' once builds are done so resources are freed."},
+
+    {"subject": "AetherMind", "topic": "aether-app-preview", "content": "Use <aether-app-preview port='5000' auto_refresh='true'>NOTE</aether-app-preview> to stream the running dev server into the Live Preview pane while App Mode is active."},
+
+    {"subject": "AetherMind", "topic": "aether-app-log", "content": "Use <aether-app-log level='info|success|error'>MESSAGE</aether-app-log> to send build/test status lines to the App Mode terminal so users can follow progress."},
+
+    {"subject": "AetherMind", "topic": "aether-playcanvas", "content": "Use <aether-playcanvas action='create_entity|upload_script|attach_script|deploy_bridge' project_id='123456'>{...}</aether-playcanvas> to control the PlayCanvas editor end-to-end via Playwright. Provide precise JSON (entity names, transforms, components, script source, bridge api_url, etc). Credentials come from PLAYCANVAS_USERNAME/PASSWORD, runs headless remotely, and returns metadata including project_url for the Live Build Feed. Never push manual clicks back to the user – automation handles the entire scene."},
+
+    {"subject": "AetherMind", "topic": "PlaywrightAutomation", "content": "The PlayCanvas adapter launches an authenticated Playwright browser to build scenes. Always specify the desired camera/entity positions so automation can reproduce results deterministically. If an action fails, inspect the returned logs/screenshots and retry; no Unity-specific tooling is required anymore."},
+
+    {"subject": "AetherMind", "topic": "aether-mixamo", "content": "Use <aether-mixamo action='download_character|download_animation|search_characters|batch_download'>{spec}</aether-mixamo> to pull rigged characters and mocap clips from Mixamo, then stash the zips into the requested PlayCanvas project ID."},
+
+    {"subject": "AetherMind", "topic": "aether-meshy", "content": "Use <aether-meshy action='generate' prompt='futuristic alley' style='realistic' format='fbx' project_id='123456'></aether-meshy> to synthesize bespoke 3D assets with Meshy.ai, optionally attaching them to a project immediately."},
+
+    {"subject": "AetherMind", "topic": "aether-sketchfab", "content": "Use <aether-sketchfab action='search|download'>{'query': 'sports car', 'downloadable': true, 'project_id': '123456'}</aether-sketchfab> to source community models from Sketchfab. Respect licensing filters and store assets alongside other pipeline outputs."},
+
+    # ==================================================
     # USAGE GUIDELINES AND INTEGRATION
     # ==================================================
     {"subject": "AetherMind", "topic": "ThinkingTags",        "content": "Always use <think>REASONING</think> to show planning process. Appears in frontend Thought Bubble. Example: <think>**Analysis**: User wants snake game\\n**Approach**: 1) pygame for rendering, 2) game loop with event handling, 3) collision detection for food/walls\\n**Implementation**: Create main.py with Game class, separate Snake and Food classes</think> Thinking tags visible but don't trigger execution."},

@@ -334,17 +334,17 @@ export const api = {
         if (!apiKey) throw new Error("API Key required");
 
         try {
-            const response = await fetch(`${this.rootUrl}/v1/benchmarks/run`, {
+            const response = await fetch(`${this.rootUrl}/v1/benchmarks/run?family=${benchmarkType}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Aether-Key': apiKey
-                },
-                body: JSON.stringify({ benchmark_type: benchmarkType })
+                }
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to run benchmark: ${response.status}`);
+                const errorText = await response.text();
+                throw new Error(`Failed to run benchmark: ${response.status} - ${errorText}`);
             }
 
             return await response.json();

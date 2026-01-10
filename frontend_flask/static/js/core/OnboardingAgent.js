@@ -150,9 +150,18 @@ export class OnboardingAgent {
                     handler: () => this.handleAction(a)
                 }));
                 this.shell.addInteractiveMessage('assistant', assistantMsg, actions);
+                
+                // Speak the message if voice is enabled (after typing)
+                if (this.isVoiceEnabled()) {
+                    // Clean thinking tags before speaking
+                    const cleanMsg = assistantMsg.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+                    if (cleanMsg) {
+                        this.shell.voice?.speak(cleanMsg);
+                    }
+                }
             } else {
-                // Regular message
-                this.shell.addMessage('assistant', assistantMsg);
+                // Use typing animation for regular messages
+                await this.shell.addMessageWithTyping('assistant', assistantMsg, this.isVoiceEnabled());
             }
             
             // Save progress after each exchange
@@ -163,9 +172,8 @@ export class OnboardingAgent {
             console.error('❌ [ONBOARDING] Error talking to agent:', err);
             
             // Fallback - still try to be helpful and keep the conversation going
-            this.shell.addMessage('assistant', 
-                "I'm having a bit of trouble connecting right now, but don't worry! Tell me about yourself and what you're hoping to accomplish - I'm listening. 💫"
-            );
+            const fallbackMsg = "I'm having a bit of trouble connecting right now, but don't worry! Tell me about yourself and what you're hoping to accomplish - I'm listening. 💫";
+            await this.shell.addMessageWithTyping('assistant', fallbackMsg, this.isVoiceEnabled());
         }
     }
 
@@ -185,6 +193,14 @@ export class OnboardingAgent {
                 handler: () => this.declineMedia() 
             }
         ]);
+        
+        // Speak the message if voice is enabled (clean thinking first)
+        if (this.isVoiceEnabled()) {
+            const cleanMsg = message.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+            if (cleanMsg) {
+                this.shell.voice?.speak(cleanMsg);
+            }
+        }
     }
 
     async provideMedia(type) {
@@ -269,8 +285,8 @@ export class OnboardingAgent {
         this.shell.isOnboarded = true;
         this.shell.userProfile = this.profile;
         
-        // Show the agent's final message
-        this.shell.addMessage('assistant', finalMessage);
+        // Show the agent's final message with typing animation
+        await this.shell.addMessageWithTyping('assistant', finalMessage, this.isVoiceEnabled());
         
         // Show quick actions now that onboarding is complete
         if (this.shell.elements?.quickActions) {
@@ -320,17 +336,30 @@ export class OnboardingAgent {
                 
                 // Ask again through natural conversation
                 const name = this.profile.learnedFacts.name || 'there';
+                const askAgainMsg = `Hey ${name}! I was thinking - a photo would really help me personalize things for you. No pressure at all though! 😊`;
                 
-                this.shell.addInteractiveMessage('assistant', 
-                    `Hey ${name}! I was thinking - a photo would really help me personalize things for you. No pressure at all though! 😊`,
+                this.shell.addInteractiveMessage('assistant', askAgainMsg,
                     [
                         { label: '📸 Sure, let\'s do it', primary: true, handler: () => this.provideMedia('photo') },
-                        { label: 'Not right now', handler: () => {
-                            this.shell.addMessage('assistant', 'No worries! I\'ll focus on getting to know you through our conversations instead. 💬');
+                        { label: 'Not right now', handler: async () => {
+                            const skipMsg = 'No worries! I\'ll focus on getting to know you through our conversations instead. 💬';
+                            await this.shell.addMessageWithTyping('assistant', skipMsg, this.isVoiceEnabled());
                         }}
                     ]
                 );
+                
+                // Speak the ask again message if voice is enabled
+                if (this.isVoiceEnabled()) {
+                    this.shell.voice?.speak(askAgainMsg);
+                }
             }
         }
+    }
+
+    isVoiceEnabled() {
+        if (typeof this.shell?.isVoiceEnabled === 'function') {
+            return this.shell.isVoiceEnabled();
+        }
+        return Boolean(this.shell?.voice?.enabled);
     }
 }

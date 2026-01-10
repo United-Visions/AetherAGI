@@ -147,6 +147,20 @@ class MyAdapter(BodyAdapter):
 
 Register in `orchestrator/router.py` and enable in `config/settings.yaml`.
 
+### 9. Frontend Supabase Integration
+
+When using Supabase in frontend templates (via CDN):
+- The `supabase-js` library exposes a global `supabase` object.
+- **DO NOT** redeclare `supabase` (e.g., `let supabase = null`). This causes `Identifier 'supabase' has already been declared` errors.
+- Destructure `createClient` from the global object: `const { createClient } = supabase;`.
+- Assign the client to a distinct variable (e.g., `sbClient`) to avoid shadowing conflicts.
+
+```javascript
+// Correct Pattern
+const { createClient } = supabase;
+const sbClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+```
+
 ## File Organization
 
 ```

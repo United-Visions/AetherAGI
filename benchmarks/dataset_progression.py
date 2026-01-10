@@ -361,6 +361,24 @@ class DatasetProgressionLoader:
         """Move to the next chunk."""
         self.config.current_chunk += 1
     
+    def filter_variants(self, variant_name_part: str):
+        """Filter variants to only those matching the name part (case-insensitive)."""
+        filtered = [v for v in self.config.variants if variant_name_part.lower() in v.name.lower()]
+        if not filtered:
+            # Try to match exact trimmed name if partial failed
+            filtered = [v for v in self.config.variants if variant_name_part.lower() == v.name.lower()]
+            
+        if filtered:
+            self.config.variants = filtered
+            self.config.current_variant_index = 0
+            # Reset scores to match filtered list
+            self.config.scores_by_variant = {k: v for k, v in self.config.scores_by_variant.items() if any(fv.name == k for fv in filtered)}
+            # If current completed variants are not in the new list, keep them or clear them? 
+            # Ideally we just want to run the filtered ones.
+            print(f"🔍 Filtered variants to: {[v.name for v in filtered]}")
+        else:
+            print(f"⚠️ No variants found matching '{variant_name_part}'. Keeping all variants.")
+
     def record_chunk_score(self, score: float):
         """Record score for current chunk."""
         variant_name = self.current_variant.name

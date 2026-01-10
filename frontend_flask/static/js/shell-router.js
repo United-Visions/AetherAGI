@@ -117,7 +117,44 @@ class AetherShell {
 
     toggleVoice() {
         const enabled = this.voice.toggle();
-        this.toast(enabled ? '🔊 Voice enabled' : '🔇 Voice muted', 'info');
+        const btn = document.getElementById('voice-btn');
+        
+        // Update button state immediately
+        if (btn) {
+            btn.classList.toggle('active', enabled);
+            const icon = btn.querySelector('i');
+            if (icon) {
+                icon.className = enabled ? 'fas fa-volume-up' : 'fas fa-volume-mute';
+            }
+            btn.title = enabled ? 'Voice On (click to mute)' : 'Voice Off (click to enable)';
+        }
+        
+        this.toast(enabled ? '🔊 Voice enabled - I\'ll speak my responses' : '🔇 Voice muted', 'info');
+        
+        // Test voice if enabled with Aether's personality
+        if (enabled) {
+            // Give a quick test so user knows it works
+            this.voice.speak('Hello! I\'m AetherMind. You can now hear my voice when I respond.', { force: true })
+                .catch(err => {
+                    console.error('Test voice failed:', err);
+                    this.toast('⚠️ Voice enabled but check browser audio permissions', 'warning');
+                });
+        }
+        
+        console.log(`🔊 [SHELL] Voice toggled: ${enabled}`);
+    }
+
+    isVoiceEnabled() {
+        if (!this.voice) {
+            return false;
+        }
+        if (typeof this.voice.isEnabled === 'function') {
+            return this.voice.isEnabled();
+        }
+        if (Object.prototype.hasOwnProperty.call(this.voice, 'enabled')) {
+            return Boolean(this.voice.enabled);
+        }
+        return false;
     }
 
     async checkUserProfile() {
@@ -233,14 +270,10 @@ class AetherShell {
                 }
             }
             
-            // Display response
-            this.addMessage('assistant', assistantMsg.content, metadata);
+            // Display response with typing animation
+            this.removeTyping(typingId);
+            await this.addMessageWithTyping('assistant', assistantMsg.content, this.isVoiceEnabled());
             this.messageHistory.push(assistantMsg);
-            
-            // Speak the response if voice is enabled
-            if (this.voice?.enabled) {
-                this.voice.speak(assistantMsg.content);
-            }
             
         } catch (err) {
             this.removeTyping(typingId);
@@ -257,12 +290,13 @@ class AetherShell {
             row.innerHTML = `<div class="user-bubble">${this.escapeHtml(content)}</div>`;
         } else {
             const formattedContent = this.formatMessage(content);
+            const metadataSections = this.buildAssistantMetadataSections(metadata);
             row.innerHTML = `
                 <div class="assistant-content">
                     <div class="assistant-avatar">
                         <i class="fas fa-robot"></i>
                     </div>
-                    <div class="assistant-text">${formattedContent}</div>
+                    <div class="assistant-text">${formattedContent}${metadataSections}</div>
                 </div>
             `;
         }
@@ -292,6 +326,100 @@ class AetherShell {
         }
         
         return row;
+    }
+
+    /**
+     * Add message with typing animation effect
+     * Shows <think> tags as they're typed, but only speaks the final response
+     */
+    async addMessageWithTyping(role, content, speakAfter = true) {
+        if (role !== 'assistant') {
+            // User messages don't need typing effect
+            return this.addMessage(role, content);
+        }
+
+        // Create the message row
+        const row = document.createElement('div');
+        row.className = `message-row ${role}`;
+        
+        row.innerHTML = `
+            <div class="assistant-content">
+                <div class="assistant-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="assistant-text"><span class="typing-cursor">▊</span></div>
+            </div>
+        `;
+        
+        this.elements.messagesContainer.appendChild(row);
+        this.scrollToBottom();
+
+        const textContainer = row.querySelector('.assistant-text');
+        const cursor = textContainer.querySelector('.typing-cursor');
+        
+        // Extract thinking and response parts
+        const thinkMatch = content.match(/^(<think>[\s\S]*?<\/think>)([\s\S]*)$/);
+        let thinkingPart = '';
+        let responsePart = content;
+        
+        if (thinkMatch) {
+            thinkingPart = thinkMatch[1];
+            responsePart = thinkMatch[2].trim();
+        }
+        
+        // Type out thinking (visual only, no voice)
+        if (thinkingPart) {
+            await this.typeText(textContainer, cursor, thinkingPart, 15); // Fast typing for thinking
+            
+            // Add visual separation
+            const thinkDiv = document.createElement('div');
+            thinkDiv.className = 'thinking-section';
+            thinkDiv.innerHTML = this.formatMessage(thinkingPart);
+            textContainer.insertBefore(thinkDiv, cursor);
+            
+            // Brief pause before response
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        
+        // Type out the actual response
+        if (responsePart) {
+            await this.typeText(textContainer, cursor, responsePart, 30); // Slower for response
+            
+            const responseDiv = document.createElement('div');
+            responseDiv.className = 'response-section';
+            responseDiv.innerHTML = this.formatMessage(responsePart);
+            textContainer.insertBefore(responseDiv, cursor);
+        }
+        
+        // Remove cursor
+        cursor.remove();
+        
+        // Speak ONLY the response part (not thinking)
+        if (speakAfter && responsePart && this.isVoiceEnabled()) {
+            this.voice?.speak(responsePart);
+        }
+        
+        return row;
+    }
+
+    /**
+     * Type text character by character
+     */
+    async typeText(container, cursor, text, delayMs = 30) {
+        const words = text.split(' ');
+        
+        for (let i = 0; i < words.length; i++) {
+            const word = words[i] + (i < words.length - 1 ? ' ' : '');
+            const tempSpan = document.createElement('span');
+            tempSpan.textContent = word;
+            container.insertBefore(tempSpan, cursor);
+            
+            // Scroll to bottom as we type
+            this.scrollToBottom();
+            
+            // Delay between words
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
     }
 
     showTyping() {
@@ -341,24 +469,15 @@ class AetherShell {
             let assistantMsg = response.choices?.[0]?.message?.content || 
                 `${this.getTimeBasedGreeting()}, ${name}! 👋 Good to see you again. What would you like to work on?`;
             
-            this.addMessage('assistant', assistantMsg);
+            await this.addMessageWithTyping('assistant', assistantMsg, this.isVoiceEnabled());
             this.messageHistory.push({ role: 'assistant', content: assistantMsg });
-            
-            // Speak welcome if voice enabled
-            if (this.voice?.enabled) {
-                this.voice.speak(assistantMsg);
-            }
             
         } catch (err) {
             this.removeTyping(typingId);
             // Fallback to simple greeting if API fails
             const greeting = this.getTimeBasedGreeting();
             const fallbackMsg = `${greeting}, ${name}! 👋 Good to see you again. What would you like to work on today?`;
-            this.addMessage('assistant', fallbackMsg);
-            
-            if (this.voice?.enabled) {
-                this.voice.speak(fallbackMsg);
-            }
+            await this.addMessageWithTyping('assistant', fallbackMsg, this.isVoiceEnabled());
         }
     }
 
@@ -409,6 +528,104 @@ class AetherShell {
         }
         
         return formatted;
+    }
+
+    buildAssistantMetadataSections(metadata = {}) {
+        let sections = '';
+
+        if (metadata.activity_events && metadata.activity_events.length) {
+            sections += this.renderActivityTimeline(metadata.activity_events);
+        }
+
+        return sections;
+    }
+
+    renderActivityTimeline(events) {
+        const visibleEvents = events.slice(0, 6);
+        const items = visibleEvents.map((event, index) => this.renderActivityEvent(event, index)).join('');
+        return `
+            <div class="activity-timeline">
+                <div class="timeline-header">
+                    <i class="fas fa-wave-square"></i>
+                    <span>Live Build Feed</span>
+                </div>
+                ${items}
+            </div>
+        `;
+    }
+
+    renderActivityEvent(event, index) {
+        const status = (event.status || 'in_progress').toLowerCase();
+        const statusIconMap = {
+            completed: 'fa-check-circle',
+            error: 'fa-exclamation-triangle',
+            in_progress: 'fa-spinner',
+            pending: 'fa-ellipsis-h'
+        };
+        const statusLabelMap = {
+            completed: 'Completed',
+            error: 'Error',
+            in_progress: 'Running',
+            pending: 'Queued'
+        };
+
+        const icon = statusIconMap[status] || statusIconMap.in_progress;
+        const label = statusLabelMap[status] || statusLabelMap.in_progress;
+        const title = this.escapeHtml(event.title || 'Agent activity');
+        const details = event.details ? this.escapeHtml(event.details) : '';
+        const timestamp = event.timestamp ? this.formatTimestamp(event.timestamp) : '';
+        const chips = [];
+        const data = event.data || {};
+
+        if (data.execution_metadata?.execution_time) {
+            const seconds = Number(data.execution_metadata.execution_time).toFixed(2);
+            chips.push(`${seconds}s runtime`);
+        }
+        if (data.execution_metadata?.files_written) {
+            chips.push(`${data.execution_metadata.files_written} file(s)`);
+        }
+        if (data.tool_name) {
+            chips.push(`Tool: ${this.escapeHtml(data.tool_name)}`);
+        }
+
+        const chipsHtml = chips.length
+            ? `<div class="event-chips">${chips.map(chip => `<span>${chip}</span>`).join('')}</div>`
+            : '';
+
+        let actionsHtml = '';
+        if (data.project_url) {
+            const safeUrl = this.escapeHtml(data.project_url);
+            actionsHtml += `<a class="event-link" href="${safeUrl}" target="_blank" rel="noopener">Open PlayCanvas</a>`;
+        }
+        if (Array.isArray(data.files) && data.files.length) {
+            const fileList = data.files.slice(0, 2)
+                .map(file => `<code>${this.escapeHtml(file)}</code>`)
+                .join('');
+            actionsHtml += `<div class="event-files">${fileList}</div>`;
+        }
+        if (data.execution_output && typeof data.execution_output === 'string') {
+            actionsHtml += `<pre class="event-output"><code>${this.escapeHtml(data.execution_output.slice(0, 400))}</code></pre>`;
+        }
+
+        return `
+            <div class="activity-event ${status}">
+                <div class="event-status">
+                    <i class="fas ${icon}"></i>
+                    <span>${label}</span>
+                    ${timestamp ? `<span class="event-timestamp">${timestamp}</span>` : ''}
+                </div>
+                <div class="event-title">${title}</div>
+                ${details ? `<div class="event-details">${details}</div>` : ''}
+                ${chipsHtml}
+                ${actionsHtml ? `<div class="event-actions">${actionsHtml}</div>` : ''}
+            </div>
+        `;
+    }
+
+    formatTimestamp(timestamp) {
+        const date = new Date(timestamp);
+        if (isNaN(date.getTime())) return '';
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
     escapeHtml(text) {
@@ -475,16 +692,20 @@ class AetherShell {
     async runBenchmark(type) {
         this.toast(`Starting ${type.toUpperCase()} benchmark...`, 'info');
         
-        // Add as background task
-        this.tasks.addTask({
-            id: `benchmark_${type}_${Date.now()}`,
-            type: 'benchmark',
-            name: `${type.toUpperCase()} Benchmark`,
-            status: 'running'
-        });
-        
         try {
-            await api.runBenchmark(type);
+            // Call the backend to start the benchmark
+            const response = await api.runBenchmark(type);
+            const benchmarkId = response.benchmark_id;
+            
+            // Add task with the actual benchmark_id from backend
+            this.tasks.addTask({
+                id: benchmarkId,
+                type: 'benchmark',
+                name: `${type.toUpperCase()} Benchmark`,
+                status: 'running'
+            });
+            
+            this.toast(`Benchmark started with ID: ${benchmarkId}`, 'success');
         } catch (err) {
             this.toast(`Benchmark failed: ${err.message}`, 'error');
         }

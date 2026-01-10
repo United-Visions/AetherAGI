@@ -26,6 +26,7 @@ class VoiceConfig:
 # Predefined voice profiles for different personas
 VOICE_PROFILES = {
     "default": VoiceConfig(voice_id="en-US-AriaNeural"),
+    "aethermind": VoiceConfig(voice_id="en-US-JennyNeural", rate="+0%"),  # Aether's signature voice
     "professional": VoiceConfig(voice_id="en-US-JennyNeural", rate="-5%"),
     "casual": VoiceConfig(voice_id="en-US-SaraNeural", rate="+5%"),
     "energetic": VoiceConfig(voice_id="en-US-AnaNeural", rate="+10%", pitch="+5Hz"),
