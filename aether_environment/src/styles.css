@@ -1,0 +1,42 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: "Space Grotesk", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top, #0b1d36 0%, #050608 65%);
+  color: #d4e5ff;
+}
+
+#hud {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(3, 8, 16, 0.75);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(61, 130, 255, 0.35);
+  min-width: 280px;
+  box-shadow: 0 12px 50px rgba(2, 10, 20, 0.55);
+}
+
+#hud h1 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8ad6ff;
+}
+
+#hud p {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: #9db5ce;
+}
