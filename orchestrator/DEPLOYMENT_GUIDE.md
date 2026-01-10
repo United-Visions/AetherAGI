@@ -47,7 +47,7 @@ PERCEPTION_SERVICE_URL=http://your-perception-service:8000
 
 # Database (if using)
 SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_key
+SB_ANON_KEY=your_supabase_key  # renamed from SUPABASE_ANON_KEY for Supabase secrets storage
 ```
 
 ### Install Dependencies

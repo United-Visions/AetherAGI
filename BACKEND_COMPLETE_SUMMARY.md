@@ -291,7 +291,7 @@ ADMIN_SECRET=xxx                           # Admin operations
 FIRECRAWL_API_KEY=xxx                      # Web crawling
 PERCEPTION_SERVICE_URL=http://localhost:8001  # Vision/audio
 SUPABASE_URL=xxx                           # User management
-SUPABASE_ANON_KEY=xxx                      # Database
+SB_ANON_KEY=xxx                            # Database (formerly SUPABASE_ANON_KEY)
 ```
 
 ---

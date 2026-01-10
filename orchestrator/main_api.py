@@ -66,16 +66,21 @@ app = FastAPI(title="AetherMind AGI API", version="1.0.0", lifespan=lifespan)
 # This allows your frontend (running on a different domain) to make API calls to this backend.
 origins = [
     "https://aethermind-frontend.onrender.com",
-    "http://localhost:5000", # For local testing
-    "http://127.0.0.1:5000", # For local testing with explicit IP
+    "http://localhost:5000",  # For local testing
+    "http://127.0.0.1:5000",  # For local testing with explicit IP
+    "http://localhost:8080",  # PlayCanvas local dev
+    "https://launch.playcanvas.com",  # PlayCanvas game launcher
+    "https://playcanvas.com",  # PlayCanvas editor
+    "https://playcanv.as",  # PlayCanvas short URL
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 logger.info(f"CORS middleware configured with allowed origins: {origins}")
@@ -2107,6 +2112,19 @@ async def list_voices(
 # UNITY GAME ENGINE INTEGRATION
 # ============================================================================
 from body.adapters.unity_adapter import UNITY_ADAPTER
+from fastapi.responses import Response
+
+@app.options("/v1/game/unity/state")
+async def unity_state_options():
+    """Handle CORS preflight requests for game state endpoint."""
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 @app.post("/v1/game/unity/state")
 async def unity_sync_state(

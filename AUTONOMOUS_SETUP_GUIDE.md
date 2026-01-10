@@ -30,7 +30,7 @@ psql $SUPABASE_URL < scripts/supabase_goals_schema.sql
 echo "GOOGLE_API_KEY: $GOOGLE_API_KEY"
 echo "PINECONE_API_KEY: $PINECONE_API_KEY"
 echo "SUPABASE_URL: $SUPABASE_URL"
-echo "SUPABASE_ANON_KEY: $SUPABASE_ANON_KEY"
+echo "SB_ANON_KEY: $SB_ANON_KEY"
 echo "REDIS_URL: $REDIS_URL"
 ```
 

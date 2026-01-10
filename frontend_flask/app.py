@@ -424,7 +424,12 @@ async def benchmarks():
             total_chunks=0,
             timestamp=None,
             supabase_url=os.getenv("SUPABASE_URL") or os.getenv("SB_URL"),
-            supabase_key=os.getenv("SUPABASE_ANON_KEY") or os.getenv("SUPABASE_KEY") or os.getenv("SB_SECRET_KEY")
+            supabase_key=(
+                os.getenv("SB_ANON_KEY")
+                or os.getenv("SUPABASE_ANON_KEY")
+                or os.getenv("SUPABASE_KEY")
+                or os.getenv("SB_SECRET_KEY")
+            )
         )
 
     all_chunk_results = sorted(payload.get("all_chunk_results", []), key=lambda entry: entry.get("chunk", 0))
@@ -518,7 +523,7 @@ async def benchmarks():
         selected_day=selected_day_id,
         error_message=None,
         supabase_url=os.getenv("SUPABASE_URL") or os.getenv("SB_URL"),
-        supabase_key=os.getenv("SUPABASE_ANON_KEY") or os.getenv("SB_ANON_KEY")
+        supabase_key=os.getenv("SB_ANON_KEY") or os.getenv("SUPABASE_ANON_KEY")
     )
 
 @app.route("/whitepaper")

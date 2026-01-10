@@ -3,7 +3,7 @@
   "completed_variants": [],
   "scores_by_variant": {
     "GSM-8K": {
-      "chunks_completed": 20,
+      "chunks_completed": 22,
       "scores": [
         0.96,
         1.0,
@@ -24,20 +24,22 @@
         0.92,
         1.0,
         0.76,
+        0.0,
+        0.0,
         0.0
       ],
-      "average": 0.908
+      "average": 0.8254545454545454
     }
   },
-  "overall_average": 0.908,
+  "overall_average": 0.8254545454545454,
   "last_chunk": {
     "variant": "GSM-8K",
-    "chunk": 20,
+    "chunk": 22,
     "total_chunks": 53,
     "score": 0.0,
     "correct": 0,
     "total": 25,
-    "timestamp": "2026-01-09T23:26:45.490111+00:00"
+    "timestamp": "2026-01-10T01:13:40.268173+00:00"
   },
   "all_chunk_results": [
     {
@@ -219,7 +221,25 @@
       "correct": 0,
       "total": 25,
       "timestamp": "2026-01-09T23:26:45.490111+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 21,
+      "total_chunks": 53,
+      "score": 0.0,
+      "correct": 0,
+      "total": 25,
+      "timestamp": "2026-01-10T00:18:59.628484+00:00"
+    },
+    {
+      "variant": "GSM-8K",
+      "chunk": 22,
+      "total_chunks": 53,
+      "score": 0.0,
+      "correct": 0,
+      "total": 25,
+      "timestamp": "2026-01-10T01:13:40.268173+00:00"
     }
   ],
-  "timestamp": "2026-01-09T23:26:47.003552+00:00"
+  "timestamp": "2026-01-10T01:13:42.016456+00:00"
 }
